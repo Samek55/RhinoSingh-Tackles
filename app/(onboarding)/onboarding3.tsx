@@ -1,6 +1,6 @@
 import { View, Text } from 'react-native';
 import React from 'react';
-import OnboardingComponent from '../components/onBoarding/onboardingComponent';
+import OnboardingComponent from '../../components/onBoarding/onboardingComponent';
 import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
@@ -17,7 +17,9 @@ export default function OnBoarding1() {
 
       <OnboardingComponent
         title="Home"
-        image={require('../assets/onBoarding/onBoarding3.png')}
+        image={require('../../assets/onBoarding/onBoarding3.png')}
+        onPress={() => router.push('/Home')}
+
       />
     </View>
   );

@@ -1,6 +1,6 @@
 import {View, Text} from 'react-native';
 import React from 'react';
-import OnboardingComponent from '../components/onBoarding/onboardingComponent';
+import OnboardingComponent from '../../components/onBoarding/onboardingComponent';
 import {StyleSheet} from 'react-native';
 import { router } from 'expo-router';
 
@@ -16,8 +16,8 @@ export default function OnBoarding1() {
             </Text>
       <OnboardingComponent
         title="Next"
-        image={require('../assets/onBoarding/onBoarding2.png')}
-        onPress={() => router.push('/onBoarding3')}
+        image={require('../../assets/onBoarding/onBoarding2.png')}
+        onPress={() => router.push('/onboarding3')}
       />
     </View>
   );
