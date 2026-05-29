@@ -1,15 +1,15 @@
 import { router } from 'expo-router';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 
-export default function BookingScreen() {
+export default function AdminLogin() {
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>Booking Screen</Text>
+            <Text style={styles.text}>Booking Otp Screen</Text>
             <Pressable
-                onPress={() => router.push("/booking/BookingDetail")}
+                onPress={() => router.push('/Home')}
                 style={styles.button}
             >
-                <Text style={{color:'white'}} >go to booking details</Text>
+                <Text style={{color:'white'}} >go back home</Text>
             </Pressable>
         </View>
     );

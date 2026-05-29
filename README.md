@@ -36,10 +36,9 @@ app/
 │   ├── onboarding2.tsx
 │   ├── onboarding3.tsx
 |
-├── (auth)/                 # Authentication flow 
+├── (admin)/                 # ADMIN 
 │   ├── _layout.tsx
-│   ├── login.tsx
-│   ├── signup.tsx
+│   ├── AdminLogin.tsx
 |
 ├── (drawer)/                # Main application
 │   ├── _layout.tsx
@@ -55,7 +54,9 @@ app/
 │   │   ├── Book.tsx
 │   │   ├── About.tsx
 │   │   ├── Contact.tsx
-│   ├
+|   |   
+│   ├── details/
+│   |   └── [id].tsx  
 
 
 ```

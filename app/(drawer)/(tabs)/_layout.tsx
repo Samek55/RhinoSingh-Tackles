@@ -7,7 +7,7 @@ export default function TabsLayout() {
         headerShown: false, 
       }}>
       <Tabs.Screen name="Home" />
-      <Tabs.Screen name="Services" />
+      <Tabs.Screen name="Service" />
       <Tabs.Screen name="Book" />
       <Tabs.Screen name="About" />
       <Tabs.Screen name="Contact" />
