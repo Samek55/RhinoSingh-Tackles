@@ -103,7 +103,7 @@ const SingleScreen = ({ route, navigation }: any) => {
 
           {/* TITLE */}
           <Text style={[styles.subtitle, { fontSize: scaleFont(17) }]}>
-            {service.name} Services in San Francisco
+            {service.name} Services in Chennai
           </Text>
 
           {/* DESCRIPTION */}

@@ -4,9 +4,9 @@ export const FaqsData = [
     {
         id:1,
         question:
-            'What handyman services do you provide in San Francisco?',
+            'What handyman services do you provide in Chennai?',
         answer:
-            'We provide plumbing, electrical repairs, carpentry, painting, drywall repair, furniture assembly, flooring fixes, appliance installation, TV mounting, and general home maintenance services across San Francisco.'
+            'We provide plumbing, electrical repairs, carpentry, painting, drywall repair, furniture assembly, flooring fixes, appliance installation, TV mounting, and general home maintenance services across Chennai.'
     },
 
     {
@@ -14,7 +14,7 @@ export const FaqsData = [
         question:
         'Do you offer same-day handyman services?',
         answer:
-        'Yes, we offer same-day and emergency handyman services depending on technician availability and your location in San Francisco.',
+        'Yes, we offer same-day and emergency handyman services depending on technician availability and your location in Chennai.',
     },
 
     {
@@ -62,7 +62,7 @@ export const FaqsData = [
         question:
         'Do you provide services for apartments and commercial offices?',
         answer:
-        'Yes, we provide handyman solutions for homes, apartments, offices, retail stores, restaurants, and commercial properties throughout San Francisco.',
+        'Yes, we provide handyman solutions for homes, apartments, offices, retail stores, restaurants, and commercial properties throughout Chennai.',
     },
 
     {

@@ -139,7 +139,6 @@ export default function DrawerLayout() {
           shadowOpacity: 0,
         },
         overlayColor: 'rgba(0,0,0,0.75)',
-        sceneContainerStyle: { backgroundColor: 'transparent' },
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     />

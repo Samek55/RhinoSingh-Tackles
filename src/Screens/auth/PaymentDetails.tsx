@@ -42,7 +42,7 @@ const PaymentDetails = ({ navigation }: { route: any; navigation: any }) => {
                     </View>
                 </TouchableOpacity>
                 <Text style={styles.thankYouText}>
-                    TACKLES Pro
+                    RocketSingh
                 </Text>
 
                 <View style={styles.detailsContainer}>

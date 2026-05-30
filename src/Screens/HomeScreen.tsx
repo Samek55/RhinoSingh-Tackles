@@ -63,10 +63,10 @@ const HomeScreen = ({ navigation }: { navigation: any }) => {
             {/* Content */}
             <View style={styles.content}>
 
-              <Text style={styles.title}>TACKLES | Fix it Today</Text>
+              <Text style={styles.title}>RocketSingh | Fix it Today</Text>
 
               <Text style={styles.subtitle}>
-                Professional Handyman Services in San Francisco
+                Professional Handyman Services in Chennai
               </Text>
 
               {/* Top Services */}

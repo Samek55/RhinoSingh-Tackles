@@ -24,11 +24,11 @@ const ICON_SIZE = hp('3.3%');
 
 const ContactScreen = ({ }: { navigation: any }) => {
   const openWebsite = useCallback(() => {
-    Linking.openURL('https://tackles.pro/');
+    Linking.openURL('https://rocketsingh.in/');
   }, []);
 
   const handleEmailPress = useCallback(() => {
-    Linking.openURL('mailto:support@tackles.pro');
+    Linking.openURL('mailto:support@rocketsingh.in');
   }, []);
 
   return (
@@ -55,9 +55,9 @@ const ContactScreen = ({ }: { navigation: any }) => {
           </View>
 
           {/* COMPANY */}
-          <Text style={styles.companyName}>TACKLES Pro</Text>
+          <Text style={styles.companyName}>RocketSingh App</Text>
           <Text style={styles.companySubtitle}>
-            Professional Handyman Services in San Francisco
+            Project of SRIYOG Consulting · IITM Pravartak · Chennai, India
           </Text>
 
           {/* CARDS */}
@@ -69,7 +69,7 @@ const ContactScreen = ({ }: { navigation: any }) => {
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Visit us</Text>
                 <Text style={styles.cardSubtitle}>
-                  600 California St, San Francisco, CA 94108.
+                  IITM Pravartak, IN-SPAN 2026, Chennai, India.
                 </Text>
               </View>
             </View>
@@ -81,7 +81,7 @@ const ContactScreen = ({ }: { navigation: any }) => {
                 <Text style={styles.cardTitle}>Email us</Text>
                 <TouchableOpacity onPress={handleEmailPress}>
                   <Text style={styles.cardSubtitle}>
-                    support@tackles.pro
+                    support@rocketsingh.in
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -94,7 +94,7 @@ const ContactScreen = ({ }: { navigation: any }) => {
                 <Text style={styles.cardTitle}>Website</Text>
                 <TouchableOpacity onPress={openWebsite}>
                   <Text style={styles.cardSubtitle}>
-                    tackles.pro
+                    rocketsingh.in
                   </Text>
                 </TouchableOpacity>
               </View>

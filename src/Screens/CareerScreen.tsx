@@ -232,7 +232,7 @@ const CareerScreen = ({ }: { navigation: any }) => {
         >
 
           <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
-            <Text style={styles.title}>TACKLES - Join Now</Text>
+            <Text style={styles.title}>RocketSingh - Join Now</Text>
 
             <Text style={styles.borderWIDTH} />
 

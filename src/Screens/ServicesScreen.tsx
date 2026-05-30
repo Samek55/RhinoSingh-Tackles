@@ -94,7 +94,7 @@ const ServicesScreen = ({ navigation }: { navigation: any }) => {
                   style={styles.headerSubtitle}
                   numberOfLines={2}
                 >
-                  Professional & Reliable Services in San Francisco
+                  Professional & Reliable Services in Chennai
                 </Text>
               </View>
             </ImageBackground>

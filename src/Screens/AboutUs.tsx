@@ -48,23 +48,28 @@ const AboutScreen = ({ }: { navigation: any }) => {
               <Text style={styles.title}>Our Story</Text>
 
               <Text style={styles.subtitle}>
-                TACKLES is an A-grade handyman service company delivering
-                professional solutions for plumbing, painting, air conditioning,
-                flooring, and wall repairs with consistent quality and dependable
-                service standards.
+                RocketSingh is the Indian version of TACKLES PRO — a growing
+                platform delivering fast, reliable, and professional on-demand
+                home services across India, powered by skilled and trained
+                professionals available 24 hours a day, 365 days a year.
               </Text>
 
               <Text style={styles.lineheighpara}>
-                Our mission is to offer complete repair and maintenance services
-                under one trusted platform, eliminating the need to search
-                multiple providers for different household and commercial
-                requirements.
+                Our mission is to connect customers with trusted experts
+                anytime, anywhere — from emergency support to daily maintenance
+                — under one convenient platform, eliminating the hassle of
+                searching multiple providers.
               </Text>
 
               <Text style={styles.lineheighpara}>
-                Our vision is to build a trusted handyman brand recognized for
-                professionalism, accessibility, and service excellence through
-                long-term client relationships and consistent work quality.
+                Our vision is to redefine modern service delivery by bringing
+                technology-driven workforce solutions to homes, offices, and
+                businesses throughout India, starting from Chennai.
+              </Text>
+
+              <Text style={styles.lineheighpara}>
+                RocketSingh is a project of SRIYOG Consulting, incubated at
+                IITM Pravartak, IN-SPAN 2026, Chennai, India.
               </Text>
 
               {/* TEAM */}

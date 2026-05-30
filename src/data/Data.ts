@@ -67,25 +67,25 @@ export const positionAppliedFor = [
 export const shifts = ['Morning', 'Day', 'Afternoon', 'Night'];
 
 export const budget = [
-  'Below USD 500',
-  'Above USD 500',
-  'Above USD 1000',
-  'Above USD 2500'
+  'Below ₹5,000',
+  'Above ₹5,000',
+  'Above ₹10,000',
+  'Above ₹25,000',
 ];
 
 export const priority = ['Normal', 'Urgent'];
 
 export const area = [
-  'Downtown San Francisco', 'Financial District', 'Union Square', 'SoMa',
-  'Chinatown', 'North Beach', "Fisherman's Wharf", 'Pier 39',
-  'Mission District', 'Haight-Ashbury', 'Castro District', 'Japantown',
-  'Pacific Heights', 'Marina District', 'Nob Hill', 'Russian Hill',
-  'Golden Gate Park', 'Golden Gate Bridge', 'Presidio of San Francisco',
-  'Twin Peaks', 'Sunset District', 'Richmond District', 'Other',
+  'T. Nagar', 'Adyar', 'Anna Nagar', 'Velachery', 'Nungambakkam',
+  'Mylapore', 'Guindy', 'Perambur', 'Ambattur', 'Chromepet',
+  'Porur', 'Pallavaram', 'Sholinganallur', 'OMR', 'ECR',
+  'Kodambakkam', 'Saidapet', 'Arumbakkam', 'Mogappair', 'Perungudi',
+  'Tambaram', 'Medavakkam', 'Thoraipakkam', 'Alwarpet', 'Kilpauk',
+  'Royapettah', 'Chetpet', 'Egmore', 'Purasaiwakkam', 'Other',
 ];
 
 export const city = [
-  'San Francisco',
+  'Chennai',
   'Other'
 ]
 

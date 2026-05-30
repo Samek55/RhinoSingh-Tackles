@@ -76,7 +76,7 @@ const AdminLogin = ({ navigation }: { navigation: any }) => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>Hello! Pro</Text>
-          <Text style={styles.subtitle}>Welcome to TACKLES</Text>
+          <Text style={styles.subtitle}>Welcome to RocketSingh</Text>
           <View style={styles.formContainer}>
             <Text style={styles.welcomeText}>Login</Text>
 
