@@ -1,5 +1,6 @@
 import {View, Text, Image,Dimensions, StyleSheet} from 'react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { router } from 'expo-router';
 import HeaderComponent from '../../components/HeaderComponent';
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
@@ -15,6 +16,13 @@ const scaleFont = (size: number) => {
 
 
 const VerifiedScreen = () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace('/Home' as any);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <View style={styles.mainContainer}>
       <HeaderComponent style={styles.header} />

@@ -6,6 +6,8 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { router } from 'expo-router';
@@ -58,9 +60,10 @@ const AdminOtp = ({ route }: { route: any }) => {
     newOtp[index] = text;
     setOtp(newOtp);
 
-    // Automatically focus next input box if the user types a number
     if (text && index < otp.length - 1) {
       inputRefs.current[index + 1]?.focus();
+    } else if (text && index === otp.length - 1) {
+      Keyboard.dismiss();
     }
   };
 
@@ -164,6 +167,7 @@ const AdminOtp = ({ route }: { route: any }) => {
   };
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <View style={styles.mainContainer}>
       <HeaderComponent style={styles.header} />
       <View style={{ borderBottomWidth: 1, borderColor: '#CAD2DF', marginTop: 16 }} />
@@ -203,6 +207,7 @@ const AdminOtp = ({ route }: { route: any }) => {
         </TouchableOpacity>
       </View>
     </View>
+    </TouchableWithoutFeedback>
   );
 };
 
