@@ -1,21 +1,15 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import HomeScreen from '../../../src/Screens/HomeScreen';
 
-export default function HomeScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Home Screen</Text>
-    </View>
-  );
+const nav = {
+  navigate: (screen: string, params?: any) => {
+    if (screen === 'SingleScreen') {
+      router.push({ pathname: '/service/ServiceDetail' as any, params: { serviceData: JSON.stringify(params?.service) } });
+    }
+  },
+  goBack: () => router.back(),
+};
+
+export default function HomeTab() {
+  return <HomeScreen navigation={nav} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,                 // take full screen
-    justifyContent: 'center', // vertical center
-    alignItems: 'center',     // horizontal center
-    borderWidth: 2,
-  },
-  text: {
-    textAlign: 'center',
-  },
-});

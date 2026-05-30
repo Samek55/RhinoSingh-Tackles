@@ -1,0 +1,70 @@
+import React, { useState } from 'react';
+import {
+  TextInput,
+  StyleSheet,
+  TextInputProps,
+} from 'react-native';
+
+type TextAreaProps = {
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  minHeight?: number;
+  maxHeight?: number;
+  borderColor?: string;
+} & TextInputProps;
+
+const TextArea: React.FC<TextAreaProps> = ({
+  value,
+  onChangeText,
+  borderColor,
+  placeholder = 'Enter text...',
+  minHeight = 100,
+  maxHeight = 180,
+  onFocus,
+  ...rest
+}) => {
+  const [height, setHeight] = useState(minHeight);
+
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      multiline
+      scrollEnabled={height >= maxHeight}   // 👈 key feature
+      onContentSizeChange={(event) => {
+        const contentHeight = event.nativeEvent.contentSize.height;
+
+        const newHeight = Math.min(
+          maxHeight,
+          Math.max(minHeight, contentHeight),
+        );
+
+        setHeight(newHeight);
+      }}
+      style={[
+        styles.input,
+        { height, borderColor: borderColor || '#000' }, // 👈 override here
+      ]}
+      textAlignVertical="top"
+       onFocus={onFocus} 
+      {...rest}
+    />
+  );
+};
+
+const styles = StyleSheet.create({
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 16,
+    fontWeight: '500',
+    color:'#4B4B4B',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+});
+
+export default TextArea;

@@ -1,21 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import AboutScreen from '../../../src/Screens/AboutUs';
 
-export default function AboutScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>About Screen</Text>
-    </View>
-  );
+export default function AboutTab() {
+  return <AboutScreen navigation={undefined} />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,                 // take full screen
-    justifyContent: 'center', // vertical center
-    alignItems: 'center',     // horizontal center
-    borderWidth: 2,
-  },
-  text: {
-    textAlign: 'center',
-  },
-});

@@ -1,36 +1,23 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { useLocalSearchParams, router } from 'expo-router';
+import SingleScreen from '../../src/Screens/SingleScreen';
 
-export default function ServiceDetails() {
-  const { id } = useLocalSearchParams();
+export default function ServiceDetailPage() {
+  const { serviceData } = useLocalSearchParams<{ serviceData: string }>();
+  const service = serviceData ? JSON.parse(serviceData) : {};
 
+  const nav = {
+    navigate: (screen: string, params?: any) => {
+      if (screen === 'SingleScreen') {
+        router.push({ pathname: '/service/ServiceDetail' as any, params: { serviceData: JSON.stringify(params?.service) } });
+      }
+      if (screen === 'Main' || screen === 'BookingTab' || screen === 'Booking') {
+        router.push('/Book' as any);
+      }
+    },
+    goBack: () => router.back(),
+  };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Service Details</Text>
-      <Text style={styles.text}>ID: {id}</Text>
-      <Pressable
-        onPress={() => router.push('/Book')}
-        style={styles.button}
-      >
-        <Text style={{ color: 'white' }} >go to Bookings</Text>
-      </Pressable>
-    </View>
-  );
+  const route = { params: { service } };
+
+  return <SingleScreen navigation={nav} route={route} />;
 }
-
-const styles = StyleSheet.create({
-  button: {
-    padding: 30,
-    backgroundColor: 'green'
-  },
-  container: {
-    flex: 1,                 // take full screen
-    justifyContent: 'center', // vertical center
-    alignItems: 'center',     // horizontal center
-    borderWidth: 2,
-  },
-  text: {
-    textAlign: 'center',
-  },
-});

@@ -5,4 +5,16 @@
 
 expo-env.d.ts
 # @end expo-cli
+.expo/
 node_modules
+.env
+.env.local
+.env.production
+.idea/
+.vscode/
+.DS_Store
+legacy/
+*.jks
+credentials.json
+google-services.json
+GoogleService-Info.plist

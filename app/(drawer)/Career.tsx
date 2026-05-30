@@ -1,21 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import CareerScreen from '../../src/Screens/CareerScreen';
 
-export default function CareerScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Career Screen</Text>
-    </View>
-  );
+export default function CareerPage() {
+  return <CareerScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,                 // take full screen
-    justifyContent: 'center', // vertical center
-    alignItems: 'center',     // horizontal center
-    borderWidth: 2,
-  },
-  text: {
-    textAlign: 'center',
-  },
-});

@@ -1,0 +1,21 @@
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      EXPO_PUBLIC_AIRTABLE_TOKEN: string;
+      EXPO_PUBLIC_AIRTABLE_BASE_ID: string;
+      EXPO_PUBLIC_AIRTABLE_API_URL_BOOKING: string;
+      EXPO_PUBLIC_AIRTABLE_API_URL_SERVICES: string;
+      EXPO_PUBLIC_AIRTABLE_API_URL_CAREER: string;
+      EXPO_PUBLIC_AIRTABLE_API_URL_PARTNERSHIP: string;
+      EXPO_PUBLIC_AIRTABLE_API_URL_HELPBOX: string;
+      EXPO_PUBLIC_CLOUDINARY_URL: string;
+      EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET: string;
+      EXPO_PUBLIC_TWILIO_ACCOUNT_SID: string;
+      EXPO_PUBLIC_TWILIO_AUTH_TOKEN: string;
+      EXPO_PUBLIC_TWILIO_VERIFY_SERVICE_SID: string;
+      EXPO_PUBLIC_TWILIO_BASE_URL: string;
+    }
+  }
+}
+
+export {};

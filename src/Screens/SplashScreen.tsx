@@ -1,0 +1,93 @@
+import { View, Text, Image, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const SplashScreen = ({ navigation }: { navigation: any }) => {
+  const [milliseconds, setMilliseconds] = useState(3000);
+  const totalDuration = 3000;
+
+  useEffect(() => {
+    const startTime = Date.now();
+
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(totalDuration - elapsed, 0);
+
+      setMilliseconds(Math.round(remaining));
+    }, 50);
+
+    const timeout = setTimeout(async () => {
+      clearInterval(timer);
+
+      const seen = await AsyncStorage.getItem('hasSeenOnboarding');
+
+      if (seen === 'true') {
+        navigation.replace('Main');
+      } else {
+        navigation.replace('OnBoarding1');
+      }
+    }, totalDuration);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(timeout);
+    };
+  }, [navigation]);
+
+  return (
+    <View style={styles.container}>
+      <Image
+        source={require('../assets/tackles.png')}
+        style={styles.splashImage}
+      />
+
+      <Text style={styles.counter}>{milliseconds}</Text>
+
+      <View style={styles.logo}>
+        <Text style={styles.partnerText}>Powered By</Text>
+        <Image
+          source={require('../assets/image/sriyogLogo.png')}
+          style={styles.logo}
+        />
+      </View>
+    </View>
+  );
+};
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+  },
+  counter: {
+    top: '4.5%',
+    fontSize: 18,
+    color: '#333',
+  },
+  splashImage: {
+    top: '27%',
+    width: 180,
+    height: 180,
+    borderRadius: 100,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+
+  },
+  logo: {
+    bottom: '9%',
+    alignItems: 'center',
+    gap: 20,
+  },
+  partnerText: {
+    fontSize: 16,
+    color: '#4B4B4B',
+    fontWeight: '500',
+    marginBottom: 30,
+  },
+});
+
+export default SplashScreen;

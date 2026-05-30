@@ -1,32 +1,15 @@
 import { router } from 'expo-router';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import ServiceBookingScreen from '../../../src/Screens/ServiceBookingScreen';
 
-export default function BookingScreen() {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.text}>Booking Screen</Text>
-            <Pressable
-                onPress={() => router.push("/booking/BookingDetail")}
-                style={styles.button}
-            >
-                <Text style={{color:'white'}} >go to booking details</Text>
-            </Pressable>
-        </View>
-    );
+const nav = {
+  navigate: (screen: string, params?: any) => {
+    if (screen === 'AdminOtp') {
+      router.push({ pathname: '/booking/BookingOtp' as any, params });
+    }
+  },
+  goBack: () => router.back(),
+};
+
+export default function BookTab() {
+  return <ServiceBookingScreen navigation={nav} />;
 }
-
-const styles = StyleSheet.create({
-    button:{
-        padding:30,
-        backgroundColor:'green'
-    },
-    container: {
-        flex: 1,                 // take full screen
-        justifyContent: 'center', // vertical center
-        alignItems: 'center',     // horizontal center
-        borderWidth: 2,
-    },
-    text: {
-        textAlign: 'center',
-    },
-});

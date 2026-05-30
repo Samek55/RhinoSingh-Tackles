@@ -1,0 +1,89 @@
+import React, { useEffect, useState } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { View, ActivityIndicator } from 'react-native';
+
+import OnBoarding1 from '../Screens/onBoarding/OnBoarding1';
+import OnBoarding2 from '../Screens/onBoarding/OnBoarding2';
+import OnBoarding3 from '../Screens/onBoarding/OnBoarding3';
+import Booking from './Booking';
+import DrawerNavigation from './DrawerNavigation';
+
+import SingleBooking from '../SingleBooking';
+
+const Stack = createNativeStackNavigator();
+
+const RootNavigator = () => {
+  const [loading, setLoading] = useState(true);
+  const [initialRoute, setInitialRoute] =
+    useState<string>('OnBoarding1');
+
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      const seen = await AsyncStorage.getItem('hasSeenOnboarding');
+
+      if (seen === 'true') {
+        setInitialRoute('Main');
+      } else {
+        setInitialRoute('OnBoarding1');
+      }
+
+      setLoading(false);
+    };
+
+    checkOnboarding();
+  }, []);
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return (
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={initialRoute}
+    >
+      <Stack.Screen
+        name="OnBoarding1"
+        component={OnBoarding1}
+      />
+      <Stack.Screen
+        name="OnBoarding2"
+        component={OnBoarding2}
+      />
+      <Stack.Screen
+        name="OnBoarding3"
+        component={OnBoarding3}
+      />
+
+      <Stack.Screen
+        name="Main"
+        component={DrawerNavigation}
+      />
+
+      <Stack.Screen
+        name="Booking"
+        component={Booking}
+      />
+
+      <Stack.Screen
+        name="SingleBooking"
+        component={SingleBooking}
+      />
+
+
+    </Stack.Navigator>
+  );
+};
+
+export default RootNavigator;

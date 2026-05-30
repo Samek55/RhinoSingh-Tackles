@@ -1,32 +1,15 @@
 import { router } from 'expo-router';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import ServicesScreen from '../../../src/Screens/ServicesScreen';
 
-export default function ServiceScreen() {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.text}>Service Screen</Text>
-            <Pressable
-                onPress={() => router.push("/service/ServiceDetail")}
-                style={styles.button}
-            >
-                <Text style={{color:'white'}} >go to service details</Text>
-            </Pressable>
-        </View>
-    );
+const nav = {
+  navigate: (screen: string, params?: any) => {
+    if (screen === 'SingleScreen') {
+      router.push({ pathname: '/service/ServiceDetail' as any, params: { serviceData: JSON.stringify(params?.service) } });
+    }
+  },
+  goBack: () => router.back(),
+};
+
+export default function ServiceTab() {
+  return <ServicesScreen navigation={nav} />;
 }
-
-const styles = StyleSheet.create({
-    button:{
-        padding:30,
-        backgroundColor:'green'
-    },
-    container: {
-        flex: 1,                 // take full screen
-        justifyContent: 'center', // vertical center
-        alignItems: 'center',     // horizontal center
-        borderWidth: 2,
-    },
-    text: {
-        textAlign: 'center',
-    },
-});

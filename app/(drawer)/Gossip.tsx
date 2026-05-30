@@ -1,21 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import GlossaryScreen from '../../src/Screens/GlossaryScreen';
 
-export default function GossipScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Gossip Screen</Text>
-    </View>
-  );
+export default function GlossaryPage() {
+  return <GlossaryScreen />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,                 // take full screen
-    justifyContent: 'center', // vertical center
-    alignItems: 'center',     // horizontal center
-    borderWidth: 2,
-  },
-  text: {
-    textAlign: 'center',
-  },
-});
