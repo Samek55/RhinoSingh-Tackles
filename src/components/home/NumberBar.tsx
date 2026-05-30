@@ -81,7 +81,7 @@ const NumberBar = ({ navigation }: any) => {
 
               setPhone(formatted);
             }}
-            placeholder="240 345 7466"
+            placeholder="981 234 5678"
             placeholderTextColor="#999"
             style={[styles.input, { fontSize }]}
             keyboardType="numeric"

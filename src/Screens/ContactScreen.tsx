@@ -48,7 +48,7 @@ const ContactScreen = ({ }: { navigation: any }) => {
           {/* MAP */}
           <View style={styles.imageContainer}>
             <Image
-              source={require('../assets/image/sanfranciscomap.png')}
+              source={require('../assets/image/chennai.jpg')}
               style={styles.mapImage}
               resizeMode="cover"
             />

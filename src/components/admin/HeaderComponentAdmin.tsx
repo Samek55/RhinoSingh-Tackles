@@ -7,7 +7,7 @@ const HeaderComponent = ({ style }: any) => {
   return (
     <View style={[styles.headerContainer, style]}>
       <Image
-        source={require('../../assets/image/header/logo.png')}
+        source={require('../../../assets/images/icon.png')}
         style={styles.leftIcon}
         resizeMode="contain"
       />

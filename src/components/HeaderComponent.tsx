@@ -1,16 +1,19 @@
-import {View, Image, StyleSheet, Dimensions} from 'react-native';
+import { View, Image, StyleSheet, Dimensions, Text } from 'react-native';
 import React from 'react';
 
-const {width,height} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-const HeaderComponent = ({style}: any) => {
+const HeaderComponent = ({ style }: any) => {
   return (
     <View style={[styles.headerContainer, style]}>
-      <Image
-        source={require('../assets/image/header/logo.png')}
-        style={styles.leftIcon}
-        resizeMode="contain"
-      />
+      <View style={styles.leftSection}>
+        <Image
+          source={require('../../assets/images/icon.png')}
+          style={styles.leftIcon}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>RocketSingh</Text>
+      </View>
 
       <Image
         source={require('../assets/image/header/right.png')}
@@ -27,20 +30,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: 15,
-    paddingTop: height * 0.015,
-    height: height * 0.06,
-     overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   leftIcon: {
-    width: width * 0.32,
-    height: width * 0.08,
+    width: 40,
+    height: 40,
+  },
+
+  title: {
+    marginLeft: 8,
+    fontSize: 18,
+    fontWeight: '600',
+    color:'darkgreen'
   },
 
   rightIcon: {
-    width: width * 0.085,
-    height: width * 0.085,
+    width: 32,
+    height: 32,
   },
 });
 
