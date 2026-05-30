@@ -1,4 +1,6 @@
-const BASE_URL = process.env.EXPO_PUBLIC_TWILIO_BASE_URL;
+const ACCOUNT_SID = process.env.EXPO_PUBLIC_TWILIO_ACCOUNT_SID;
+const AUTH_TOKEN = process.env.EXPO_PUBLIC_TWILIO_AUTH_TOKEN;
+const SERVICE_SID = process.env.EXPO_PUBLIC_TWILIO_VERIFY_SERVICE_SID;
 
 export interface SendOtpResponse {
   success: boolean;
@@ -7,54 +9,68 @@ export interface SendOtpResponse {
 
 export interface VerifyOtpResponse {
   success: boolean;
-  status: "approved" | "pending"
+  status: 'approved' | 'pending' | string;
 }
 
-// SEND OTP
+// SEND OTP — calls Twilio Verify API directly
 export const sendOtp = async (phone: string): Promise<SendOtpResponse | null> => {
   try {
-    const res = await fetch(`${BASE_URL}/send-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ phone }),
-    });
+    const credentials = btoa(`${ACCOUNT_SID}:${AUTH_TOKEN}`);
 
-    const text = await res.text();
-    console.log("RAW RESPONSE:", text);
+    const res = await fetch(
+      `https://verify.twilio.com/v2/Services/${SERVICE_SID}/Verifications`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `To=${encodeURIComponent(phone)}&Channel=sms`,
+      }
+    );
 
-    // Guard rail: If HTTP status is not 200-299, don't blind-parse it
-    if (!res.ok) {
-      console.warn(`Server responded with status ${res.status}: ${text}`);
-      return { success: false, status: `Error ${res.status}` };
-    }
+    const data = await res.json();
+    console.log('Send OTP response:', data);
 
-    return JSON.parse(text);
+    return {
+      success: data.status === 'pending',
+      status: data.status ?? 'error',
+    };
   } catch (error) {
-    console.log("Send OTP network/runtime error:", error);
+    console.log('Send OTP error:', error);
     return null;
   }
 };
 
-// VERIFY OTP
+// VERIFY OTP — calls Twilio Verify API directly
 export const verifyOtp = async (
   phone: string,
   code: string
 ): Promise<VerifyOtpResponse | null> => {
   try {
-    const res = await fetch(`${BASE_URL}/verify-otp`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ phone, code }),
-    });
+    const credentials = btoa(`${ACCOUNT_SID}:${AUTH_TOKEN}`);
 
-    const data: VerifyOtpResponse = await res.json();
-    return data;
+    const res = await fetch(
+      `https://verify.twilio.com/v2/Services/${SERVICE_SID}/VerificationCheck`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `To=${encodeURIComponent(phone)}&Code=${encodeURIComponent(code)}`,
+      }
+    );
+
+    const data = await res.json();
+    console.log('Verify OTP response:', data);
+
+    return {
+      success: data.status === 'approved',
+      status: data.status ?? 'pending',
+    };
   } catch (error) {
-    console.log("Verify OTP error:", error);
+    console.log('Verify OTP error:', error);
     return null;
   }
 };

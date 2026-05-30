@@ -21,7 +21,7 @@ function CustomDrawerContent(props: any) {
     router.push(path as any);
   };
 
-  const menuItems = [
+  const mainItems = [
     { label: 'Home', path: '/Home', icon: require('../../src/assets/drawer/home.png') },
     { label: 'Services', path: '/Service', icon: require('../../src/assets/drawer/services.png') },
     { label: 'Book a Service', path: '/Book', icon: require('../../src/assets/drawer/book.png') },
@@ -37,64 +37,92 @@ function CustomDrawerContent(props: any) {
   ];
 
   return (
-    <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
-      {/* Close button */}
-      <TouchableOpacity style={styles.closeBtn} onPress={() => props.navigation.closeDrawer()}>
-        <Text style={styles.closeText}>✕</Text>
-      </TouchableOpacity>
-
-      {/* Logo */}
-      <View style={styles.imageContainer}>
-        <Image
-          style={styles.drawerTitle}
-          source={require('../../src/assets/logowithwordmark.png')}
-        />
-      </View>
-
-      {/* Main nav items */}
-      {menuItems.map((item) => (
-        <TouchableOpacity key={item.label} style={styles.item} onPress={() => navigate(item.path)}>
-          <View style={styles.buttoncontainer}>
-            <Image source={item.icon} resizeMode="contain" style={styles.iconSize} />
-            <Text style={styles.buttonText}>{item.label}</Text>
-          </View>
-        </TouchableOpacity>
-      ))}
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* Extra items */}
-      {extraItems.map((item) => (
+    // Outer transparent fill — covers full drawer container
+    <View style={styles.outerContainer}>
+      {/* Floating card */}
+      <View style={styles.floatingCard}>
+        {/* Close button */}
         <TouchableOpacity
-          key={item.label}
-          style={[styles.item, activeItem === item.key && styles.activeItem]}
-          onPress={() => navigate(item.path, item.key)}
+          style={styles.closeBtn}
+          onPress={() => props.navigation.closeDrawer()}
         >
-          <View style={styles.buttoncontainer}>
-            <Image
-              source={item.icon}
-              resizeMode="contain"
-              style={[styles.iconSize, activeItem === item.key && styles.activeIcon]}
-            />
-            <Text style={[styles.buttonText, activeItem === item.key && styles.activeText]}>
-              {item.label}
-            </Text>
-          </View>
+          <Text style={styles.closeText}>✕</Text>
         </TouchableOpacity>
-      ))}
 
-      {/* Admin Login / Logout */}
-      {!isAdminLoggedIn ? (
-        <TouchableOpacity onPress={() => { props.navigation.closeDrawer(); router.push('/AdminLogin' as any); }}>
-          <Text style={styles.adminBtn}>Admin Login</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity onPress={() => { dispatch(logoutAdmin()); props.navigation.closeDrawer(); router.push('/Home' as any); }}>
-          <Text style={styles.adminBtn}>Logout</Text>
-        </TouchableOpacity>
-      )}
-    </DrawerContentScrollView>
+        <DrawerContentScrollView
+          {...props}
+          scrollEnabled
+          contentContainerStyle={styles.scrollContent}
+        >
+          {/* Logo */}
+          <View style={styles.logoContainer}>
+            <Image
+              style={styles.logo}
+              source={require('../../src/assets/logowithwordmark.png')}
+            />
+          </View>
+
+          {/* Main nav items */}
+          {mainItems.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.item}
+              onPress={() => navigate(item.path)}
+            >
+              <View style={styles.row}>
+                <Image source={item.icon} resizeMode="contain" style={styles.icon} />
+                <Text style={styles.label}>{item.label}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          {/* Divider */}
+          <View style={styles.divider} />
+
+          {/* Extra items */}
+          {extraItems.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={[styles.item, activeItem === item.key && styles.activeItem]}
+              onPress={() => navigate(item.path, item.key)}
+            >
+              <View style={styles.row}>
+                <Image
+                  source={item.icon}
+                  resizeMode="contain"
+                  style={[styles.icon, activeItem === item.key && styles.activeIcon]}
+                />
+                <Text style={[styles.label, activeItem === item.key && styles.activeLabel]}>
+                  {item.label}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          {/* Admin Login / Logout */}
+          {!isAdminLoggedIn ? (
+            <TouchableOpacity
+              onPress={() => {
+                props.navigation.closeDrawer();
+                router.push('/AdminLogin' as any);
+              }}
+            >
+              <Text style={styles.adminBtn}>Admin Login</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                dispatch(logoutAdmin());
+                props.navigation.closeDrawer();
+                router.push('/Home' as any);
+              }}
+            >
+              <Text style={styles.adminBtn}>Logout</Text>
+            </TouchableOpacity>
+          )}
+        </DrawerContentScrollView>
+      </View>
+    </View>
   );
 }
 
@@ -103,14 +131,15 @@ export default function DrawerLayout() {
     <Drawer
       screenOptions={{
         headerShown: false,
+        drawerType: 'front',
         drawerStyle: {
-          width: wp('75%'),
-          borderRadius: wp('6%'),
-          marginTop: hp('8%'),
-          marginBottom: hp('8%'),
-          marginLeft: wp('3%'),
+          backgroundColor: 'transparent',
+          width: wp('85%'),
+          elevation: 0,
+          shadowOpacity: 0,
         },
         overlayColor: 'rgba(0,0,0,0.75)',
+        sceneContainerStyle: { backgroundColor: 'transparent' },
       }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     />
@@ -118,10 +147,24 @@ export default function DrawerLayout() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: {
-    paddingHorizontal: wp('5%'),
-    paddingTop: wp('5%'),
-    paddingBottom: hp('3%'),
+  outerContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  floatingCard: {
+    position: 'absolute',
+    left: wp('3%'),
+    top: hp('8%'),
+    bottom: hp('8%'),
+    width: wp('75%'),
+    backgroundColor: '#fff',
+    borderRadius: wp('6%'),
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   closeBtn: {
     position: 'absolute',
@@ -139,7 +182,12 @@ const styles = StyleSheet.create({
     color: 'hsl(0, 0%, 25%)',
     fontWeight: '800',
   },
-  imageContainer: {
+  scrollContent: {
+    paddingHorizontal: wp('5%'),
+    paddingTop: wp('5%'),
+    paddingBottom: hp('3%'),
+  },
+  logoContainer: {
     width: '100%',
     height: hp('7%'),
     marginBottom: hp('2.5%'),
@@ -149,7 +197,7 @@ const styles = StyleSheet.create({
     borderColor: 'hsl(0, 0%, 80%)',
     paddingBottom: hp('1.5%'),
   },
-  drawerTitle: {
+  logo: {
     width: wp('38%'),
     height: hp('6.5%'),
     resizeMode: 'contain',
@@ -162,21 +210,21 @@ const styles = StyleSheet.create({
   activeItem: {
     backgroundColor: 'rgba(47, 111, 94, 0.08)',
   },
-  buttoncontainer: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  buttonText: {
+  label: {
     fontSize: hp('1.75%'),
     color: 'hsl(0, 0%, 30%)',
     fontWeight: '500',
     letterSpacing: 0.2,
   },
-  activeText: {
+  activeLabel: {
     color: 'green',
     fontWeight: '700',
   },
-  iconSize: {
+  icon: {
     width: wp('4.8%'),
     height: wp('4.8%'),
     marginRight: wp('3%'),

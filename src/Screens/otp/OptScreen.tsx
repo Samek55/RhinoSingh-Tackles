@@ -19,7 +19,8 @@ import { addFormData } from '../../redux/slice/formSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../redux/store';
 import { createHelpbox } from '../../api/PostApiHelpbox';
-import { verifyOtp } from '../../api/otp'; //  Import your Verify OTP API function
+import { verifyOtp } from '../../api/otp';
+import { router } from 'expo-router';
 
 const scaleFont = (size: number) => {
   const guidelineBaseWidth = 375; 
@@ -93,7 +94,7 @@ const OtpScreen = () => {
 
       await createHelpbox(booking);
       dispatch(addFormData(newEntry as any));
-      navigation.navigate('Verify');
+      router.push('/otp/VerifiedScreen' as any);
 
     } catch (error) {
       console.log("BOOKING ERROR DURING VERIFICATION:", error);
