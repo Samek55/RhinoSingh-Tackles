@@ -354,7 +354,6 @@ export default function DrawerNavigation({
                                 navigation.navigate('Main', {
                                     screen: 'AdminLogin',
                                 });
-                                dispatch(loginAdmin());
                                 setDrawerOpen(false);
                             }}
                         >

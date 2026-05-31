@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,12 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
+  ScrollView,
 } from 'react-native';
 
 import Dropdown from '../../src/components/Dropdown';
 import { area, services, shifts, budget, priority } from '../../src/data/Data';
 import TextArea from '../components/TextArea';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import countryLogo from '../assets/image/header/right.png';
 import {
   widthPercentageToDP as wp,
@@ -46,7 +46,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [selectedService, setSelectedService] = useState('');
@@ -179,15 +178,10 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
     >
       <View style={{ flex: 1 }}>
         <Header />
-        <KeyboardAwareScrollView
-          ref={scrollRef}
+        <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          enableOnAndroid={true}
-          // extraScrollHeight={80}
-          keyboardOpeningTime={0}
-          enableAutomaticScroll={true}
         >
 
           <View style={styles.formContainer}>
@@ -391,7 +385,7 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
 
           </View>
 
-        </KeyboardAwareScrollView>
+        </ScrollView>
       </View >
     </KeyboardAvoidingView>
   );

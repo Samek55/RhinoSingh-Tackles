@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import HeaderComponent from '../../src/components/HeaderComponent';
 import { area, positionAppliedFor, services } from '../../src/data/Data';
 import TextArea from '../components/TextArea';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import countryLogo from '../assets/image/header/right.png';
 import {
   widthPercentageToDP as wp,
@@ -27,6 +27,7 @@ import DropdownAdd from '../components/DropdownAdd';
 import { useDispatch } from 'react-redux';
 import { addFormData } from '../redux/slice/formSlice';
 import { createCareer } from '../api/PostApiCareer';
+import { uploadMultipleToCloudinary } from '../api/uploadToCloudinary';
 
 
 const { width, height } = Dimensions.get('window');
@@ -48,7 +49,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 const CareerScreen = ({ }: { navigation?: any }) => {
   const dispatch = useDispatch();
 
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -72,6 +72,8 @@ const CareerScreen = ({ }: { navigation?: any }) => {
   const [selectedPosition, setSelectedPosition] = useState<string[]>([]);
   const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
   const [selectedArea, setSelectedArea] = useState<string[]>([]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
 
 
@@ -172,6 +174,14 @@ const CareerScreen = ({ }: { navigation?: any }) => {
       return Alert.alert('Validation Error', 'Message cannot be empty');
     }
     try {
+      setIsSubmitting(true);
+
+      // Upload images to Cloudinary and get back secure URLs
+      const [cvUrls, idUrls] = await Promise.all([
+        selectedCV.length > 0 ? uploadMultipleToCloudinary(selectedCV) : Promise.resolve([]),
+        selectedID.length > 0 ? uploadMultipleToCloudinary(selectedID) : Promise.resolve([]),
+      ]);
+
       const newEntry = {
         id: Date.now(),
         name,
@@ -185,25 +195,29 @@ const CareerScreen = ({ }: { navigation?: any }) => {
         selectedPosition,
         selectedExpertise,
         message,
-        // selectedID,
-        // selectedCV
       };
 
-       const career = {
-        "Full Name":name,
-        "Phone":number,
-        "Email":email,
-        "Position Applied For":selectedPosition,
-        "Area of Expertise":selectedExpertise,
-        "Years of Experience":experience,
-        "Preferred Working Area":selectedArea,
-        "Insurance Policy Number":policyNumber,
-        "Emergency Contact Number":emergencyNumber,
-        "Cover Letter":coverMessage,
-        "Message":message,
-        // "Resume/CV":selectedCV,
-        // "ID Proof":selectedID
+      const career: Record<string, any> = {
+        "Full Name": name,
+        "Phone": number,
+        "Email": email,
+        "Position Applied For": selectedPosition,
+        "Area of Expertise": selectedExpertise,
+        "Years of Experience": experience,
+        "Preferred Working Area": selectedArea,
+        "Insurance Policy Number": policyNumber,
+        "Emergency Contact Number": emergencyNumber,
+        "Cover Letter": coverMessage,
+        "Message": message,
       };
+
+      // Airtable attachment fields require [{ url }] format
+      if (cvUrls.length > 0) {
+        career["Resume/CV"] = cvUrls.map(url => ({ url }));
+      }
+      if (idUrls.length > 0) {
+        career["ID Proof"] = idUrls.map(url => ({ url }));
+      }
 
       await createCareer(career);
 
@@ -212,6 +226,8 @@ const CareerScreen = ({ }: { navigation?: any }) => {
       Alert.alert('Successful');
     } catch (error) {
       Alert.alert('Error', 'Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -224,10 +240,9 @@ const CareerScreen = ({ }: { navigation?: any }) => {
       <View style={{ marginBottom: hp('10%') }}>
         <HeaderComponent style={styles.header} />
         <View style={{ borderBottomWidth: 1, borderColor: '#CAD2DF', marginTop: 16 }} />
-        <KeyboardAwareScrollView
+        <ScrollView
           contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
-          ref={scrollRef}
           keyboardShouldPersistTaps="handled"
         >
 
@@ -421,16 +436,16 @@ const CareerScreen = ({ }: { navigation?: any }) => {
               </Pressable>
 
               <Button
-                style={styles.buttonSubmit}
+                style={[styles.buttonSubmit, isSubmitting && { opacity: 0.6 }]}
                 textStyle={{ color: 'white', textAlign: 'center' }}
-                onPress={handleSubmit}
+                onPress={isSubmitting ? undefined : handleSubmit}
               >
-                Submit
+                {isSubmitting ? 'Uploading...' : 'Submit'}
               </Button>
             </View>
           </View>
 
-        </KeyboardAwareScrollView >
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );

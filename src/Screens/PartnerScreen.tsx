@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import HeaderComponent from '../../src/components/HeaderComponent';
 import Dropdown from '../../src/components/Dropdown';
 import { businessType, city, howduhear, partnershipInterest, services } from '../../src/data/Data';
 import TextArea from '../components/TextArea';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import countryLogo from '../assets/image/header/right.png';
 import {
   widthPercentageToDP as wp,
@@ -46,7 +46,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 const PartnerScreen = ({ }: { navigation?: any }) => {
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -218,10 +217,9 @@ return (
     <View style={{ marginBottom: hp('10%') }}>
       <HeaderComponent style={styles.header} />
       <View style={{ borderBottomWidth: 1, borderColor: '#CAD2DF', marginTop: 16 }} />
-      <KeyboardAwareScrollView
+      <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
-        ref={scrollRef}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -395,7 +393,7 @@ return (
           </View>
         </View>
 
-      </KeyboardAwareScrollView >
+      </ScrollView>
     </View>
   </KeyboardAvoidingView>
 );

@@ -1,4 +1,7 @@
-import React, { useRef, useState } from 'react'; import {
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { loginAdmin } from '../../redux/slice/adminAuthSlice';
+import {
   View,
   Text,
   Image,
@@ -34,6 +37,7 @@ const scaleFont = (size: number) => {
 
 
 const AdminLogin = ({ navigation }: { navigation: any }) => {
+  const dispatch = useDispatch();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [phoneNumber, setphoneNumber] = useState<any>('');
   const [password, setPassword] = useState<any>('');
@@ -43,23 +47,10 @@ const AdminLogin = ({ navigation }: { navigation: any }) => {
   };
 
   const handleSubmit = () => {
+    dispatch(loginAdmin());
     navigation.navigate('BookingHistoryScreen');
   };
 
-  const scrollRef = useRef<ScrollView>(null);
-  const scrollToForm = () => {
-    scrollRef.current?.scrollTo({
-      y: 200, // adjust if needed
-      animated: true,
-    });
-  };
-
-  const resetScroll = () => {
-    scrollRef.current?.scrollTo({
-      y: 0,
-      animated: true,
-    });
-  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -71,7 +62,6 @@ const AdminLogin = ({ navigation }: { navigation: any }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}>
         <ScrollView
-          ref={scrollRef}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
@@ -101,8 +91,6 @@ const AdminLogin = ({ navigation }: { navigation: any }) => {
 
                     setphoneNumber(formatted);
                   }}
-                onFocus={scrollToForm}
-                onBlur={resetScroll}
               />
 
             </View>
@@ -128,8 +116,6 @@ const AdminLogin = ({ navigation }: { navigation: any }) => {
                     setPassword(formatted);
                   }}
                 keyboardType="number-pad"
-                onFocus={scrollToForm}
-                onBlur={resetScroll}
               />
               <TouchableOpacity onPress={togglePasswordVisibility}>
                 {passwordVisible ? (
