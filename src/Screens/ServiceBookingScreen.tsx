@@ -172,11 +172,7 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-
-    >
+  
       <View style={{ flex: 1 }}>
         <Header />
         <KeyboardAwareScrollView
@@ -393,7 +389,6 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
 
         </KeyboardAwareScrollView>
       </View >
-    </KeyboardAvoidingView>
   );
 };
 

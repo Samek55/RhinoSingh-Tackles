@@ -67,21 +67,56 @@ export const positionAppliedFor = [
 export const shifts = ['Morning', 'Day', 'Afternoon', 'Night'];
 
 export const budget = [
-  'Below ₹5,000',
-  'Above ₹5,000',
-  'Above ₹10,000',
-  'Above ₹25,000',
+  'Below ₹ 1,000',
+  'Above ₹ 2,000',
+  'Above ₹ 5,000',
+  'Above ₹ 10,000',
 ];
 
 export const priority = ['Normal', 'Urgent'];
 
 export const area = [
-  'T. Nagar', 'Adyar', 'Anna Nagar', 'Velachery', 'Nungambakkam',
-  'Mylapore', 'Guindy', 'Perambur', 'Ambattur', 'Chromepet',
-  'Porur', 'Pallavaram', 'Sholinganallur', 'OMR', 'ECR',
-  'Kodambakkam', 'Saidapet', 'Arumbakkam', 'Mogappair', 'Perungudi',
-  'Tambaram', 'Medavakkam', 'Thoraipakkam', 'Alwarpet', 'Kilpauk',
-  'Royapettah', 'Chetpet', 'Egmore', 'Purasaiwakkam', 'Other',
+  "Adambakkam",
+  "Adyar",
+  "Alandur",
+  "Ambattur",
+  "Anna Nagar",
+  "Ashok Nagar",
+  "Besant Nagar",
+  "Chromepet",
+  "Egmore",
+  "Guindy",
+  "Injambakkam",
+  "K.K. Nagar",
+  "Kodambakkam",
+  "Kolathur",
+  "Madhavaram",
+  "Madipakkam",
+  "Medavakkam",
+  "Mogappair",
+  "Mylapore",
+  "Nanganallur",
+  "Navalur",
+  "Nungambakkam",
+  "Pallavaram",
+  "Pallikaranai",
+  "Perambur",
+  "Perungudi",
+  "Porur",
+  "Purasawalkam",
+  "Royapettah",
+  "Royapuram",
+  "Sholinganallur",
+  "Tambaram",
+  "T. Nagar",
+  "Tharamani",
+  "Thiruvanmiyur",
+  "Tiruvottiyur",
+  "Vadapalani",
+  "Valasaravakkam",
+  "Velachery",
+  "Virugambakkam",
+  "Washermanpet"
 ];
 
 export const city = [

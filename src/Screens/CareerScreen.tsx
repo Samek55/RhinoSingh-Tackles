@@ -216,11 +216,7 @@ const CareerScreen = ({ }: { navigation?: any }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-
-    >
+   
       <View style={{ marginBottom: hp('10%') }}>
         <HeaderComponent style={styles.header} />
         <View style={{ borderBottomWidth: 1, borderColor: '#CAD2DF', marginTop: 16 }} />
@@ -432,7 +428,6 @@ const CareerScreen = ({ }: { navigation?: any }) => {
 
         </KeyboardAwareScrollView >
       </View>
-    </KeyboardAvoidingView>
   );
 };
 
