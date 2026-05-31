@@ -45,7 +45,7 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
   );
 };
 
-const PartnerScreen = ({ }: { navigation: any }) => {
+const PartnerScreen = ({ }: { navigation?: any }) => {
   const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');

@@ -10,7 +10,9 @@ import {
   Dimensions,
   Image,
   KeyboardAvoidingView,
+  Modal,
 } from 'react-native';
+
 import Dropdown from '../../src/components/Dropdown';
 import { area, services, shifts, budget, priority } from '../../src/data/Data';
 import TextArea from '../components/TextArea';
@@ -54,7 +56,45 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
   const [selectedBudget, setSelectedBudget] = useState('');
   const [message, setMessage] = useState('');
   const [date, setDate] = useState<Date | null>(null);
-  const [dateText, setDateText] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+  const getFirstDay = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+  const prevMonth = () => {
+    if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
+    else setCalMonth(calMonth - 1);
+  };
+  const nextMonth = () => {
+    if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); }
+    else setCalMonth(calMonth + 1);
+  };
+
+  const buildWeeks = () => {
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < getFirstDay(calYear, calMonth); i++) cells.push(null);
+    for (let d = 1; d <= getDaysInMonth(calYear, calMonth); d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const weeks: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+    return weeks;
+  };
+
+  const selectDay = (day: number) => {
+    setDate(new Date(calYear, calMonth, day));
+    setShowCalendar(false);
+  };
+
+  const formatDate = (d: Date) =>
+    `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
 
   const handleSubmit = async() => {
     const cleanNumber = number.replace(/\s/g, ''); // remove spaces
@@ -220,23 +260,67 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
               />
 
               <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
-              <TextInput
-                placeholder="Enter Date (YYYY-MM-DD)"
-                value={dateText}
-                onChangeText={(text) => {
-                  setDateText(text);
-                  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-                    const parsed = new Date(text);
-                    if (!isNaN(parsed.getTime())) setDate(parsed);
-                  } else {
-                    setDate(null);
-                  }
-                }}
-                style={styles.input}
-                keyboardType="numbers-and-punctuation"
-                placeholderTextColor="#4B4B4B"
-                maxLength={10}
-              />
+              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowCalendar(true)}>
+                <Text style={date ? styles.dateText : styles.datePlaceholder}>
+                  {date ? formatDate(date) : 'Select a date'}
+                </Text>
+                <Text style={styles.calendarIcon}>📅</Text>
+              </TouchableOpacity>
+
+              <Modal transparent animationType="fade" visible={showCalendar}>
+                <View style={styles.calOverlay}>
+                  <View style={styles.calCard}>
+                    {/* Month / Year header */}
+                    <View style={styles.calHeader}>
+                      <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
+                        <Text style={styles.navArrow}>‹</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.calMonthYear}>{MONTHS[calMonth]} {calYear}</Text>
+                      <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
+                        <Text style={styles.navArrow}>›</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Day-name row */}
+                    <View style={styles.dayNamesRow}>
+                      {DAY_NAMES.map(d => (
+                        <Text key={d} style={styles.dayName}>{d}</Text>
+                      ))}
+                    </View>
+
+                    {/* Calendar grid */}
+                    {buildWeeks().map((week, wi) => (
+                      <View key={wi} style={styles.weekRow}>
+                        {week.map((day, di) => {
+                          if (!day) return <View key={di} style={styles.dayCell} />;
+                          const cellDate = new Date(calYear, calMonth, day);
+                          const disabled = cellDate < today;
+                          const selected = !!date &&
+                            date.getDate() === day &&
+                            date.getMonth() === calMonth &&
+                            date.getFullYear() === calYear;
+                          return (
+                            <TouchableOpacity
+                              key={di}
+                              style={[styles.dayCell, selected && styles.selectedDay, disabled && styles.disabledDay]}
+                              onPress={() => !disabled && selectDay(day)}
+                              disabled={disabled}
+                            >
+                              <Text style={[styles.dayText, selected && styles.selectedDayText, disabled && styles.disabledDayText]}>
+                                {day}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    ))}
+
+                    <TouchableOpacity style={styles.calCancelBtn} onPress={() => setShowCalendar(false)}>
+                      <Text style={styles.calCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
 
               <Text style={styles.label}>Preferred Time<Text style={{ color: 'red' }}>*</Text></Text>
               <Dropdown
@@ -384,20 +468,120 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#4B4B4B',
   },
-  datePicker: {
+  datePickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: '#3CB371',
     borderRadius: 10,
     paddingHorizontal: width * 0.03,
     height: height * 0.05,
-    justifyContent: 'space-between',
+    marginBottom: height * 0.02,
   },
-  datePickerText: {
+  dateText: {
     fontSize: width * 0.035,
     fontWeight: '500',
     color: '#4B4B4B',
+  },
+  datePlaceholder: {
+    fontSize: width * 0.035,
+    fontWeight: '500',
+    color: '#4B4B4B',
+  },
+  calendarIcon: {
+    fontSize: 18,
+  },
+  calOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  calCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+  },
+  calHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  navBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navArrow: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#047857',
+  },
+  calMonthYear: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111',
+  },
+  dayNamesRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  dayName: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    paddingVertical: 4,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  dayCell: {
+    flex: 1,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    margin: 1,
+  },
+  dayText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111',
+  },
+  selectedDay: {
+    backgroundColor: '#047857',
+  },
+  selectedDayText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  disabledDay: {
+    opacity: 0.3,
+  },
+  disabledDayText: {
+    color: '#9CA3AF',
+  },
+  calCancelBtn: {
+    marginTop: 12,
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  calCancelText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   label: {
     marginBottom: 5,

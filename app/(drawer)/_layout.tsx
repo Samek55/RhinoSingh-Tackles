@@ -1,7 +1,6 @@
 import { Drawer } from 'expo-router/drawer';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, usePathname } from 'expo-router';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutAdmin } from '../../src/redux/slice/adminAuthSlice';
@@ -13,10 +12,9 @@ import {
 function CustomDrawerContent(props: any) {
   const dispatch = useDispatch();
   const isAdminLoggedIn = useSelector((state: any) => state.adminAuth.isAdminLoggedIn);
-  const [activeItem, setActiveItem] = useState('');
+  const pathname = usePathname();
 
-  const navigate = (path: string, key?: string) => {
-    if (key) setActiveItem(key);
+  const navigate = (path: string) => {
     props.navigation.closeDrawer();
     router.push(path as any);
   };
@@ -30,10 +28,10 @@ function CustomDrawerContent(props: any) {
   ];
 
   const extraItems = [
-    { label: 'Become a Partner', path: '/Partnership', key: 'partner', icon: require('../../src/assets/drawer/becomeApartner.png') },
-    { label: 'Career', path: '/Career', key: 'career', icon: require('../../src/assets/drawer/career.png') },
-    { label: 'FAQ', path: '/FAQs', key: 'faq', icon: require('../../src/assets/drawer/faq.png') },
-    { label: 'Glossary', path: '/Gossip', key: 'glossary', icon: require('../../src/assets/drawer/glossary.png') },
+    { label: 'Become a Partner', path: '/Partnership', icon: require('../../src/assets/drawer/becomeApartner.png') },
+    { label: 'Career', path: '/Career', icon: require('../../src/assets/drawer/career.png') },
+    { label: 'FAQ', path: '/FAQs', icon: require('../../src/assets/drawer/faq.png') },
+    { label: 'Glossary', path: '/Gossip', icon: require('../../src/assets/drawer/glossary.png') },
   ];
 
   return (
@@ -63,41 +61,47 @@ function CustomDrawerContent(props: any) {
           </View>
 
           {/* Main nav items */}
-          {mainItems.map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.item}
-              onPress={() => navigate(item.path)}
-            >
-              <View style={styles.row}>
-                <Image source={item.icon} resizeMode="contain" style={styles.icon} />
-                <Text style={styles.label}>{item.label}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {mainItems.map((item) => {
+            const active = pathname === item.path;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={[styles.item, active && styles.activeItem]}
+                onPress={() => navigate(item.path)}
+              >
+                <View style={styles.row}>
+                  <Image source={item.icon} resizeMode="contain" style={[styles.icon, active && styles.activeIcon]} />
+                  <Text style={[styles.label, active && styles.activeLabel]}>{item.label}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
 
           {/* Divider */}
           <View style={styles.divider} />
 
           {/* Extra items */}
-          {extraItems.map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              style={[styles.item, activeItem === item.key && styles.activeItem]}
-              onPress={() => navigate(item.path, item.key)}
-            >
-              <View style={styles.row}>
-                <Image
-                  source={item.icon}
-                  resizeMode="contain"
-                  style={[styles.icon, activeItem === item.key && styles.activeIcon]}
-                />
-                <Text style={[styles.label, activeItem === item.key && styles.activeLabel]}>
-                  {item.label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+          {extraItems.map((item) => {
+            const active = pathname === item.path;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={[styles.item, active && styles.activeItem]}
+                onPress={() => navigate(item.path)}
+              >
+                <View style={styles.row}>
+                  <Image
+                    source={item.icon}
+                    resizeMode="contain"
+                    style={[styles.icon, active && styles.activeIcon]}
+                  />
+                  <Text style={[styles.label, active && styles.activeLabel]}>
+                    {item.label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
 
           {/* Admin Login / Logout */}
           {!isAdminLoggedIn ? (

@@ -3,6 +3,7 @@ import React from 'react';
 import OnboardingComponent from '../../components/onBoarding/onboardingComponent';
 import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function OnBoarding1() {
   return (
@@ -11,12 +12,16 @@ export default function OnBoarding1() {
       {/* Skip Button */}
       <Pressable
         style={styles.skipContainer}
+        onPress={async () => {
+          try { await AsyncStorage.setItem('hasSeenOnboarding', 'true'); } catch {}
+          router.replace('/Home' as any);
+        }}
       >
         <Text style={styles.skipbutton}>SKIP</Text>
       </Pressable>
 
       <Text style={styles.title}>
-        Welcome to Tackles
+        Welcome to RhinoSingh
       </Text>
 
       <Text style={styles.subtitle}>

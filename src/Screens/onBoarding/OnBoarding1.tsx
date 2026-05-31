@@ -19,7 +19,7 @@ const OnBoarding1 = ({ navigation }: { navigation: any }) => {
       </Pressable>
 
       <Text style={styles.title}>
-        Welcome to Tackles
+        Welcome to RhinoSingh
       </Text>
 
       <Text style={styles.subtitle}>

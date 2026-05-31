@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 18,
     fontWeight: '600',
-    color:'darkgreen'
+    color: 'darkgreen',
   },
 
   rightIcon: {

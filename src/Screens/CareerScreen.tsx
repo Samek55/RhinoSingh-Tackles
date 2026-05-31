@@ -45,7 +45,7 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
   );
 };
 
-const CareerScreen = ({ }: { navigation: any }) => {
+const CareerScreen = ({ }: { navigation?: any }) => {
   const dispatch = useDispatch();
 
   const scrollRef = useRef<any>(null);
