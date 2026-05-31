@@ -15,8 +15,8 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-const { width, height } = Dimensions.get('window'); 
-import { useRoute } from '@react-navigation/native';
+const { width, height } = Dimensions.get('window');
+import { useLocalSearchParams } from 'expo-router';
 import { addFormData } from '../../redux/slice/formSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../redux/store';
@@ -30,10 +30,9 @@ const scaleFont = (size: number) => {
 };
 
 const OtpScreen = () => {
-  const [otp, setOtp] = useState(['', '', '', '', '']); 
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
-  const route = useRoute<any>();
-  const { phone } = route.params || {};
+  const { phone } = useLocalSearchParams<{ phone: string }>();
   const navigation = useNavigation<any>();
   const dispatch: AppDispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,9 +64,8 @@ const OtpScreen = () => {
   const handleNavigate = async () => {
     const enteredOtp = otp.join('');
 
-    // Ensure they filled out all 5 boxes
-    if (enteredOtp.length < 5) {
-      Alert.alert('Validation Error', 'Please enter the complete 5-digit verification code.');
+    if (enteredOtp.length < 6) {
+      Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
       return;
     }
 

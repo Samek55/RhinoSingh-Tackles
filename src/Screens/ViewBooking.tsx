@@ -114,8 +114,7 @@ const ViewBooking = ({navigation}: {navigation: any}) => {
 
                 <TouchableOpacity style={styles.actionButton}>
                   <Text style={styles.actionText}>Action</Text>
-                  <DropIcon height={20} width={20} />
-                   <Image source={DropIcon} style={{width:20, height:20}} />
+                  <Image source={DropIcon} style={{width:20, height:20}} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
