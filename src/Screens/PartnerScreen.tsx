@@ -46,7 +46,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 const PartnerScreen = ({ }: { navigation?: any }) => {
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -216,9 +215,8 @@ return (
       <View style={{ borderBottomWidth: 1, borderColor: '#CAD2DF', marginTop: 16 }} />
       <KeyboardAwareScrollView
         contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-        ref={scrollRef}
-        keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          keyboardShouldPersistTaps="handled"
       >
 
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>

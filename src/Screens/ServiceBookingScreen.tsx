@@ -46,7 +46,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [selectedService, setSelectedService] = useState('');
@@ -63,8 +62,8 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const DAY_NAMES = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
   const getFirstDay = (y: number, m: number) => new Date(y, m, 1).getDay();
@@ -96,7 +95,7 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
   const formatDate = (d: Date) =>
     `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
 
-  const handleSubmit = async() => {
+  const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, ''); // remove spaces
 
     if (!name.trim()) {
@@ -172,223 +171,218 @@ const ServiceBookingScreen = ({ navigation }: { navigation: any }) => {
   };
 
   return (
-  
-      <View style={{ flex: 1 }}>
-        <Header />
-        <KeyboardAwareScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          enableOnAndroid={true}
-          // extraScrollHeight={80}
-          keyboardOpeningTime={0}
-          enableAutomaticScroll={true}
-        >
 
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>Book a Service</Text>
+    <View style={{ flex: 1 }}>
+      <Header />
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        enableOnAndroid={true}
+        keyboardShouldPersistTaps="handled"
+      >
+
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Book a Service</Text>
 
 
-            <View
-              style={[
-                styles.inputGroup,
-                { marginBottom: height * 0.08 },
-              ]}
-            >
+          <View
+            style={[
+              styles.inputGroup,
+              { marginBottom: height * 0.08 },
+            ]}
+          >
 
-              <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              placeholder="Enter your Full Name"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+              placeholderTextColor={'#4B4B4B'}
+            />
+
+            <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
+            <View style={styles.phoneContainer}>
+              <Image
+                source={countryLogo}
+                style={styles.icon}
+                resizeMode="contain"
+              />
+
               <TextInput
-                placeholder="Enter your Full Name"
-                value={name}
-                onChangeText={setName}
-                style={styles.input}
+                placeholder="Enter your Phone Number"
+                value={number}
+                onChangeText={(value) => {
+                  // keep only numbers
+                  let cleaned = value.replace(/[^0-9]/g, '');
+
+                  // limit to 10 digits
+                  cleaned = cleaned.slice(0, 10);
+
+                  // format 3-3-4
+                  let formatted = cleaned;
+
+                  if (cleaned.length > 3 && cleaned.length <= 6) {
+                    formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
+                  } else if (cleaned.length > 6) {
+                    formatted =
+                      cleaned.slice(0, 3) +
+                      ' ' +
+                      cleaned.slice(3, 6) +
+                      ' ' +
+                      cleaned.slice(6);
+                  }
+
+                  setNumber(formatted);
+                }}
+                keyboardType="number-pad"
+                style={styles.phoneInput}
                 placeholderTextColor={'#4B4B4B'}
               />
-
-              <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
-              <View style={styles.phoneContainer}>
-                <Image
-                  source={countryLogo}
-                  style={styles.icon}
-                  resizeMode="contain"
-                />
-
-                <TextInput
-                  placeholder="Enter your Phone Number"
-                  value={number}
-                  onChangeText={(value) => {
-                    // keep only numbers
-                    let cleaned = value.replace(/[^0-9]/g, '');
-
-                    // limit to 10 digits
-                    cleaned = cleaned.slice(0, 10);
-
-                    // format 3-3-4
-                    let formatted = cleaned;
-
-                    if (cleaned.length > 3 && cleaned.length <= 6) {
-                      formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                    } else if (cleaned.length > 6) {
-                      formatted =
-                        cleaned.slice(0, 3) +
-                        ' ' +
-                        cleaned.slice(3, 6) +
-                        ' ' +
-                        cleaned.slice(6);
-                    }
-
-                    setNumber(formatted);
-                  }}
-                  keyboardType="number-pad"
-                  style={styles.phoneInput}
-                  placeholderTextColor={'#4B4B4B'}
-                />
-              </View>
-
-              <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
-              <Dropdown
-                options={services}
-                placeholder="Select Services"
-                placeholderColor="#4B4B4B"
-                onSelectOption={setSelectedService}
-                borderColor='#3CB371'
-              />
-
-              <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
-              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowCalendar(true)}>
-                <Text style={date ? styles.dateText : styles.datePlaceholder}>
-                  {date ? formatDate(date) : 'Select a date'}
-                </Text>
-                <Text style={styles.calendarIcon}>📅</Text>
-              </TouchableOpacity>
-
-              <Modal transparent animationType="fade" visible={showCalendar}>
-                <View style={styles.calOverlay}>
-                  <View style={styles.calCard}>
-                    {/* Month / Year header */}
-                    <View style={styles.calHeader}>
-                      <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
-                        <Text style={styles.navArrow}>‹</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.calMonthYear}>{MONTHS[calMonth]} {calYear}</Text>
-                      <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
-                        <Text style={styles.navArrow}>›</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Day-name row */}
-                    <View style={styles.dayNamesRow}>
-                      {DAY_NAMES.map(d => (
-                        <Text key={d} style={styles.dayName}>{d}</Text>
-                      ))}
-                    </View>
-
-                    {/* Calendar grid */}
-                    {buildWeeks().map((week, wi) => (
-                      <View key={wi} style={styles.weekRow}>
-                        {week.map((day, di) => {
-                          if (!day) return <View key={di} style={styles.dayCell} />;
-                          const cellDate = new Date(calYear, calMonth, day);
-                          const disabled = cellDate < today;
-                          const selected = !!date &&
-                            date.getDate() === day &&
-                            date.getMonth() === calMonth &&
-                            date.getFullYear() === calYear;
-                          return (
-                            <TouchableOpacity
-                              key={di}
-                              style={[styles.dayCell, selected && styles.selectedDay, disabled && styles.disabledDay]}
-                              onPress={() => !disabled && selectDay(day)}
-                              disabled={disabled}
-                            >
-                              <Text style={[styles.dayText, selected && styles.selectedDayText, disabled && styles.disabledDayText]}>
-                                {day}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    ))}
-
-                    <TouchableOpacity style={styles.calCancelBtn} onPress={() => setShowCalendar(false)}>
-                      <Text style={styles.calCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </Modal>
-
-              <Text style={styles.label}>Preferred Time<Text style={{ color: 'red' }}>*</Text></Text>
-              <Dropdown
-                options={shifts}
-                placeholder="Choose a Shift"
-                placeholderColor="#4B4B4B"
-                onSelectOption={setSelectedShift}
-                dropdownType="shift"
-                borderColor='#3CB371'
-              />
-
-
-              <Text style={styles.label}>Your Location<Text style={{ color: 'red' }}>*</Text></Text>
-              <Dropdown
-                options={area}
-                placeholder="Select your location"
-                placeholderColor="#4B4B4B"
-                onSelectOption={setSelectedArea}
-                borderColor='#3CB371'
-
-              />
-
-
-              <Text style={styles.label}>Priority<Text style={{ color: 'red' }}>*</Text></Text>
-              <Dropdown
-                options={priority}
-                placeholder="Select Priority"
-                placeholderColor="#4B4B4B"
-                onSelectOption={setSelectedPriority}
-                value={selectedPriority}
-                borderColor='#3CB371'
-              />
-              <Text style={styles.label}>Select Budget<Text style={{ color: 'red' }}>*</Text></Text>
-              <Dropdown
-                value={selectedBudget}
-                options={budget}
-                placeholder="Select Budget"
-                placeholderColor="#4B4B4B"
-                onSelectOption={setSelectedBudget}
-                borderColor='#3CB371'
-
-              />
-
-              <TextArea
-                value={message}
-                onChangeText={setMessage}
-                placeholder=""
-                placeholderTextColor="#4B4B4B"
-                maxHeight={160}
-                borderColor="#3CB371"
-              />
-
-              {/* Submit Button */}
-              <View style={styles.buttonPadding}>
-                <Button
-                  style={styles.button1}
-                  textStyle={{ color: 'white', textAlign: 'center' }}
-                  onPress={handleSubmit}
-                >
-                  SUBMIT
-                </Button>
-
-              </View>
             </View>
 
+            <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={services}
+              placeholder="Select Services"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedService}
+              borderColor='#3CB371'
+            />
+
+            <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
+            <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowCalendar(true)}>
+              <Text style={date ? styles.dateText : styles.datePlaceholder}>
+                {date ? formatDate(date) : 'Select a date'}
+              </Text>
+              <Text style={styles.calendarIcon}>📅</Text>
+            </TouchableOpacity>
+
+            <Modal transparent animationType="fade" visible={showCalendar}>
+              <View style={styles.calOverlay}>
+                <View style={styles.calCard}>
+                  {/* Month / Year header */}
+                  <View style={styles.calHeader}>
+                    <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
+                      <Text style={styles.navArrow}>‹</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.calMonthYear}>{MONTHS[calMonth]} {calYear}</Text>
+                    <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
+                      <Text style={styles.navArrow}>›</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Day-name row */}
+                  <View style={styles.dayNamesRow}>
+                    {DAY_NAMES.map(d => (
+                      <Text key={d} style={styles.dayName}>{d}</Text>
+                    ))}
+                  </View>
+
+                  {/* Calendar grid */}
+                  {buildWeeks().map((week, wi) => (
+                    <View key={wi} style={styles.weekRow}>
+                      {week.map((day, di) => {
+                        if (!day) return <View key={di} style={styles.dayCell} />;
+                        const cellDate = new Date(calYear, calMonth, day);
+                        const disabled = cellDate < today;
+                        const selected = !!date &&
+                          date.getDate() === day &&
+                          date.getMonth() === calMonth &&
+                          date.getFullYear() === calYear;
+                        return (
+                          <TouchableOpacity
+                            key={di}
+                            style={[styles.dayCell, selected && styles.selectedDay, disabled && styles.disabledDay]}
+                            onPress={() => !disabled && selectDay(day)}
+                            disabled={disabled}
+                          >
+                            <Text style={[styles.dayText, selected && styles.selectedDayText, disabled && styles.disabledDayText]}>
+                              {day}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ))}
+
+                  <TouchableOpacity style={styles.calCancelBtn} onPress={() => setShowCalendar(false)}>
+                    <Text style={styles.calCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+
+            <Text style={styles.label}>Preferred Time<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={shifts}
+              placeholder="Choose a Shift"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedShift}
+              dropdownType="shift"
+              borderColor='#3CB371'
+            />
 
 
+            <Text style={styles.label}>Your Location<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={area}
+              placeholder="Select your location"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedArea}
+              borderColor='#3CB371'
 
+            />
+
+
+            <Text style={styles.label}>Priority<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={priority}
+              placeholder="Select Priority"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedPriority}
+              value={selectedPriority}
+              borderColor='#3CB371'
+            />
+            <Text style={styles.label}>Select Budget<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              value={selectedBudget}
+              options={budget}
+              placeholder="Select Budget"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedBudget}
+              borderColor='#3CB371'
+
+            />
+
+            <TextArea
+              value={message}
+              onChangeText={setMessage}
+              placeholder=""
+              placeholderTextColor="#4B4B4B"
+              maxHeight={160}
+              borderColor="#3CB371"
+            />
+
+            {/* Submit Button */}
+            <View style={styles.buttonPadding}>
+              <Button
+                style={styles.button1}
+                textStyle={{ color: 'white', textAlign: 'center' }}
+                onPress={handleSubmit}
+              >
+                SUBMIT
+              </Button>
+
+            </View>
           </View>
 
-        </KeyboardAwareScrollView>
-      </View >
+
+
+
+        </View>
+
+      </KeyboardAwareScrollView>
+    </View >
   );
 };
 
@@ -417,7 +411,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 20,
     backgroundColor: '#fff',
-    maxHeight: '90%',
     elevation: 10,
   },
   input: {
