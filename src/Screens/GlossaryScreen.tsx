@@ -21,7 +21,7 @@ const alphabet: AlphabetKey[] = [
   'U', 'V', 'W', 'X', 'Y', 'Z'
 ];
 
-const ContactScreen = () => {
+const GlossaryScreen = () => {
   const [selectedLetter, setSelectedLetter] = useState<AlphabetKey>('A');
 
   const filteredData = GlossaryData2[selectedLetter] || [];
@@ -92,7 +92,7 @@ const ContactScreen = () => {
   );
 };
 
-export default ContactScreen;
+export default GlossaryScreen;
 
 const styles = StyleSheet.create({
   scrollView: {

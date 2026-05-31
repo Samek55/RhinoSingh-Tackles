@@ -83,9 +83,8 @@ const AdminOtp = ({ route }: { route: any }) => {
     // prevent multiple calls
     if (isSubmitting) return;
 
-    // Ensure they filled out all 5 boxes
-    if (enteredOtp.length < 5) {
-      Alert.alert('Validation Error', 'Please enter the complete 5-digit verification code.');
+    if (enteredOtp.length < 6) {
+      Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
       return;
     }
 
