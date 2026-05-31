@@ -7,7 +7,7 @@ import {
     Image,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutAdmin, loginAdmin } from '../redux/slice/adminAuthSlice';
+import { logoutAdmin } from '../redux/slice/adminAuthSlice';
 import { CommonActions } from '@react-navigation/native';
 import {
     heightPercentageToDP as hp,

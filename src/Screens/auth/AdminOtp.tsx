@@ -231,16 +231,16 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   otpPromptText: {
-    fontSize: scaleFont(18.5),
+    fontSize: scaleFont(16.5),
     marginBottom: height * 0.04, // Adjust margin-bottom for larger screens
-    fontWeight: '500',
+    fontWeight: '400',
     color: 'green',
   },
   otpBox: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: 2,
   },
   input: {
     width: width * 0.12, // Dynamic width for better scalability

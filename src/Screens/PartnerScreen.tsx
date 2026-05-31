@@ -9,14 +9,12 @@ import {
   Image,
   Pressable,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
 } from 'react-native';
 import HeaderComponent from '../../src/components/HeaderComponent';
 import Dropdown from '../../src/components/Dropdown';
 import { businessType, city, howduhear, partnershipInterest, services } from '../../src/data/Data';
 import TextArea from '../components/TextArea';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import countryLogo from '../assets/image/header/right.png';
 import {
   widthPercentageToDP as wp,
@@ -209,17 +207,13 @@ const handleSubmit = async () => {
 
 
 return (
-  <KeyboardAvoidingView
-    style={{ flex: 1 }}
-    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
 
-  >
     <View style={{ marginBottom: hp('10%') }}>
       <HeaderComponent style={styles.header} />
       <View style={{ borderBottomWidth: 1, borderColor: '#CAD2DF', marginTop: 16 }} />
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
+        enableOnAndroid={true}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -393,9 +387,8 @@ return (
           </View>
         </View>
 
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
-  </KeyboardAvoidingView>
 );
 };
 
