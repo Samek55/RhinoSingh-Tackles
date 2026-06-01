@@ -29,7 +29,7 @@ export default function Header4() {
               navigation.dispatch(DrawerActions.openDrawer())
             }
           >
-            <Ionicons name="menu" size={28} color='darkgreen' />
+            <Ionicons name="menu" size={25} color='#fff' />
           </TouchableOpacity>
         </View>
       </View>
@@ -60,8 +60,10 @@ const styles = StyleSheet.create({
   button: {
     borderRadius: 6,
     alignSelf: 'center',
+    borderWidth: 2.3,
+    borderColor: '#fff',
+    backgroundColor: '#008000'
   },
-
   leftIcon: {
     width: 33,
     height: 33,

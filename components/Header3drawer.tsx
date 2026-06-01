@@ -29,7 +29,7 @@ export default function Header3() {
               navigation.dispatch(DrawerActions.openDrawer())
             }
           >
-                  <Ionicons name="menu" size={28} color='darkgreen'/>
+            <Ionicons name="menu" size={25} color='#fff' />
           </TouchableOpacity>
         </View>
       </View>
@@ -43,10 +43,10 @@ const styles = StyleSheet.create({
     paddingTop: 55,
     backgroundColor: "hsl(0, 0%, 95%)",
   },
-  subHeader:{
-    flexDirection:'row',
+  subHeader: {
+    flexDirection: 'row',
     justifyContent: "space-between",
-    paddingHorizontal:18
+    paddingHorizontal: 18
 
   },
   left: {
@@ -54,20 +54,23 @@ const styles = StyleSheet.create({
   },
   right: {
     flexDirection: 'row',
-      alignSelf:'center',
-    gap:10
+    alignSelf: 'center',
+    gap: 10
   },
   button: {
-    borderRadius:6,
-    alignSelf:'center',
+    borderRadius: 6,
+    alignSelf: 'center',
+    borderWidth: 2.3,
+    borderColor: '#fff',
+    backgroundColor: '#008000'
   },
 
- leftIcon: {
+  leftIcon: {
     width: 33,
     height: 33,
     resizeMode: 'contain',
-    borderWidth:1,
-    borderRadius:200
+    borderWidth: 1,
+    borderRadius: 200
   },
   rightIcon: {
 
