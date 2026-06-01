@@ -276,6 +276,7 @@ export default function ServiceBookingScreen() {
 
             />
 
+            <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
             <TextArea
               value={message}
               onChangeText={setMessage}

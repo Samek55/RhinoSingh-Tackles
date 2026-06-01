@@ -22,7 +22,7 @@ export default function AdminOtpVerify(){
         </Text>
         <View style={styles.imageContainer}>
           <Image
-            source={require('../../assets/icons/admin/check-mark.png')}
+            source={require('../../../../assets/icons/admin/check-mark.png')}
             style={styles.image}
           />
           <Text style={styles.confirmationText}>

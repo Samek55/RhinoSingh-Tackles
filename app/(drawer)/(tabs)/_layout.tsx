@@ -57,6 +57,30 @@ export default function TabsLayout() {
         }}
       />
 
+       <Tabs.Screen
+        name="booking/BookingDetail"
+        options={{
+         headerShown:false,
+          href: null,
+        }}
+      />
+
+        <Tabs.Screen
+        name="booking/BookingOtp"
+        options={{
+         headerShown:false,
+          href: null,
+        }}
+      />
+
+        <Tabs.Screen
+        name="booking/BookingVerify"
+        options={{
+         headerShown:false,
+          href: null,
+        }}
+      />
+
       <Tabs.Screen
         name="About"
         options={{

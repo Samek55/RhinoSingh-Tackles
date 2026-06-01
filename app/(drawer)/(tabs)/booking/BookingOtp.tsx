@@ -9,12 +9,12 @@ import {
 } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { createBooking } from '../../api/PostApiBooking';
+import { createBooking } from '../../../../api/PostApiBooking';
 import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import base from '../../api/airtable';
-import { verifyOtp } from '../../api/otp';
+import base from '../../../../api/airtable';
+import { verifyOtp } from '../../../../api/otp';
 import { router, useLocalSearchParams } from 'expo-router';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions

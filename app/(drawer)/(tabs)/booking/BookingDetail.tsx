@@ -131,7 +131,7 @@ export default function BookingDetails() {
 
         <TouchableOpacity
           style={styles.backBtn}
-          onPress={() => router.back()}
+          onPress={() => router.replace('/Book')}
           activeOpacity={0.7}
         >
           <Text style={styles.backBtnText}>Edit Booking</Text>
