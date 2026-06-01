@@ -196,7 +196,6 @@ export default function ServiceBookingScreen() {
               placeholder="Select Services"
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedService}
-              borderColor='#3CB371'
               onOpen={() => setActiveInput('service')}
               onClose={() => setActiveInput(null)}
             />
@@ -254,7 +253,6 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedShift}
               dropdownType="shift"
-              borderColor='#3CB371'
               onOpen={() => setActiveInput('shift')}
               onClose={() => setActiveInput(null)}
             />
@@ -266,7 +264,6 @@ export default function ServiceBookingScreen() {
               placeholder="Select your location"
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedArea}
-              borderColor='#3CB371'
               onOpen={() => setActiveInput('location')}
               onClose={() => setActiveInput(null)}
             />
@@ -279,7 +276,6 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedPriority}
               value={selectedPriority}
-              borderColor='#3CB371'
               onOpen={() => setActiveInput('priority')}
               onClose={() => setActiveInput(null)}
             />
@@ -292,7 +288,6 @@ export default function ServiceBookingScreen() {
               placeholder="Select Budget"
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedBudget}
-              borderColor='#3CB371'
               onOpen={() => setActiveInput('budget')}
               onClose={() => setActiveInput(null)}
             />

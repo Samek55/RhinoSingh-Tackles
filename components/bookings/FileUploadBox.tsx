@@ -7,6 +7,7 @@ import {
   Image,
   Modal,
   Dimensions,
+  Platform
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -29,10 +30,9 @@ type Props = {
 const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images', // ✅ new
+      mediaTypes: 'images',
       allowsMultipleSelection: true,
       quality: 0.7,
     });
@@ -49,11 +49,11 @@ const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
 
     onChange([...value, ...newFiles]);
   };
+
   const removeFile = (uri: string) => {
     const updated = value.filter(item => item.uri !== uri);
     onChange(updated);
 
-    // close preview if deleted item is active
     if (previewIndex !== null) {
       const newLength = updated.length;
       if (newLength === 0) setPreviewIndex(null);
@@ -63,11 +63,11 @@ const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
 
   return (
     <View style={styles.container}>
-      {/* EMPTY */}
+      {/* EMPTY DASHED UPLOAD BOX */}
       {value.length === 0 && (
-        <TouchableOpacity style={styles.box} onPress={pickImages}>
+        <TouchableOpacity style={styles.boxEmpty} onPress={pickImages} activeOpacity={0.7}>
           <View style={styles.emptyState}>
-            <Image source={ArrowDownIcon} style={{ width: 28, height: 28 }} />
+            <Image source={ArrowDownIcon} style={styles.uploadIcon} />
             <Text style={styles.placeholder}>
               Drop files/photos here
             </Text>
@@ -75,53 +75,59 @@ const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
         </TouchableOpacity>
       )}
 
-      {/* GRID PREVIEW */}
+      {/* STABLE GRID CONTAINER AND ITEMS */}
       {value.length > 0 && (
-        <View style={styles.box}>
-          <View style={styles.previewList}>
+        <View style={styles.boxFilled}>
+          <View style={styles.previewGrid}>
             {value.map((item, index) => (
-              <TouchableOpacity
-                key={item.uri}
-                onPress={() => setPreviewIndex(index)}
-                style={styles.previewCard}
-              >
-                <Image source={{ uri: item.uri }} style={styles.previewImage} />
+              <View key={item.uri} style={styles.columnWrapper}>
+                <TouchableOpacity
+                  onPress={() => setPreviewIndex(index)}
+                  style={styles.previewCard}
+                  activeOpacity={0.9}
+                >
+                  <Image source={{ uri: item.uri }} style={styles.previewImage} />
 
-                <View style={styles.previewInfo}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {item.fileName}
-                  </Text>
-                  <Text style={styles.size}>
-                    {item.sizeMB ? `${item.sizeMB} MB` : ''}
-                  </Text>
-                </View>
+                  <View style={styles.previewInfo}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {item.fileName}
+                    </Text>
+                    {item.sizeMB !== undefined && item.sizeMB > 0 ? (
+                      <Text style={styles.size}>{item.sizeMB} MB</Text>
+                    ) : null}
+                  </View>
 
-                <TouchableOpacity onPress={() => removeFile(item.uri)}>
-                  <Image source={DelIcon} style={{ width: 16, height: 16 }} />
+                  <TouchableOpacity 
+                    onPress={() => removeFile(item.uri)} 
+                    style={styles.deleteHitSlop}
+                  >
+                    <Image source={DelIcon} style={styles.deleteIcon} />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </TouchableOpacity>
+              </View>
             ))}
 
-            <TouchableOpacity style={styles.addMore} onPress={pickImages}>
-              <Text style={styles.addText}>+ Add more</Text>
-            </TouchableOpacity>
+            {/* SYMMETRICAL ADD MORE ATTACHMENT ACTION */}
+            <View style={styles.columnWrapper}>
+              <TouchableOpacity style={styles.addMore} onPress={pickImages} activeOpacity={0.7}>
+                <Text style={styles.addText}>+ Add more</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
 
-      {/* INSTAGRAM STYLE FULL SCREEN PREVIEW */}
-      <Modal visible={previewIndex !== null} transparent={true}>
+      {/* FULL SCREEN LIGHTBOX DIALOG PREVIEW */}
+      <Modal visible={previewIndex !== null} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
-
-          {/* Close Button */}
+          {/* Close Button Header Area */}
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={() => setPreviewIndex(null)}
           >
-            <Text style={{ color: '#fff', fontSize: 18 }}>✕</Text>
+            <Text style={{ color: '#fff', fontSize: 22, fontWeight: '300' }}>✕</Text>
           </TouchableOpacity>
 
-          {/* Image */}
           {previewIndex !== null && (
             <Image
               source={{ uri: value[previewIndex].uri }}
@@ -130,14 +136,13 @@ const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
             />
           )}
 
-          {/* Delete from preview */}
           {previewIndex !== null && (
             <TouchableOpacity
               style={styles.deleteFromPreview}
               onPress={() => removeFile(value[previewIndex].uri)}
             >
-              <Text style={{ color: 'white', fontWeight: '600' }}>
-                Delete
+              <Text style={{ color: 'white', fontWeight: '600', fontSize: 14 }}>
+                Delete File
               </Text>
             </TouchableOpacity>
           )}
@@ -151,108 +156,135 @@ export default FileUploadBox;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 6,
+    marginBottom: 16,
   },
-
-  box: {
-    minHeight: 120,
-    borderWidth: 1,
+  // High-fidelity empty state configuration matching dynamic style specs
+  boxEmpty: {
+    minHeight: 110,
+    borderWidth: 1.5,
     borderRadius: 12,
-    padding: 12,
-    backgroundColor: '#fff',
-  },
-
-  emptyState: {
-    flex: 1,
+    borderStyle: 'dashed',
+    borderColor: '#B2C5FF',       // Elegant layout preview branding theme hue
+    backgroundColor: '#F8FAFC',   // Cream neutral slate backdrop tint
+    padding: 16,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-
+  boxFilled: {
+    minHeight: 110,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    borderColor: '#E2E8F0',       // Uniform inline static wrapper profile gray
+    backgroundColor: '#fff',
+    padding: 8,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadIcon: {
+    width: 24,
+    height: 24,
+    tintColor: '#2F6BFF',         // Matches universal focus theme engine glow accent
+  },
   placeholder: {
     marginTop: 8,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#666',
+    color: '#4B5563',
   },
-
-  /* GRID */
-  previewList: {
+  // Optimized Grid mechanics to replace cross-platform gap rendering limitations
+  previewGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
   },
-
+  columnWrapper: {
+    width: '50%',
+    padding: 6,
+  },
   previewCard: {
-    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F1F5F9',   // Light gray layout card backgrounds
     padding: 8,
     borderRadius: 10,
+    height: 56,
   },
-
   previewImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    marginRight: 8,
+    width: 38,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: '#E2E8F0',
   },
-
   previewInfo: {
     flex: 1,
+    paddingHorizontal: 8,
   },
-
   name: {
     fontSize: 12,
-    color: '#333',
+    fontWeight: '600',
+    color: '#1E293B',
   },
-
   size: {
     fontSize: 11,
-    color: '#777',
+    color: '#64748B',
+    marginTop: 1,
   },
-
+  deleteHitSlop: {
+    padding: 4,
+  },
+  deleteIcon: {
+    width: 14,
+    height: 14,
+    tintColor: '#94A3B8',
+  },
   addMore: {
-    width: '48%',
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: '#999',
+    borderColor: '#CBD5E1',
+    backgroundColor: '#FAFAFA',
   },
-
   addText: {
+    fontSize: 12,
     fontWeight: '600',
+    color: '#2F6BFF',
   },
-
-  /* 🔥 FULL SCREEN PREVIEW */
+  /* PREVIEW INTERACTION DIALOG BLUEPRINTS */
   modalContainer: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   fullImage: {
-    width,
-    height: height * 0.8,
+    width: width,
+    height: height * 0.75,
   },
-
   closeBtn: {
     position: 'absolute',
-    top: 40,
+    top: Platform.OS === 'ios' ? 54 : 30,
     left: 20,
     zIndex: 10,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
   deleteFromPreview: {
     position: 'absolute',
     bottom: 50,
-    backgroundColor: 'rgba(255,0,0,0.7)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    backgroundColor: '#EF4444',   // Standardized destruct item alert color hex
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });

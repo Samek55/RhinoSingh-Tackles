@@ -9,8 +9,6 @@ import {
   Image,
   Pressable,
   Alert,
-  ScrollView,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { area, positionAppliedFor, services } from '../../src/data/Data';
@@ -28,7 +26,6 @@ import { createCareer } from '@/api/PostApiCareer';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
 
 const { width, height } = Dimensions.get('window');
 
@@ -64,17 +61,20 @@ export default function CareerScreen() {
     fileName?: string;
   };
 
-  //photoes
+  // photos
   const [selectedCV, setSelectedCV] = useState<FileItem[]>([]);
   const [selectedID, setSelectedID] = useState<FileItem[]>([]);
 
-  // dropdown states (FIXED)
+  // dropdown states
   const [selectedPosition, setSelectedPosition] = useState<string[]>([]);
   const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
   const [selectedArea, setSelectedArea] = useState<string[]>([]);
 
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+
+  // Shared active focus state system mapping layout changes
+  const [activeInput, setActiveInput] = useState<string | null>(null);
 
   const clearAllFields = () => {
     setName('');
@@ -90,9 +90,8 @@ export default function CareerScreen() {
     setSelectedPosition([]);
     setSelectedExpertise([]);
     setSelectedArea([]);
+    setActiveInput(null);
   };
-
-
 
   const handleClearForm = () => {
     Alert.alert(
@@ -106,21 +105,7 @@ export default function CareerScreen() {
         {
           text: 'Yes, Clear',
           style: 'destructive',
-          onPress: () => {
-            setName('');
-            setNumber('');
-            setEmail('');
-            setMessage('');
-            setExperience('');
-            setPolicyNumber('');
-            setCoverMessage('');
-            setSelectedCV([]);
-            setSelectedID([]);
-            setSelectedPosition([]);
-            setSelectedExpertise([]);
-            setSelectedArea([]);
-            setEmergencyNumber('');
-          },
+          onPress: clearAllFields,
         },
       ]
     );
@@ -187,10 +172,6 @@ export default function CareerScreen() {
       return Alert.alert('Validation Error', 'Message is required');
     }
 
-    if (!message.trim()) {
-      return Alert.alert('Validation Error', 'Message cannot be empty');
-    }
-
     setOverlayStatus('loading');
     setOverlayVisible(true);
 
@@ -237,7 +218,7 @@ export default function CareerScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Header3 />
       <SubmitOverlay
         visible={overlayVisible}
@@ -259,17 +240,24 @@ export default function CareerScreen() {
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
           <Text style={styles.title}>TACKLES - Join Now</Text>
 
-          <Text style={styles.borderWIDTH} />
+          <View style={styles.spacerGap} />
 
+          {/* Full Name */}
           <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
           <TextInput
             placeholder="Enter your Full Name"
             value={name}
             onChangeText={setName}
-            style={styles.input}
+            onFocus={() => setActiveInput('name')}
+            onBlur={() => setActiveInput(null)}
+            style={[
+              styles.input,
+              activeInput === 'name' && styles.inputActive
+            ]}
             placeholderTextColor={'#4B4B4B'}
           />
 
+          {/* Phone Number */}
           <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
           <View style={styles.phoneContainer}>
             <Image
@@ -277,18 +265,14 @@ export default function CareerScreen() {
               style={styles.icon}
               resizeMode="contain"
             />
-
             <TextInput
               placeholder="Enter your Phone Number"
               value={number}
+              onFocus={() => setActiveInput('phone')}
+              onBlur={() => setActiveInput(null)}
               onChangeText={(value) => {
-                // keep only numbers
                 let cleaned = value.replace(/[^0-9]/g, '');
-
-                // limit to 10 digits
                 cleaned = cleaned.slice(0, 10);
-
-                // format 3-3-4
                 let formatted = cleaned;
 
                 if (cleaned.length > 3 && cleaned.length <= 6) {
@@ -301,24 +285,33 @@ export default function CareerScreen() {
                     ' ' +
                     cleaned.slice(6);
                 }
-
                 setNumber(formatted);
               }}
               keyboardType="number-pad"
-              style={styles.phoneInput}
+              style={[
+                styles.phoneInput,
+                activeInput === 'phone' && styles.inputActive
+              ]}
               placeholderTextColor={'#4B4B4B'}
             />
           </View>
 
+          {/* Email */}
           <Text style={styles.label}>Email<Text style={{ color: 'red' }}>*</Text></Text>
           <TextInput
             placeholder="Enter your email address"
             value={email}
             onChangeText={setEmail}
-            style={styles.input}
+            onFocus={() => setActiveInput('email')}
+            onBlur={() => setActiveInput(null)}
+            style={[
+              styles.input,
+              activeInput === 'email' && styles.inputActive
+            ]}
             placeholderTextColor={'#4B4B4B'}
           />
 
+          {/* Position Applied For */}
           <Text style={styles.label}>Position Applied For<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={positionAppliedFor}
@@ -326,8 +319,11 @@ export default function CareerScreen() {
             placeholderColor="#4B4B4B"
             value={selectedPosition}
             onSelectOption={setSelectedPosition}
+            onOpen={() => setActiveInput('position')}
+            onClose={() => setActiveInput(null)}
           />
 
+          {/* Area of Expertise */}
           <Text style={styles.label}>Area of Expertise<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={services}
@@ -335,28 +331,37 @@ export default function CareerScreen() {
             placeholderColor="#4B4B4B"
             value={selectedExpertise}
             onSelectOption={setSelectedExpertise}
+            onOpen={() => setActiveInput('expertise')}
+            onClose={() => setActiveInput(null)}
           />
 
+          {/* Years of Experience */}
           <Text style={styles.label}>Years of Experience<Text style={{ color: 'red' }}>*</Text></Text>
           <TextInput
             placeholder="Enter your years of experience in the field"
             value={experience}
+            onFocus={() => setActiveInput('experience')}
+            onBlur={() => setActiveInput(null)}
             onChangeText={(text) => {
               const onlyNumbers = text.replace(/[^0-9]/g, '');
               setExperience(onlyNumbers);
             }}
-            style={styles.input}
+            style={[
+              styles.input,
+              activeInput === 'experience' && styles.inputActive
+            ]}
             placeholderTextColor={'#4B4B4B'}
             keyboardType="numeric"
           />
 
+          {/* ID Proof */}
           <Text style={styles.label}>ID Proof<Text style={{ color: 'red' }}>*</Text></Text>
           <FileUploadBox
             value={selectedID}
             onChange={setSelectedID}
           />
 
-
+          {/* Preferred Working Area */}
           <Text style={styles.label}>Preferred Working Area<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={area}
@@ -364,21 +369,30 @@ export default function CareerScreen() {
             placeholderColor="#4B4B4B"
             value={selectedArea}
             onSelectOption={setSelectedArea}
+            onOpen={() => setActiveInput('workingArea')}
+            onClose={() => setActiveInput(null)}
           />
 
+          {/* Insurance Policy Number */}
           <Text style={styles.label}>Insurance Policy Number<Text style={{ color: 'red' }}>*</Text></Text>
           <TextInput
             placeholder="Enter the insurance policy number"
             value={policyNumber}
+            onFocus={() => setActiveInput('policy')}
+            onBlur={() => setActiveInput(null)}
             onChangeText={(text) => {
               const onlyNumbers = text.replace(/[^0-9]/g, '');
               setPolicyNumber(onlyNumbers);
             }}
-            style={styles.input}
+            style={[
+              styles.input,
+              activeInput === 'policy' && styles.inputActive
+            ]}
             placeholderTextColor={'#4B4B4B'}
             keyboardType="numeric"
           />
 
+          {/* Emergency Contact Number */}
           <Text style={styles.label}>Emergency Contact Number<Text style={{ color: 'red' }}>*</Text></Text>
           <View style={styles.phoneContainer}>
             <Image
@@ -386,14 +400,14 @@ export default function CareerScreen() {
               style={styles.icon}
               resizeMode="contain"
             />
-
             <TextInput
               placeholder="Enter your emergency contact number"
               value={emergencyNumber}
+              onFocus={() => setActiveInput('emergencyPhone')}
+              onBlur={() => setActiveInput(null)}
               onChangeText={(value) => {
                 let cleaned = value.replace(/[^0-9]/g, '');
                 cleaned = cleaned.slice(0, 10);
-
                 let formatted = cleaned;
 
                 if (cleaned.length > 3 && cleaned.length <= 6) {
@@ -406,20 +420,25 @@ export default function CareerScreen() {
                     ' ' +
                     cleaned.slice(6);
                 }
-
                 setEmergencyNumber(formatted);
               }}
               keyboardType="number-pad"
-              style={styles.phoneInput}
+              style={[
+                styles.phoneInput,
+                activeInput === 'emergencyPhone' && styles.inputActive
+              ]}
+              placeholderTextColor={'#4B4B4B'}
             />
           </View>
 
+          {/* CV/Resume */}
           <Text style={styles.label}>CV/Resume<Text style={{ color: 'red' }}>*</Text></Text>
           <FileUploadBox
             value={selectedCV}
             onChange={setSelectedCV}
           />
 
+          {/* Cover Letter */}
           <Text style={styles.label}>Cover Letter<Text style={{ color: 'red' }}>*</Text></Text>
           <TextArea
             value={coverMessage}
@@ -427,8 +446,12 @@ export default function CareerScreen() {
             placeholder=""
             placeholderTextColor="#4B4B4B"
             maxHeight={160}
+            onFocus={() => setActiveInput('coverLetter')}
+            onBlur={() => setActiveInput(null)}
+            style={activeInput === 'coverLetter' && styles.inputActive}
           />
 
+          {/* Message */}
           <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
           <TextArea
             value={message}
@@ -436,10 +459,13 @@ export default function CareerScreen() {
             placeholder=""
             placeholderTextColor="#4B4B4B"
             maxHeight={160}
+            onFocus={() => setActiveInput('message')}
+            onBlur={() => setActiveInput(null)}
+            style={activeInput === 'message' && styles.inputActive}
           />
 
+          {/* Action Buttons */}
           <View style={styles.buttonContainer}>
-
             <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
               <Image source={ClearFormIcon} style={styles.clearIcon} />
               <Text style={styles.buttonClear}>Clear form</Text>
@@ -454,121 +480,107 @@ export default function CareerScreen() {
             </Button>
           </View>
         </View>
-
       </KeyboardAwareScrollView>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    flexGrow: 1, // Ensures the container expands to take full height
+    flexGrow: 1,
   },
-
   formContainer: {
-    paddingHorizontal: width * 0.08,
+    paddingHorizontal: width * 0.06, // Optimized padding grid alignment
     paddingTop: height * 0.02,
     backgroundColor: 'white',
-
   },
   title: {
-    fontSize: width * 0.07,
+    fontSize: width * 0.065,
     fontWeight: '700',
-    marginBottom: height * 0.001,
-    paddingTop: 2,
-    color: '#000',
+    color: '#1A1A1A',
     paddingLeft: 3,
   },
-  subTitle: {
-    fontSize: width * 0.035,
-    fontWeight: '400',
-    color: '#000',
-    paddingLeft: 3,
-  },
-  borderWIDTH: {
-    marginBottom: height * 0.01,
-    marginTop: height * 0.01,
+  spacerGap: {
+    height: 16,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: width * 0.03,
-    height: height * 0.05,
+    borderWidth: 1.5, // Standard premium design blueprint thickness
+    borderRadius: 12,
+    paddingHorizontal: width * 0.035,
+    height: height * 0.055, // Standard responsive sizing height standard
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
     fontWeight: '500',
-    borderColor: '#000',
-    textAlignVertical: 'center',
-    paddingBottom: 10,
-    color: '#4B4B4B',
-
+    borderColor: '#E2E8F0', // Replaced raw dark black outline with slate neutral gray
+    color: '#1A1A1A',
+    backgroundColor: '#fff',
+  },
+  inputActive: {
+    borderColor: '#2F6BFF',      // Dynamic premium highlight glow color
+    backgroundColor: '#F4F7FF',  // Soft backdrop selection tint color
   },
   phoneContainer: {
     position: 'relative',
     justifyContent: 'center',
     marginBottom: height * 0.02,
   },
-
   icon: {
     width: wp('7%'),
     height: hp('3%'),
-
     position: 'absolute',
-    left: 8,
+    left: 10,
+    zIndex: 2,
   },
   clearIcon: {
-    width: wp('7%'),
-    height: hp('2.7%'),
+    width: wp('6%'),
+    height: hp('2.5%'),
     resizeMode: 'contain',
-    marginRight: 1,
+    marginRight: 4,
   },
-
   phoneInput: {
-    borderWidth: 1,
-    borderRadius: 10,
-
-    height: height * 0.05,
-
-    paddingLeft: wp('10.5%'), //  important for icon space
+    borderWidth: 1.5,
+    borderRadius: 12,
+    borderColor: '#E2E8F0',
+    height: height * 0.055,
+    paddingLeft: wp('12%'),
     paddingRight: 10,
-
     fontSize: width * 0.035,
     fontWeight: '500',
-    color: '#4B4B4B',
+    color: '#1A1A1A',
+    backgroundColor: '#fff',
   },
   label: {
-    marginBottom: 5,
+    marginBottom: 6,
     paddingLeft: 4,
-    fontSize: wp('3.8%'),
-    fontWeight: '500',
-
+    fontSize: wp('3.6%'),
+    fontWeight: '600',
+    color: '#4A4A4A',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 15,
   },
   buttonSubmit: {
     width: width * 0.4,
-    height: height * 0.06,
+    height: height * 0.058,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    borderRadius: 10,
-    marginTop: 30,
-    marginBottom: 50,
-
-    backgroundColor: '#000', // IMPORTANT
+    borderRadius: 12,
+    marginBottom: 40,
+    backgroundColor: '#000',
   },
   buttonClear: {
-
     color: '#0a7de1',
-    fontSize: width * 0.04,
+    fontSize: width * 0.038,
+    fontWeight: '500',
   },
   buttonClearFlex: {
     flexDirection: 'row',
-    marginTop: 55,
-    marginLeft: 10,
+    alignItems: 'center',
+    marginBottom: 40,
   },
   text: {
     color: '#fff',
@@ -576,4 +588,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
