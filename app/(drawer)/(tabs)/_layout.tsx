@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import CustomAddIcon from '../../../assets/booking.svg';
-console.log('CustomAddIcon:', CustomAddIcon);
+
 export default function TabsLayout() {
   return (
     <Tabs
