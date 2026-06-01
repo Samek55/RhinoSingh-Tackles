@@ -13,15 +13,15 @@ export default function OnBoarding1() {
       <Pressable
         style={styles.skipContainer}
         onPress={async () => {
-          try { await AsyncStorage.setItem('hasSeenOnboarding', 'true'); } catch {}
-          router.replace('/Home' as any);
+          await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+          router.replace('/Home');
         }}
       >
         <Text style={styles.skipbutton}>SKIP</Text>
       </Pressable>
 
       <Text style={styles.title}>
-        Welcome to RhinoSingh
+        Welcome to RocketSingh
       </Text>
 
       <Text style={styles.subtitle}>

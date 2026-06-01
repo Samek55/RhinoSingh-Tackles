@@ -1,43 +1,109 @@
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import FaqsScreen from '../../src/Screens/FaqsScreen';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
-export default function FAQsPage() {
-  const navigation = useNavigation();
+import { FaqsData } from '../../src/data/FAQsData';
+
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
+import Header3 from '@/components/Header3drawer';
+
+type FaqItem = {
+  id: number;
+  question: string;
+  answer: string;
+};
+
+type Props = {
+  navigation?: any;
+};
+
+export default function FaqsScreen() {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  const toggleItem = (id: number) => {
+    setExpandedId(prev => (prev === id ? null : id));
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      <FaqsScreen />
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-      >
-        <Text style={styles.menuIcon}>☰</Text>
-      </TouchableOpacity>
+      <Header3 />
+
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+
+        <View style={styles.container}>
+          <Text style={styles.title}>Frequently Asked Questions</Text>
+
+          {(FaqsData as FaqItem[]).map((item) => {
+            const isOpen = expandedId === item.id;
+
+            return (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.8}
+                onPress={() => toggleItem(item.id)}
+                style={styles.card}
+              >
+                <Text style={styles.cardTitle}>
+                  {item.id}. {item.question}
+                </Text>
+
+                {isOpen && (
+                  <Text style={styles.cardSubtitle}>
+                    {item.answer}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    top: hp('3.8%'),
-    right: wp('14%'),
-    width: wp('8.5%'),
-    height: wp('8.5%'),
-    borderRadius: wp('5%'),
-    borderWidth: 1,
-    backgroundColor: '#058610',
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999,
-    elevation: 10,
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  menuIcon: {
-    fontSize: hp('2.3%'),
-    color: '#fff',
+
+  container: {
+    paddingHorizontal: wp('6%'),
+    paddingTop: hp('2%'),
+  },
+
+  title: {
+    fontSize: wp('5.8%'),
+    fontWeight: '900',
+    color: '#064E3B',
+    marginBottom: hp('5%'),
+    marginTop: hp('2%')
+  },
+
+  card: {
+    width: '100%',
+    padding: 15,
+    marginBottom: hp('3%'),
+    borderRadius: 15,
+    backgroundColor: '#fff',
+    elevation: 2,
+    borderColor: 'hsl(160, 51%, 70%)',
+    borderWidth: 1,
+  },
+
+  cardTitle: {
+    fontSize: wp('4%'),
     fontWeight: '700',
+    color: 'hsl(164, 86%, 15%)',
+    marginBottom: 6,
+  },
+
+  cardSubtitle: {
+    fontSize: wp('3.6%'),
+    color: '#000',
+    fontWeight: '500',
+    lineHeight: 20,
   },
 });

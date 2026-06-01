@@ -1,43 +1,522 @@
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import PartnerScreen from '../../src/Screens/PartnerScreen';
+import React, { useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Image,
+  Pressable,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import Dropdown from '../../components/bookings/Dropdown';
+import { businessType, city, howduhear, partnershipInterest, services } from '../../src/data/Data';
+import TextArea from '../../components/bookings/TextArea';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import countryLogo from '../../assets/header/right.png';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
+import FileUploadBox from '../../components/bookings/FileUploadBox';
+import ClearFormIcon from '../../assets/icons/booking/clear.png'
+import DropdownAdd from '../../components/bookings/DropdownAdd';
+import { createPartnership } from '@/api/PostApiPartnership';
+import Header3 from '@/components/Header3drawer';
+import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 
-export default function PartnershipPage() {
-  const navigation = useNavigation();
+const { width, height } = Dimensions.get('window');
+
+const Button = ({ children, style, textStyle, onPress }: any) => {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
+      style={style}
+    >
+      <Text style={[styles.text, textStyle]}>
+        {children}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
+export default function PartnershipScreen() {
+  const scrollRef = useRef<any>(null);
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [message, setMessage] = useState('');
+  const [employees, setEmployees] = useState('');
+  type FileItem = {
+    uri: string;
+    fileName?: string;
+  };
+  // photoss
+  const [selectCompanyPhotos, setSelectCompanyPhotos] = useState<FileItem[]>([]);
+  const [selectCRCphotos, setSelectCRCphotos] = useState<FileItem[]>([]);
+
+  // dropdown states (separated properly)
+  const [selectedArea, setSelectedArea] = useState('');
+  const [selectedBusinessType, setSelectedBusinessType] = useState('');
+  const [selectedPartnership, setSelectedPartnership] = useState('');
+  const [selectedHowHeard, setSelectedHowHeard] = useState('Google Search');
+  const [selectedServicesOffered, setSelectedServicesOffered] = useState<string[]>([]);
+
+  const handleClearForm = () => {
+    Alert.alert(
+      'Clear Form',
+      'Are you sure you want to clear all fields?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Clear',
+          style: 'destructive',
+          onPress: () => {
+            setName('');
+            setNumber('');
+            setEmail('');
+            setOrganizationName('');
+            setMessage('');
+            setEmployees('');
+            setSelectCompanyPhotos([]);
+            setSelectCRCphotos([]);
+            setSelectedArea('');
+            setSelectedBusinessType('');
+            setSelectedPartnership('');
+            setSelectedHowHeard('Google Search');
+            setSelectedServicesOffered([]);
+          },
+        },
+      ]
+    );
+  };
+
+
+
+  const handleSubmit = async () => {
+    const cleanNumber = number.replace(/\s/g, '');
+
+    if (!name.trim()) {
+      return Alert.alert('Validation Error', 'Full Name is required');
+    }
+
+    if (!cleanNumber || cleanNumber.length !== 10) {
+      return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number');
+    }
+
+    if (!email.trim()) {
+      return Alert.alert('Validation Error', 'Email is required');
+    }
+
+    // basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return Alert.alert('Validation Error', 'Enter a valid email address');
+    }
+
+    if (!organizationName.trim()) {
+      return Alert.alert('Validation Error', 'Organization name is required');
+    }
+
+    if (!employees.trim()) {
+      return Alert.alert('Validation Error', 'Number of employees is required');
+    }
+
+    if (!selectedArea.trim()) {
+      return Alert.alert('Validation Error', 'Please select area');
+    }
+
+    if (!selectedBusinessType.trim()) {
+      return Alert.alert('Validation Error', 'Please select business type');
+    }
+
+    if (!selectedPartnership.trim()) {
+      return Alert.alert('Validation Error', 'Please select partnership type');
+    }
+
+    if (!selectedHowHeard.trim()) {
+      return Alert.alert('Validation Error', 'Please select how you heard about us');
+    }
+
+    if (selectedServicesOffered.length === 0) {
+      return Alert.alert('Validation Error', 'Please select at least one service');
+    }
+
+    if (selectCompanyPhotos.length === 0) {
+      return Alert.alert('Validation Error', 'Please upload company photos');
+    }
+
+    if (selectCRCphotos.length === 0) {
+      return Alert.alert('Validation Error', 'Please upload CRC photos');
+    }
+
+    if (!message.trim()) {
+      return Alert.alert('Validation Error', 'Message cannot be empty');
+    }
+
+    // 1. Upload images first
+    const [companyImages, crcImages] = await Promise.all([
+      uploadMultipleToCloudinary(
+        selectCompanyPhotos.map(item => ({
+          uri: item.uri,
+          fileName: item.fileName,
+        }))
+      ),
+      uploadMultipleToCloudinary(
+        selectCRCphotos.map(item => ({
+          uri: item.uri,
+          fileName: item.fileName,
+        }))
+      ),
+    ]);
+    try {
+      const partnership = {
+        "Full Name": name,
+        "Name of Organisation": organizationName,
+        "Phone Number": number,
+        "eMail": email,
+        "City": selectedArea,
+        "Number of Employees": Number(employees),
+        "Business Type": selectedBusinessType,
+        "Services Offered": selectedServicesOffered,
+        "Partnership Interests": selectedPartnership,
+        "How did you hear about us?": selectedHowHeard,
+        "Message": message,
+        "Company Photos": companyImages.map(url => ({
+          url,
+        })),
+
+        "Company Registration Certificates": crcImages.map(url => ({
+          url,
+        })),
+
+      };
+
+      await createPartnership(partnership);
+
+
+      Alert.alert('Successful');
+      handleClearForm();
+    } catch (error) {
+      Alert.alert('Error', 'Submission failed. Please try again.');
+    }
+  };
+
+
+
   return (
     <View style={{ flex: 1 }}>
-      <PartnerScreen />
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+      <Header3 />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+
       >
-        <Text style={styles.menuIcon}>☰</Text>
-      </TouchableOpacity>
+
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+        >
+
+          <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
+            <Text style={styles.title}>Partnership</Text>
+            <Text style={styles.subTitle}>Partnership opportunity with TACKLES</Text>
+
+            <Text style={styles.borderWIDTH} />
+
+            <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              placeholder="Enter your Full Name"
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+              placeholderTextColor={'#4B4B4B'}
+
+            />
+
+            <Text style={styles.label}>Name of Organization<Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              placeholder="Enter the name of your Organization"
+              value={organizationName}
+              onChangeText={setOrganizationName}
+              style={styles.input}
+              placeholderTextColor={'#4B4B4B'}
+            />
+
+            <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
+            <View style={styles.phoneContainer}>
+              <Image
+                source={countryLogo}
+                style={styles.icon}
+                resizeMode="contain"
+              />
+
+              <TextInput
+                placeholder="Enter your Phone Number"
+                value={number}
+                onChangeText={(value) => {
+                  // keep only numbers
+                  let cleaned = value.replace(/[^0-9]/g, '');
+
+                  // limit to 10 digits
+                  cleaned = cleaned.slice(0, 10);
+
+                  // format 3-3-4
+                  let formatted = cleaned;
+
+                  if (cleaned.length > 3 && cleaned.length <= 6) {
+                    formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
+                  } else if (cleaned.length > 6) {
+                    formatted =
+                      cleaned.slice(0, 3) +
+                      ' ' +
+                      cleaned.slice(3, 6) +
+                      ' ' +
+                      cleaned.slice(6);
+                  }
+
+                  setNumber(formatted);
+                }}
+                keyboardType="number-pad"
+                style={styles.phoneInput}
+                placeholderTextColor={'#4B4B4B'}
+              />
+            </View>
+
+            <Text style={styles.label}>Email<Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              placeholder="Enter your Email Address"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              placeholderTextColor={'#4B4B4B'}
+            />
+
+            <Text style={styles.label}>Company Photos<Text style={{ color: 'red' }}>*</Text></Text>
+            <FileUploadBox
+              value={selectCompanyPhotos}
+              onChange={setSelectCompanyPhotos}
+            />
+
+            <Text style={styles.label}>Area<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={city}
+              placeholder="Select your Area"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedArea}
+              value={selectedArea}
+            />
+
+            <Text style={styles.label}>Number of Employees<Text style={{ color: 'red' }}>*</Text></Text>
+            <TextInput
+              placeholder="Enter the number of Employees"
+              style={styles.input}
+              placeholderTextColor={'#4B4B4B'}
+              keyboardType="numeric"
+              value={employees}
+              onChangeText={(text) => {
+                const onlyNumbers = text.replace(/[^0-9]/g, '');
+                setEmployees(onlyNumbers);
+              }}
+            />
+
+            <Text style={styles.label}>Business Type<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={businessType}
+              placeholder="Select your Business Type"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedBusinessType}
+              value={selectedBusinessType}
+            />
+
+            <Text style={styles.label}>Services Offered<Text style={{ color: 'red' }}>*</Text></Text>
+            <DropdownAdd
+              options={services}
+              placeholder="Select the Services you offer"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedServicesOffered}
+              value={selectedServicesOffered}
+            />
+
+            <Text style={styles.label}>Partnership Interest<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={partnershipInterest}
+              placeholder="Select Partnership Interest"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedPartnership}
+              value={selectedPartnership}
+            />
+
+            <Text style={styles.label}>Company Registration Certificates<Text style={{ color: 'red' }}>*</Text></Text>
+            <FileUploadBox
+              value={selectCRCphotos}
+              onChange={setSelectCRCphotos}
+            />
+
+            <Text style={styles.label}>How did you hear about us?<Text style={{ color: 'red' }}>*</Text></Text>
+            <Dropdown
+              options={howduhear}
+              placeholder="How did you hear about us?"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedHowHeard}
+              value={selectedHowHeard}
+            />
+
+            <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
+            <TextArea
+              value={message}
+              onChangeText={setMessage}
+              placeholder=""
+              placeholderTextColor="#4B4B4B"
+              maxHeight={160}
+            />
+
+            <View style={styles.buttonContainer}>
+
+              <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
+                <Image source={ClearFormIcon} style={styles.clearIcon} />
+                <Text style={styles.buttonClear}>Clear form</Text>
+              </Pressable>
+
+              <Button
+                style={styles.buttonSubmit}
+                textStyle={{ color: 'white', textAlign: 'center' }}
+                onPress={handleSubmit}
+              >
+                Submit
+              </Button>
+            </View>
+          </View>
+
+        </KeyboardAwareScrollView >
+      </KeyboardAvoidingView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  fab: {
-    position: 'absolute',
-    top: hp('3.8%'),
-    right: wp('14%'),
-    width: wp('8.5%'),
-    height: wp('8.5%'),
-    borderRadius: wp('5%'),
-    borderWidth: 1,
-    backgroundColor: '#058610',
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 999,
-    elevation: 10,
+  container: {
+    backgroundColor: '#fff',
+    flexGrow: 1, // Ensures the container expands to take full height
   },
-  menuIcon: {
-    fontSize: hp('2.3%'),
-    color: '#fff',
+  formContainer: {
+    paddingHorizontal: width * 0.08,
+    paddingTop: height * 0.02,
+    backgroundColor: 'white',
+
+  },
+  title: {
+    fontSize: width * 0.07,
     fontWeight: '700',
+    marginBottom: height * 0.001,
+    paddingTop: 2,
+    color: '#000',
+    paddingLeft: 3,
+  },
+  subTitle: {
+    fontSize: width * 0.035,
+    fontWeight: '400',
+    color: '#000',
+    paddingLeft: 3,
+  },
+  borderWIDTH: {
+    marginBottom: height * 0.01,
+    marginTop: height * 0.01,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: width * 0.03,
+    height: height * 0.05,
+    marginBottom: height * 0.02,
+    fontSize: width * 0.035,
+    fontWeight: '500',
+    borderColor: '#000',
+    textAlignVertical: 'center',
+    paddingBottom: 10,
+    color: '#4B4B4B',
+
+  },
+  phoneContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+    marginBottom: height * 0.02,
+  },
+
+  icon: {
+    width: wp('7%'),
+    height: hp('3%'),
+
+    position: 'absolute',
+    left: 8,
+  },
+  clearIcon: {
+    width: wp('7%'),
+    height: hp('2.7%'),
+    resizeMode: 'contain',
+    marginRight: 1,
+  },
+
+  phoneInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+
+    height: height * 0.05,
+
+    paddingLeft: wp('10.5%'), //  important for icon space
+    paddingRight: 10,
+
+    fontSize: width * 0.035,
+    fontWeight: '500',
+    color: '#4B4B4B',
+  },
+  label: {
+    marginBottom: 5,
+    paddingLeft: 4,
+    fontSize: wp('3.8%'),
+    fontWeight: '500',
+
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  buttonSubmit: {
+    width: width * 0.4,
+    height: height * 0.06,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderRadius: 10,
+    marginTop: 30,
+    marginBottom: 50,
+
+    backgroundColor: '#000', // IMPORTANT
+  },
+  buttonClear: {
+
+    color: '#0a7de1',
+    fontSize: width * 0.04,
+  },
+  buttonClearFlex: {
+    flexDirection: 'row',
+    marginTop: 55,
+    marginLeft: 10,
+  },
+  text: {
+    color: '#fff',
+    fontSize: width * 0.04,
+    fontWeight: '600',
   },
 });
+

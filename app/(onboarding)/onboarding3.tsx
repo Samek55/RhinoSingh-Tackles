@@ -1,10 +1,8 @@
 import { View, Text } from 'react-native';
-import React from 'react';
 import OnboardingComponent from '../../components/onBoarding/onboardingComponent';
 import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 
 export default function OnBoarding1() {
 
@@ -20,8 +18,8 @@ export default function OnBoarding1() {
         title="Home"
         image={require('../../assets/onBoarding/onBoarding3.png')}
         onPress={async () => {
-          try { await AsyncStorage.setItem('hasSeenOnboarding', 'true'); } catch {}
-          router.replace('/Home' as any);
+          await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+          router.replace('/Home');
         }}
 
       />

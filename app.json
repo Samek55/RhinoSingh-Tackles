@@ -2,7 +2,7 @@
   "expo": {
     "name": "RocketSingh",
     "slug": "RocketSingh",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "rocketsingh",
@@ -42,7 +42,9 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-community/datetimepicker",
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -51,7 +53,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "5e54ae55-d37d-4c78-81a7-42d0f0d572b4"
+        "projectId": "11bdd822-faeb-4c83-aecf-9af239f5bbaf"
       }
     }
   }

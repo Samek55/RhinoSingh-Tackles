@@ -14,12 +14,7 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.jsx",
-    "env.d.ts",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-  ],
-  "exclude": [
-    "legacy/**",
-    "node_modules/**"
   ]
 }

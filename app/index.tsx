@@ -1,23 +1,34 @@
-import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Redirect } from 'expo-router';
+import { View, ActivityIndicator } from 'react-native';
+
+type Route = '/Home' | '/onboarding1';
 
 export default function Index() {
+  const [route, setRoute] = useState<Route | null>(null);
+
   useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const seen = await AsyncStorage.getItem('hasSeenOnboarding');
-        if (seen === 'true') {
-          router.replace('/Home' as any);
-        } else {
-          router.replace('/onboarding1' as any);
-        }
-      } catch {
-        router.replace('/onboarding1' as any);
+    const check = async () => {
+      const seen = await AsyncStorage.getItem('hasSeenOnboarding');
+
+      if (seen === 'true') {
+        setRoute('/Home');
+      } else {
+        setRoute('/onboarding1');
       }
     };
-    checkOnboarding();
+
+    check();
   }, []);
 
-  return null;
+  if (!route) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  return <Redirect href={route} />;
 }
