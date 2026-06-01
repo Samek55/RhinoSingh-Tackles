@@ -208,8 +208,6 @@ export default function CareerScreen() {
       //  SUCCESS ACTIONS
       Alert.alert('Success', 'Application submitted successfully!');
 
-      handleClearForm(); //  RESET FORM HERE
-
     } catch (error) {
       console.log(error);
       Alert.alert('Error', 'Submission failed. Please try again.');

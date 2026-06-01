@@ -204,7 +204,7 @@ export default function PartnershipScreen() {
 
 
       Alert.alert('Successful');
-      handleClearForm();
+
     } catch (error) {
       Alert.alert('Error', 'Submission failed. Please try again.');
     }
