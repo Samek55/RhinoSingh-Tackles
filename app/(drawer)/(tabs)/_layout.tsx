@@ -1,14 +1,15 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-
+import CustomAddIcon from '../../../assets/booking.svg';
+console.log('CustomAddIcon:', CustomAddIcon);
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: 'green',   
-        tabBarInactiveTintColor: 'gray', 
+        tabBarActiveTintColor: 'green',
+        tabBarInactiveTintColor: 'gray',
       }}
     >
       <Tabs.Screen
@@ -32,7 +33,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="service/ServiceDetail"
         options={{
-         headerShown:false,
+          headerShown: false,
           href: null,
         }}
       />
@@ -50,7 +51,12 @@ export default function TabsLayout() {
                   activeOpacity={0.85}
                   style={styles.floatingButton}
                 >
-                  <Ionicons name="add-circle-outline" size={60} color="#fff" />
+                  {/* 2. Replaced <Ionicons /> with your custom SVG Component */}
+                  <CustomAddIcon
+                    width={54}
+                    height={54}
+                    fill="#fff"
+                  />
                 </TouchableOpacity>
               </View>
             );
@@ -58,26 +64,26 @@ export default function TabsLayout() {
         }}
       />
 
-       <Tabs.Screen
+      <Tabs.Screen
         name="booking/BookingDetail"
         options={{
-         headerShown:false,
+          headerShown: false,
           href: null,
         }}
       />
 
-        <Tabs.Screen
+      <Tabs.Screen
         name="booking/BookingOtp"
         options={{
-         headerShown:false,
+          headerShown: false,
           href: null,
         }}
       />
 
-        <Tabs.Screen
+      <Tabs.Screen
         name="booking/BookingVerify"
         options={{
-         headerShown:false,
+          headerShown: false,
           href: null,
         }}
       />
@@ -110,20 +116,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   floatingButton: {
-    width: 65,
-    height: 65,
-    borderRadius: 45,
-    backgroundColor: '#008000',
+   
 
     justifyContent: 'center',
     alignItems: 'center',
 
-    top: -15, 
-
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 10,
+    top: -15,
+    boxShadow: '0px 0px 0px 3px #ddd',
+    borderRadius:400
   },
 })
