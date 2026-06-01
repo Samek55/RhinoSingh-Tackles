@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     paddingLeft: 3,
   },
   spacerGap: {
-    height: 16,
+    marginVertical:20
   },
   input: {
     borderWidth: 1.5, // Standard premium design blueprint thickness
