@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ import DropdownAdd from '../../components/bookings/DropdownAdd';
 import { createPartnership } from '@/api/PostApiPartnership';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const { width, height } = Dimensions.get('window');
 
@@ -46,6 +47,8 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 export default function PartnershipScreen() {
+  const scrollRef = useRef<any>(null);
+
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -236,188 +239,188 @@ export default function PartnershipScreen() {
         onClear={() => { clearAllFields(); setOverlayVisible(false); }}
         onClose={() => setOverlayVisible(false)}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-      <ScrollView
+      <KeyboardAwareScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        extraScrollHeight={80}
         keyboardShouldPersistTaps="handled"
+        enableResetScrollToCoords={false}
+        resetScrollToCoords={undefined}
+        enableAutomaticScroll={Platform.OS === 'ios'}
+        keyboardDismissMode="on-drag"
       >
 
-          <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
-            <Text style={styles.title}>Partnership</Text>
-            <Text style={styles.subTitle}>Partnership opportunity with TACKLES</Text>
+        <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
+          <Text style={styles.title}>Partnership</Text>
+          <Text style={styles.subTitle}>Partnership opportunity with TACKLES</Text>
 
-            <Text style={styles.borderWIDTH} />
+          <Text style={styles.borderWIDTH} />
 
-            <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
+          <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
+          <TextInput
+            placeholder="Enter your Full Name"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            placeholderTextColor={'#4B4B4B'}
+
+          />
+
+          <Text style={styles.label}>Name of Organization<Text style={{ color: 'red' }}>*</Text></Text>
+          <TextInput
+            placeholder="Enter the name of your Organization"
+            value={organizationName}
+            onChangeText={setOrganizationName}
+            style={styles.input}
+            placeholderTextColor={'#4B4B4B'}
+          />
+
+          <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
+          <View style={styles.phoneContainer}>
+            <Image
+              source={countryLogo}
+              style={styles.icon}
+              resizeMode="contain"
+            />
+
             <TextInput
-              placeholder="Enter your Full Name"
-              value={name}
-              onChangeText={setName}
-              style={styles.input}
-              placeholderTextColor={'#4B4B4B'}
+              placeholder="Enter your Phone Number"
+              value={number}
+              onChangeText={(value) => {
+                // keep only numbers
+                let cleaned = value.replace(/[^0-9]/g, '');
 
-            />
+                // limit to 10 digits
+                cleaned = cleaned.slice(0, 10);
 
-            <Text style={styles.label}>Name of Organization<Text style={{ color: 'red' }}>*</Text></Text>
-            <TextInput
-              placeholder="Enter the name of your Organization"
-              value={organizationName}
-              onChangeText={setOrganizationName}
-              style={styles.input}
-              placeholderTextColor={'#4B4B4B'}
-            />
+                // format 3-3-4
+                let formatted = cleaned;
 
-            <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
-            <View style={styles.phoneContainer}>
-              <Image
-                source={countryLogo}
-                style={styles.icon}
-                resizeMode="contain"
-              />
+                if (cleaned.length > 3 && cleaned.length <= 6) {
+                  formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
+                } else if (cleaned.length > 6) {
+                  formatted =
+                    cleaned.slice(0, 3) +
+                    ' ' +
+                    cleaned.slice(3, 6) +
+                    ' ' +
+                    cleaned.slice(6);
+                }
 
-              <TextInput
-                placeholder="Enter your Phone Number"
-                value={number}
-                onChangeText={(value) => {
-                  // keep only numbers
-                  let cleaned = value.replace(/[^0-9]/g, '');
-
-                  // limit to 10 digits
-                  cleaned = cleaned.slice(0, 10);
-
-                  // format 3-3-4
-                  let formatted = cleaned;
-
-                  if (cleaned.length > 3 && cleaned.length <= 6) {
-                    formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                  } else if (cleaned.length > 6) {
-                    formatted =
-                      cleaned.slice(0, 3) +
-                      ' ' +
-                      cleaned.slice(3, 6) +
-                      ' ' +
-                      cleaned.slice(6);
-                  }
-
-                  setNumber(formatted);
-                }}
-                keyboardType="number-pad"
-                style={styles.phoneInput}
-                placeholderTextColor={'#4B4B4B'}
-              />
-            </View>
-
-            <Text style={styles.label}>Email<Text style={{ color: 'red' }}>*</Text></Text>
-            <TextInput
-              placeholder="Enter your Email Address"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              placeholderTextColor={'#4B4B4B'}
-            />
-
-            <Text style={styles.label}>Company Photos<Text style={{ color: 'red' }}>*</Text></Text>
-            <FileUploadBox
-              value={selectCompanyPhotos}
-              onChange={setSelectCompanyPhotos}
-            />
-
-            <Text style={styles.label}>Area<Text style={{ color: 'red' }}>*</Text></Text>
-            <Dropdown
-              options={city}
-              placeholder="Select your Area"
-              placeholderColor="#4B4B4B"
-              onSelectOption={setSelectedArea}
-              value={selectedArea}
-            />
-
-            <Text style={styles.label}>Number of Employees<Text style={{ color: 'red' }}>*</Text></Text>
-            <TextInput
-              placeholder="Enter the number of Employees"
-              style={styles.input}
-              placeholderTextColor={'#4B4B4B'}
-              keyboardType="numeric"
-              value={employees}
-              onChangeText={(text) => {
-                const onlyNumbers = text.replace(/[^0-9]/g, '');
-                setEmployees(onlyNumbers);
+                setNumber(formatted);
               }}
+              keyboardType="number-pad"
+              style={styles.phoneInput}
+              placeholderTextColor={'#4B4B4B'}
             />
-
-            <Text style={styles.label}>Business Type<Text style={{ color: 'red' }}>*</Text></Text>
-            <Dropdown
-              options={businessType}
-              placeholder="Select your Business Type"
-              placeholderColor="#4B4B4B"
-              onSelectOption={setSelectedBusinessType}
-              value={selectedBusinessType}
-            />
-
-            <Text style={styles.label}>Services Offered<Text style={{ color: 'red' }}>*</Text></Text>
-            <DropdownAdd
-              options={services}
-              placeholder="Select the Services you offer"
-              placeholderColor="#4B4B4B"
-              onSelectOption={setSelectedServicesOffered}
-              value={selectedServicesOffered}
-            />
-
-            <Text style={styles.label}>Partnership Interest<Text style={{ color: 'red' }}>*</Text></Text>
-            <Dropdown
-              options={partnershipInterest}
-              placeholder="Select Partnership Interest"
-              placeholderColor="#4B4B4B"
-              onSelectOption={setSelectedPartnership}
-              value={selectedPartnership}
-            />
-
-            <Text style={styles.label}>Company Registration Certificates<Text style={{ color: 'red' }}>*</Text></Text>
-            <FileUploadBox
-              value={selectCRCphotos}
-              onChange={setSelectCRCphotos}
-            />
-
-            <Text style={styles.label}>How did you hear about us?<Text style={{ color: 'red' }}>*</Text></Text>
-            <Dropdown
-              options={howduhear}
-              placeholder="How did you hear about us?"
-              placeholderColor="#4B4B4B"
-              onSelectOption={setSelectedHowHeard}
-              value={selectedHowHeard}
-            />
-
-            <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
-            <TextArea
-              value={message}
-              onChangeText={setMessage}
-              placeholder=""
-              placeholderTextColor="#4B4B4B"
-              maxHeight={160}
-            />
-
-            <View style={styles.buttonContainer}>
-
-              <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
-                <Image source={ClearFormIcon} style={styles.clearIcon} />
-                <Text style={styles.buttonClear}>Clear form</Text>
-              </Pressable>
-
-              <Button
-                style={styles.buttonSubmit}
-                textStyle={{ color: 'white', textAlign: 'center' }}
-                onPress={handleSubmit}
-              >
-                Submit
-              </Button>
-            </View>
           </View>
 
-      </ScrollView>
-      </KeyboardAvoidingView>
+          <Text style={styles.label}>Email<Text style={{ color: 'red' }}>*</Text></Text>
+          <TextInput
+            placeholder="Enter your Email Address"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            placeholderTextColor={'#4B4B4B'}
+          />
+
+          <Text style={styles.label}>Company Photos<Text style={{ color: 'red' }}>*</Text></Text>
+          <FileUploadBox
+            value={selectCompanyPhotos}
+            onChange={setSelectCompanyPhotos}
+          />
+
+          <Text style={styles.label}>Area<Text style={{ color: 'red' }}>*</Text></Text>
+          <Dropdown
+            options={city}
+            placeholder="Select your Area"
+            placeholderColor="#4B4B4B"
+            onSelectOption={setSelectedArea}
+            value={selectedArea}
+          />
+
+          <Text style={styles.label}>Number of Employees<Text style={{ color: 'red' }}>*</Text></Text>
+          <TextInput
+            placeholder="Enter the number of Employees"
+            style={styles.input}
+            placeholderTextColor={'#4B4B4B'}
+            keyboardType="numeric"
+            value={employees}
+            onChangeText={(text) => {
+              const onlyNumbers = text.replace(/[^0-9]/g, '');
+              setEmployees(onlyNumbers);
+            }}
+          />
+
+          <Text style={styles.label}>Business Type<Text style={{ color: 'red' }}>*</Text></Text>
+          <Dropdown
+            options={businessType}
+            placeholder="Select your Business Type"
+            placeholderColor="#4B4B4B"
+            onSelectOption={setSelectedBusinessType}
+            value={selectedBusinessType}
+          />
+
+          <Text style={styles.label}>Services Offered<Text style={{ color: 'red' }}>*</Text></Text>
+          <DropdownAdd
+            options={services}
+            placeholder="Select the Services you offer"
+            placeholderColor="#4B4B4B"
+            onSelectOption={setSelectedServicesOffered}
+            value={selectedServicesOffered}
+          />
+
+          <Text style={styles.label}>Partnership Interest<Text style={{ color: 'red' }}>*</Text></Text>
+          <Dropdown
+            options={partnershipInterest}
+            placeholder="Select Partnership Interest"
+            placeholderColor="#4B4B4B"
+            onSelectOption={setSelectedPartnership}
+            value={selectedPartnership}
+          />
+
+          <Text style={styles.label}>Company Registration Certificates<Text style={{ color: 'red' }}>*</Text></Text>
+          <FileUploadBox
+            value={selectCRCphotos}
+            onChange={setSelectCRCphotos}
+          />
+
+          <Text style={styles.label}>How did you hear about us?<Text style={{ color: 'red' }}>*</Text></Text>
+          <Dropdown
+            options={howduhear}
+            placeholder="How did you hear about us?"
+            placeholderColor="#4B4B4B"
+            onSelectOption={setSelectedHowHeard}
+            value={selectedHowHeard}
+          />
+
+          <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
+          <TextArea
+            value={message}
+            onChangeText={setMessage}
+            placeholder=""
+            placeholderTextColor="#4B4B4B"
+            maxHeight={160}
+          />
+
+          <View style={styles.buttonContainer}>
+
+            <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
+              <Image source={ClearFormIcon} style={styles.clearIcon} />
+              <Text style={styles.buttonClear}>Clear form</Text>
+            </Pressable>
+
+            <Button
+              style={styles.buttonSubmit}
+              textStyle={{ color: 'white', textAlign: 'center' }}
+              onPress={handleSubmit}
+            >
+              Submit
+            </Button>
+          </View>
+        </View>
+      </KeyboardAwareScrollView>
     </View>
   );
 };

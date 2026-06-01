@@ -31,7 +31,7 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
       <LinearGradient
-        colors={['#047857', '#15803d', '#65a30d']} // emerald gradient
+        colors={['#047857', '#15803d', '#65a30d']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.button1, style]}
@@ -58,55 +58,46 @@ export default function ServiceBookingScreen() {
   const [show, setShow] = useState<boolean>(false);
 
   const handleSubmit = async () => {
-    const cleanNumber = number.replace(/\s/g, ''); // remove spaces
+    const cleanNumber = number.replace(/\s/g, '');
 
     if (!name.trim()) {
       Alert.alert('Validation Error', 'Full Name is required');
       return;
     }
-
     if (!cleanNumber || cleanNumber.length !== 10) {
       Alert.alert('Validation Error', 'Enter a valid 10-digit phone number');
       return;
     }
-
     if (!selectedService) {
       Alert.alert('Validation Error', 'Please select a service');
       return;
     }
-
     if (!date) {
       Alert.alert('Validation Error', 'Please select a date');
       return;
     }
-
     if (!selectedShift) {
       Alert.alert('Validation Error', 'Please choose a time shift');
       return;
     }
-
     if (!selectedArea) {
       Alert.alert('Validation Error', 'Please select your location');
-      return;
-    }
-
-    if (!message.trim()) {
-      Alert.alert('Validation Error', 'Message cannot be empty');
       return;
     }
     if (!selectedBudget.trim()) {
       Alert.alert('Validation Error', 'Budget cannot be empty');
       return;
     }
-
     if (!selectedPriority.trim()) {
       Alert.alert('Validation Error', 'Please choose a Priority');
       return;
     }
+    if (!message.trim()) {
+      Alert.alert('Validation Error', 'Message cannot be empty');
+      return;
+    }
 
     try {
-
-
       router.push({
         pathname: '/booking/BookingDetail',
         params: {
@@ -128,27 +119,24 @@ export default function ServiceBookingScreen() {
   };
 
   return (
-    <View>
-      <Header2/>
+    <View style={{ flex: 1, backgroundColor: 'teal' }}>
+      <Header2 />
       <KeyboardAwareScrollView
         ref={scrollRef}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        extraScrollHeight={80}
         keyboardShouldPersistTaps="handled"
-        enableAutomaticScroll={false}
+        enableResetScrollToCoords={false}
+        resetScrollToCoords={undefined}
+        enableAutomaticScroll={Platform.OS === 'ios'}
+        keyboardDismissMode="on-drag"
       >
-
         <View style={styles.formContainer}>
           <Text style={styles.title}>Book a Service</Text>
 
-
-          <View
-            style={[
-              styles.inputGroup,
-              { marginBottom: height * 0.08 },
-            ]}
-          >
-
+          <View style={styles.inputGroup}>
+            {/* Full Name */}
             <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
             <TextInput
               placeholder="Enter your Full Name"
@@ -158,25 +146,16 @@ export default function ServiceBookingScreen() {
               placeholderTextColor={'#4B4B4B'}
             />
 
+            {/* Phone Number */}
             <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
             <View style={styles.phoneContainer}>
-              <Image
-                source={countryLogo}
-                style={styles.icon}
-                resizeMode="contain"
-              />
-
+              <Image source={countryLogo} style={styles.icon} resizeMode="contain" />
               <TextInput
                 placeholder="Enter your Phone Number"
                 value={number}
                 onChangeText={(value) => {
-                  // keep only numbers
                   let cleaned = value.replace(/[^0-9]/g, '');
-
-                  // limit to 10 digits
                   cleaned = cleaned.slice(0, 10);
-
-                  // format 3-3-4
                   let formatted = cleaned;
 
                   if (cleaned.length > 3 && cleaned.length <= 6) {
@@ -189,7 +168,6 @@ export default function ServiceBookingScreen() {
                       ' ' +
                       cleaned.slice(6);
                   }
-
                   setNumber(formatted);
                 }}
                 keyboardType="number-pad"
@@ -198,6 +176,7 @@ export default function ServiceBookingScreen() {
               />
             </View>
 
+            {/* Select Service */}
             <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
               options={services}
@@ -207,11 +186,10 @@ export default function ServiceBookingScreen() {
               borderColor='#3CB371'
             />
 
+            {/* Choose Date */}
             <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
             <View style={{ marginBottom: height * 0.025 }}>
-              <TouchableOpacity
-                onPress={() => setShow(true)}
-                style={styles.datePicker}>
+              <TouchableOpacity onPress={() => setShow(true)} style={styles.datePicker}>
                 <Text style={[styles.datePickerText, { fontSize: width * 0.035 }]}>
                   {date ? date.toDateString() : 'Pick a Date'}
                 </Text>
@@ -225,15 +203,16 @@ export default function ServiceBookingScreen() {
                   display="default"
                   minimumDate={new Date()}
                   onChange={(event, selectedDate) => {
+                    setShow(Platform.OS === 'ios');
                     if (event.type === 'set' && selectedDate) {
                       setDate(selectedDate);
                     }
-                    setShow(Platform.OS === 'ios');
                   }}
                 />
               )}
             </View>
 
+            {/* Preferred Time */}
             <Text style={styles.label}>Preferred Time<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
               options={shifts}
@@ -244,7 +223,7 @@ export default function ServiceBookingScreen() {
               borderColor='#3CB371'
             />
 
-
+            {/* Your Location */}
             <Text style={styles.label}>Your Location<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
               options={area}
@@ -252,10 +231,9 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedArea}
               borderColor='#3CB371'
-
             />
 
-
+            {/* Priority */}
             <Text style={styles.label}>Priority<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
               options={priority}
@@ -265,6 +243,8 @@ export default function ServiceBookingScreen() {
               value={selectedPriority}
               borderColor='#3CB371'
             />
+
+            {/* Select Budget */}
             <Text style={styles.label}>Select Budget<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
               value={selectedBudget}
@@ -273,9 +253,9 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedBudget}
               borderColor='#3CB371'
-
             />
 
+            {/* Message */}
             <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
             <TextArea
               value={message}
@@ -295,43 +275,39 @@ export default function ServiceBookingScreen() {
               >
                 SUBMIT
               </Button>
-
             </View>
           </View>
         </View>
       </KeyboardAwareScrollView>
     </View>
-
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'teal',
-    flexGrow: 1, // Ensures the container expands to take full height
+    flexGrow: 1,
   },
   formContainer: {
     paddingHorizontal: width * 0.05,
     paddingTop: height * 0.02,
     backgroundColor: 'teal',
-
   },
   title: {
     fontSize: width * 0.06,
     fontWeight: '700',
-    marginBottom: height * 0.001,
-    paddingTop: 2,
-    paddingBottom: 3,
     color: 'white',
     paddingLeft: 8,
+    marginBottom: 10,
   },
   inputGroup: {
     marginTop: height * 0.015,
     padding: 20,
     borderRadius: 20,
     backgroundColor: '#fff',
-    maxHeight: '90%',
     elevation: 10,
+    // FIX: Removed maxHeight: '90%' to ensure full content is accessible
+    marginBottom: height * 0.05, // Cleaned up layout spacing baseline
   },
   input: {
     borderWidth: 1,
@@ -342,36 +318,27 @@ const styles = StyleSheet.create({
     fontSize: width * 0.035,
     fontWeight: '500',
     borderColor: '#3CB371',
-    textAlignVertical: 'center',
-    paddingBottom: 10,
     color: '#4B4B4B',
-
   },
   phoneContainer: {
     position: 'relative',
     justifyContent: 'center',
     marginBottom: height * 0.02,
   },
-
   icon: {
     width: wp('7%'),
     height: hp('3%'),
-
     position: 'absolute',
     left: 8,
     zIndex: 2,
   },
-
   phoneInput: {
     borderWidth: 1,
     borderRadius: 10,
     borderColor: '#3CB371',
-
     height: height * 0.05,
-
-    paddingLeft: wp('10.5%'), //  important for icon space
+    paddingLeft: wp('10.5%'),
     paddingRight: 10,
-
     fontSize: width * 0.035,
     fontWeight: '500',
     color: '#4B4B4B',
@@ -396,12 +363,10 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     fontSize: 15,
     fontWeight: '500',
-
   },
   buttonPadding: {
-    paddingBottom: 30,
+    paddingBottom: 10,
     alignItems: 'center',
-    color: '#fff',
   },
   button1: {
     width: width * 0.4,
@@ -409,9 +374,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    paddingVertical: 8,
     borderRadius: 10,
-    marginTop: 30,
+    marginTop: 20,
   },
   text: {
     color: '#fff',
@@ -419,4 +383,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

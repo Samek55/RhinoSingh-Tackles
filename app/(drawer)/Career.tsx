@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import DropdownAdd from '../../components/bookings/DropdownAdd';
 import { createCareer } from '@/api/PostApiCareer';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 
 const { width, height } = Dimensions.get('window');
@@ -46,6 +47,7 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 export default function CareerScreen() {
+  const scrollRef = useRef<any>(null);
 
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
@@ -243,16 +245,17 @@ export default function CareerScreen() {
         onClear={() => { clearAllFields(); setOverlayVisible(false); }}
         onClose={() => setOverlayVisible(false)}
       />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-      <ScrollView
+      <KeyboardAwareScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        extraScrollHeight={80}
         keyboardShouldPersistTaps="handled"
+        enableResetScrollToCoords={false}
+        resetScrollToCoords={undefined}
+        enableAutomaticScroll={Platform.OS === 'ios'}
+        keyboardDismissMode="on-drag"
       >
-
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
           <Text style={styles.title}>TACKLES - Join Now</Text>
 
@@ -452,8 +455,7 @@ export default function CareerScreen() {
           </View>
         </View>
 
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </View>
   );
 };
