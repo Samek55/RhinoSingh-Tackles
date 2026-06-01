@@ -191,11 +191,11 @@ export default function PartnershipScreen() {
         "How did you hear about us?": selectedHowHeard,
         "Message": message,
         "Company Photos": companyImages.map(url => ({
-          url,
+          url:url,
         })),
 
         "Company Registration Certificates": crcImages.map(url => ({
-          url,
+          url:url,
         })),
 
       };

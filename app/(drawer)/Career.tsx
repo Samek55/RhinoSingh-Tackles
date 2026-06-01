@@ -198,10 +198,10 @@ export default function CareerScreen() {
         "Cover Letter": coverMessage,
         "Message": message,
         "Resume/CV": cvImages.map(url => ({
-          url,
+          url:url,
         })),
         "ID Proof": idProofImages.map(url => ({
-          url,
+          url:url,
         })),
       };
 
