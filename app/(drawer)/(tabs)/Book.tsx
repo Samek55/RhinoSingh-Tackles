@@ -57,6 +57,9 @@ export default function ServiceBookingScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [show, setShow] = useState<boolean>(false);
 
+  // New tracking states for handling matching active design glows
+  const [activeInput, setActiveInput] = useState<string | null>(null);
+
   const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
 
@@ -142,7 +145,12 @@ export default function ServiceBookingScreen() {
               placeholder="Enter your Full Name"
               value={name}
               onChangeText={setName}
-              style={styles.input}
+              onFocus={() => setActiveInput('name')}
+              onBlur={() => setActiveInput(null)}
+              style={[
+                styles.input,
+                activeInput === 'name' && styles.inputActive
+              ]}
               placeholderTextColor={'#4B4B4B'}
             />
 
@@ -153,6 +161,8 @@ export default function ServiceBookingScreen() {
               <TextInput
                 placeholder="Enter your Phone Number"
                 value={number}
+                onFocus={() => setActiveInput('phone')}
+                onBlur={() => setActiveInput(null)}
                 onChangeText={(value) => {
                   let cleaned = value.replace(/[^0-9]/g, '');
                   cleaned = cleaned.slice(0, 10);
@@ -171,7 +181,10 @@ export default function ServiceBookingScreen() {
                   setNumber(formatted);
                 }}
                 keyboardType="number-pad"
-                style={styles.phoneInput}
+                style={[
+                  styles.phoneInput,
+                  activeInput === 'phone' && styles.inputActive
+                ]}
                 placeholderTextColor={'#4B4B4B'}
               />
             </View>
@@ -184,16 +197,33 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedService}
               borderColor='#3CB371'
+              onOpen={() => setActiveInput('service')}
+              onClose={() => setActiveInput(null)}
             />
 
             {/* Choose Date */}
             <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
             <View style={{ marginBottom: height * 0.025 }}>
-              <TouchableOpacity onPress={() => setShow(true)} style={styles.datePicker}>
+              <TouchableOpacity 
+                onPress={() => {
+                  setShow(true);
+                  setActiveInput('date');
+                }} 
+                style={[
+                  styles.datePicker,
+                  activeInput === 'date' && styles.inputActive
+                ]}
+              >
                 <Text style={[styles.datePickerText, { fontSize: width * 0.035 }]}>
                   {date ? date.toDateString() : 'Pick a Date'}
                 </Text>
-                <Image source={CalenderIcon} style={{ height: 21, width: 21 }} />
+                <Image 
+                  source={CalenderIcon} 
+                  style={[
+                    { height: 21, width: 21 },
+                    activeInput === 'date' && { tintColor: '#2F6BFF' }
+                  ]} 
+                />
               </TouchableOpacity>
 
               {show && (
@@ -204,6 +234,10 @@ export default function ServiceBookingScreen() {
                   minimumDate={new Date()}
                   onChange={(event, selectedDate) => {
                     setShow(Platform.OS === 'ios');
+                    // Reset styling focus outline when picker resolves on Android
+                    if (Platform.OS === 'android') {
+                      setActiveInput(null);
+                    }
                     if (event.type === 'set' && selectedDate) {
                       setDate(selectedDate);
                     }
@@ -221,6 +255,8 @@ export default function ServiceBookingScreen() {
               onSelectOption={setSelectedShift}
               dropdownType="shift"
               borderColor='#3CB371'
+              onOpen={() => setActiveInput('shift')}
+              onClose={() => setActiveInput(null)}
             />
 
             {/* Your Location */}
@@ -231,6 +267,8 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedArea}
               borderColor='#3CB371'
+              onOpen={() => setActiveInput('location')}
+              onClose={() => setActiveInput(null)}
             />
 
             {/* Priority */}
@@ -242,6 +280,8 @@ export default function ServiceBookingScreen() {
               onSelectOption={setSelectedPriority}
               value={selectedPriority}
               borderColor='#3CB371'
+              onOpen={() => setActiveInput('priority')}
+              onClose={() => setActiveInput(null)}
             />
 
             {/* Select Budget */}
@@ -253,6 +293,8 @@ export default function ServiceBookingScreen() {
               placeholderColor="#4B4B4B"
               onSelectOption={setSelectedBudget}
               borderColor='#3CB371'
+              onOpen={() => setActiveInput('budget')}
+              onClose={() => setActiveInput(null)}
             />
 
             {/* Message */}
@@ -264,6 +306,10 @@ export default function ServiceBookingScreen() {
               placeholderTextColor="#4B4B4B"
               maxHeight={160}
               borderColor="#3CB371"
+              // Pass layout handlers down to custom textareas if built to handle them
+              onFocus={() => setActiveInput('message')}
+              onBlur={() => setActiveInput(null)}
+              style={activeInput === 'message' && styles.inputActive}
             />
 
             {/* Submit Button */}
@@ -306,19 +352,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: '#fff',
     elevation: 10,
-    // FIX: Removed maxHeight: '90%' to ensure full content is accessible
-    marginBottom: height * 0.05, // Cleaned up layout spacing baseline
+    marginBottom: height * 0.05,
   },
   input: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: width * 0.03,
-    height: height * 0.05,
+    borderWidth: 1.5, // Match premium look thickness
+    borderRadius: 12,
+    paddingHorizontal: width * 0.035,
+    height: height * 0.055, // Matches the height optimization from before
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
     fontWeight: '500',
-    borderColor: '#3CB371',
-    color: '#4B4B4B',
+    borderColor: '#E2E8F0', // Cleaner neutral baseline gray
+    color: '#1A1A1A',
+    backgroundColor: '#fff',
+  },
+  inputActive: {
+    borderColor: '#2F6BFF',      // Premium blue border glow
+    backgroundColor: '#F4F7FF',  // Premium soft blue internal background tint
   },
   phoneContainer: {
     position: 'relative',
@@ -329,40 +379,43 @@ const styles = StyleSheet.create({
     width: wp('7%'),
     height: hp('3%'),
     position: 'absolute',
-    left: 8,
+    left: 10,
     zIndex: 2,
   },
   phoneInput: {
-    borderWidth: 1,
-    borderRadius: 10,
-    borderColor: '#3CB371',
-    height: height * 0.05,
-    paddingLeft: wp('10.5%'),
+    borderWidth: 1.5,
+    borderRadius: 12,
+    borderColor: '#E2E8F0',
+    height: height * 0.055,
+    paddingLeft: wp('12%'),
     paddingRight: 10,
     fontSize: width * 0.035,
     fontWeight: '500',
-    color: '#4B4B4B',
+    color: '#1A1A1A',
+    backgroundColor: '#fff',
   },
   datePicker: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#3CB371',
-    borderRadius: 10,
-    paddingHorizontal: width * 0.03,
-    height: height * 0.05,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: width * 0.035,
+    height: height * 0.055,
     justifyContent: 'space-between',
+    backgroundColor: '#fff',
   },
   datePickerText: {
     fontSize: width * 0.035,
     fontWeight: '500',
-    color: '#4B4B4B',
+    color: '#1A1A1A',
   },
   label: {
-    marginBottom: 5,
+    marginBottom: 6,
     paddingLeft: 4,
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4A4A4A',
   },
   buttonPadding: {
     paddingBottom: 10,

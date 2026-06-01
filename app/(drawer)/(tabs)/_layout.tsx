@@ -1,14 +1,14 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: 'green',   //  ACTIVE COLOR
-        tabBarInactiveTintColor: 'gray',  // optional
+        tabBarActiveTintColor: 'green',   
+        tabBarInactiveTintColor: 'gray', 
       }}
     >
       <Tabs.Screen
@@ -41,17 +41,18 @@ export default function TabsLayout() {
         name="Book"
         options={{
           tabBarLabel: '',
-
           tabBarButton: (props) => {
             return (
-              <TouchableOpacity
-                onPress={props.onPress}
-                onLongPress={props.onLongPress ?? undefined}
-                activeOpacity={0.85}
-                style={styles.floatingButton}
-              >
-                <Ionicons name="add-circle-outline" size={60} color="#fff" />
-              </TouchableOpacity>
+              <View style={styles.buttonWrapper}>
+                <TouchableOpacity
+                  onPress={props.onPress}
+                  onLongPress={props.onLongPress ?? undefined}
+                  activeOpacity={0.85}
+                  style={styles.floatingButton}
+                >
+                  <Ionicons name="add-circle-outline" size={60} color="#fff" />
+                </TouchableOpacity>
+              </View>
             );
           },
         }}
@@ -103,21 +104,21 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  buttonWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   floatingButton: {
-    position: 'absolute',
-    bottom: 10,
-
     width: 65,
     height: 65,
     borderRadius: 45,
-
     backgroundColor: '#008000',
 
     justifyContent: 'center',
     alignItems: 'center',
 
-    left: '50%',
-    marginLeft: -35,
+    top: -15, 
 
     shadowColor: '#000',
     shadowOpacity: 0.25,

@@ -1,20 +1,10 @@
-import React, { useState,useEffect , useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  Modal,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { MultiSelect } from 'react-native-element-dropdown';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
-import DropIconAdd from '../../assets/icons/booking/add.png';
-
-import {
-  widthPercentageToDP as wp,
-  heightPercentageToDP as hp,
-} from 'react-native-responsive-screen';
+// Mocking your asset imports (Matches your original pathing structure)
+const DropIconAdd = require('../../assets/icons/booking/add.png');
 
 type Props = {
   options: string[];
@@ -24,7 +14,9 @@ type Props = {
   onSelectOption?: (options: string[]) => void;
   dropdownType?: string;
   borderColor?: string;
-   value?: string[]; 
+  value?: string[];
+  onOpen?: () => void;
+  onClose?: () => void; // Added onClose support
 };
 
 const DropdownAdd = ({
@@ -34,184 +26,113 @@ const DropdownAdd = ({
   showRequired = false,
   onSelectOption,
   dropdownType,
-  borderColor,
+  borderColor = '#E0E0E0', // Softer default gray border
   value,
+  onOpen,
+  onClose
 }: Props) => {
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  // MULTIPLE SELECTED ITEMS
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
+  const [isFocus, setIsFocus] = useState(false); // Track focus state for modern UX enhancements
 
-  // Dropdown position
-  const [coords, setCoords] = useState({
-    x: 0,
-    y: 0,
-    width: 0,
-  });
+  // Synchronize incoming programmatic values
+  useEffect(() => {
+    setSelectedOptions(value || []);
+  }, [value]);
 
-  const containerRef = useRef<View>(null);
-
-  const toggleDropdown = () => {
-    if (!showDropdown) {
-      containerRef.current?.measure((x, y, w, h, px, py) => {
-        setCoords({
-          x: px,
-          y: py + h,
-          width: w,
-        });
-
-        setShowDropdown(true);
-      });
-    } else {
-      setShowDropdown(false);
-    }
-  };
-
-  // ADD ITEM
-  const handleSelectOption = (option: string) => {
-    if (!selectedOptions.includes(option)) {
-      const updatedOptions = [...selectedOptions, option];
-
-      setSelectedOptions(updatedOptions);
-
-      onSelectOption?.(updatedOptions);
-    }
-  };
-
-  // REMOVE ITEM
-  const handleRemoveOption = (option: string) => {
-    const updatedOptions = selectedOptions.filter(
-      item => item !== option,
-    );
-
-    setSelectedOptions(updatedOptions);
-
-    onSelectOption?.(updatedOptions);
-  };
+  // Map plain array strings to the format the library expects
+  const data = options.map((item, index) => ({ label: item, value: item, index }));
 
   const getDropIcon = () => {
     if (dropdownType === 'shift') {
       return require('../../assets/icons/booking/clock.png');
     }
-
     return DropIconAdd;
   };
 
-  useEffect(() => {
-  setSelectedOptions(value || []);
-}, [value]);
+  // Custom renderer for the right-side icon
+  const renderRightIcon = () => (
+    <Image
+      source={getDropIcon()}
+      style={[
+        { width: hp('2.2%'), height: hp('2.2%') },
+        // Rotates the icon 180 degrees smoothly when open if it's a dynamic icon type
+        isFocus && dropdownType !== 'shift' && { transform: [{ rotate: '180deg' }], tintColor: '#2F6BFF' }
+      ]}
+    />
+  );
+
+  // Custom renderer for alternating row items
+  const renderItem = (item: { label: string; value: string; index: number }) => {
+    const backgroundColor = item.index % 2 === 0 ? '#fff' : '#f9f9f9';
+    const isSelected = selectedOptions.includes(item.value);
+
+    return (
+      <View style={[
+        styles.itemContainer, 
+        { backgroundColor }, 
+        isSelected && styles.selectedOption
+      ]}>
+        <Text style={[styles.itemText, isSelected && styles.selectedOptionText]}>
+          {item.label}
+        </Text>
+      </View>
+    );
+  };
+
+  // Custom renderer for selected tags/chips inside the box
+  const renderSelectedItem = (item: { label: string; value: string; index: number }, unSelect?: (item: any) => void) => {
+    return (
+      <View style={styles.tag}>
+        <Text style={styles.tagText}>{item.label}</Text>
+        <TouchableOpacity 
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          onPress={() => unSelect && unSelect(item)}
+        >
+          <Text style={styles.removeText}>✕</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
-    <View ref={containerRef} style={styles.container}>
-      {/* INPUT */}
-      <TouchableOpacity
+    <View style={styles.container}>
+      {showRequired && selectedOptions.length === 0 && (
+        <Text style={styles.requiredAbsolute}>*</Text>
+      )}
+
+      <MultiSelect
         style={[
-          styles.inputContainer,
-          {
-            borderColor: borderColor || '#000',
-          },
+          styles.dropdownStyle, 
+          { borderColor: isFocus ? '#2F6BFF' : borderColor }, // Primary glow border on focus
+          isFocus && styles.dropdownActiveBackground // Soft tint background when active
         ]}
-        activeOpacity={0.8}
-        onPress={toggleDropdown}
-      >
-        {/* PLACEHOLDER */}
-        {selectedOptions.length === 0 && (
-          <View style={styles.placeholderWrapper}>
-            <Text
-              style={[
-                styles.placeholder,
-                { color: placeholderColor },
-              ]}
-            >
-              {placeholder}
-            </Text>
-
-            {showRequired && (
-              <Text style={styles.required}>*</Text>
-            )}
-          </View>
-        )}
-
-        {/* SELECTED TAGS */}
-        <View style={styles.tagsWrapper}>
-          {selectedOptions.map((item, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{item}</Text>
-
-              <TouchableOpacity
-                onPress={() => handleRemoveOption(item)}
-              >
-                <Text style={styles.removeText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-
-        {/* DROPDOWN ICON */}
-        <View style={styles.iconContainer}>
-          <Image
-            source={getDropIcon()}
-            style={styles.icon}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {/* DROPDOWN MODAL */}
-      <Modal
-        visible={showDropdown}
-        transparent={true}
-        animationType="none"
-        onRequestClose={() => setShowDropdown(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowDropdown(false)}
-        >
-          <View
-            style={[
-              styles.dropdown,
-              {
-                top: coords.y - 5,
-                left: coords.x,
-                width: coords.width,
-                maxHeight: hp('26.8%'),
-              },
-            ]}
-          >
-            <ScrollView
-              bounces={false}
-              nestedScrollEnabled={true}
-              keyboardShouldPersistTaps="handled"
-            >
-              {options.map((item, index) => {
-                const isSelected =
-                  selectedOptions.includes(item);
-
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => handleSelectOption(item)}
-                    style={[
-                      styles.optionContainer,
-                      isSelected && styles.selectedOption,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.option,
-                        isSelected && styles.selectedOptionText,
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
+        containerStyle={styles.menuContainer}
+        activeColor="transparent" // Disables default library highlight layer in favor of custom styles
+        visibleSelectedItem={true} 
+        inside={true} 
+        data={data}
+        maxHeight={hp('26.8%')}
+        labelField="label"
+        valueField="value"
+        placeholder={placeholder}
+        value={selectedOptions}
+        onFocus={() => {
+          setIsFocus(true);
+          onOpen?.();
+        }}
+        onBlur={() => {
+          setIsFocus(false);
+          onClose?.();
+        }}
+        onChange={items => {
+          setSelectedOptions(items);
+          onSelectOption?.(items);
+        }}
+        renderRightIcon={renderRightIcon}
+        renderItem={renderItem}
+        renderSelectedItem={renderSelectedItem}
+      />
     </View>
   );
 };
@@ -219,51 +140,52 @@ const DropdownAdd = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: hp('2.5%'),
+    position: 'relative',
   },
-
-  inputContainer: {
+  dropdownStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: wp('2%'),
-    minHeight: hp('5%'),
+    borderWidth: 1.5, // Matching the prominent look of your single dropdown
+    borderRadius: 12,
+    paddingHorizontal: wp('3.5%'),
+    minHeight: hp('5.5%'), // Slightly boosted initial target sizing
     backgroundColor: '#fff',
-    paddingVertical: hp('0.8%'),
+    paddingVertical: hp('0.5%'),
   },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+  dropdownActiveBackground: {
+    backgroundColor: '#F4F7FF', // Subtle blue hint background tint when opened
   },
-
-  icon: {
-    width: hp('2.5%'),
-    height: hp('2.5%'),
-  },
-
-  placeholderWrapper: {
-    position: 'absolute',
-    left: wp('3%'),
-    flexDirection: 'row',
-  },
-
   placeholder: {
-    fontSize: wp('3.5%'),
-    fontWeight: '500',
+    fontSize: wp('3.6%'),
+    fontWeight: '400',
   },
-
-  required: {
-    color: 'red',
-    marginLeft: 2,
+  menuContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 4, // Leaves a breathing gap right below the main input field
+    elevation: 8,
+    shadowColor: '#2F6BFF', // Clean colored blueprint shadow depth
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    overflow: 'hidden',
   },
-
-  tagsWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  itemContainer: {
+    paddingVertical: hp('1.6%'),
+    paddingHorizontal: wp('4%'),
   },
-
+  itemText: {
+    fontSize: hp('1.7%'),
+    color: '#4A4A4A',
+  },
+  selectedOption: {
+    backgroundColor: '#EBF1FF', // Matches active single-dropdown active item rows
+  },
+  selectedOptionText: {
+    color: '#2F6BFF',
+    fontWeight: '600',
+  },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -271,65 +193,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp('2.5%'),
     paddingVertical: hp('0.6%'),
     borderRadius: 20,
-    marginVertical: 3,
-    marginRight: 5,
+    marginTop: hp('0.5%'),
+    marginBottom: hp('0.5%'),
+    marginRight: wp('2%'),
   },
-
   tagText: {
     color: '#333',
     fontSize: wp('3.2%'),
     marginRight: 6,
   },
-
   removeText: {
     color: '#FF3B30',
     fontSize: wp('3.5%'),
     fontWeight: 'bold',
   },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-
-  dropdown: {
+  requiredAbsolute: {
+    color: '#FF3B30',
     position: 'absolute',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    elevation: 10,
-
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    overflow: 'hidden',
-  },
-
-  optionContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-
-  option: {
-    paddingVertical: hp('1.4%'),
-    paddingHorizontal: wp('3%'),
-    fontSize: hp('1.7%'),
-    color: '#333',
-  },
-
-  selectedOption: {
-    backgroundColor: '#F1F5FF',
-  },
-
-  selectedOptionText: {
-    color: '#2F6BFF',
-    fontWeight: '600',
+    right: wp('12%'),
+    top: hp('1.5%'),
+    zIndex: 10,
   },
 });
 

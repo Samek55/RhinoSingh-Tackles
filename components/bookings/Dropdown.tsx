@@ -1,21 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  Modal,
-  findNodeHandle,
-  UIManager
-} from 'react-native';
-
-
-import DropIcon from '../../assets/icons/contact/DropDown.png';
-
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import { Dropdown as LibDropdown } from 'react-native-element-dropdown';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+
+const DropIcon = require('../../assets/icons/contact/DropDown.png');
 
 type Props = {
   options: string[];
@@ -27,6 +15,7 @@ type Props = {
   borderColor?: string;
   value?: string;
   onOpen?: () => void;
+  onClose?: () => void; // Added onClose prop support
 };
 
 const Dropdown = ({
@@ -36,45 +25,15 @@ const Dropdown = ({
   showRequired = false,
   onSelectOption,
   dropdownType,
-  borderColor,
+  borderColor = '#E0E0E0', // Changed default to a softer grey so focus states stand out
   value,
-  onOpen
+  onOpen,
+  onClose
 }: Props) => {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedOption, setSelectedOption] = useState('');
+  // Track focus state to trigger dynamic UI/color upgrades
+  const [isFocus, setIsFocus] = useState(false);
 
-  // States to track where to draw the dropdown
-  const [coords, setCoords] = useState({ x: 0, y: 0, width: 0 });
-const containerRef = useRef<View | null>(null);
-
-const toggleDropdown = () => {
-  if (!showDropdown) {
-    onOpen?.();
-
-    setTimeout(() => {
-      const node = findNodeHandle(containerRef.current);
-      if (!node) return;
-
-      UIManager.measure(node, (x, y, width, height, pageX, pageY) => {
-        setCoords({
-          x: pageX,
-          y: pageY + height,
-          width,
-        });
-
-        setShowDropdown(true);
-      });
-    }, 50);
-  } else {
-    setShowDropdown(false);
-  }
-};
-
-  const handleSelectOption = (option: string) => {
-    setSelectedOption(option);
-    setShowDropdown(false);
-    onSelectOption(option);
-  };
+  const data = options.map((item, index) => ({ label: item, value: item, index }));
 
   const getDropIcon = () => {
     if (dropdownType === 'shift') {
@@ -83,83 +42,71 @@ const toggleDropdown = () => {
     return DropIcon;
   };
 
-  useEffect(() => {
-  setSelectedOption(value || '');
-}, [value]);
+  const renderRightIcon = () => (
+    <Image
+      source={getDropIcon()}
+      style={[
+        { width: hp('2.2%'), height: hp('2.2%') },
+        // Rotates the icon 180 degrees smoothly when open if it's an arrow
+        isFocus && dropdownType !== 'shift' && { transform: [{ rotate: '180deg' }], tintColor: '#2F6BFF' }
+      ]}
+    />
+  );
+
+  const renderItem = (item: { label: string; value: string; index: number }) => {
+    const backgroundColor = item.index % 2 === 0 ? '#fff' : '#f9f9f9';
+    const isSelected = value === item.value;
+
+    return (
+      <View style={[
+        styles.itemContainer, 
+        { backgroundColor },
+        isSelected && styles.selectedRowBackground
+      ]}>
+        <Text style={[styles.itemText, isSelected && styles.selectedRowText]}>
+          {item.label}
+        </Text>
+      </View>
+    );
+  };
 
   return (
-    <View ref={containerRef} style={styles.container}>
-      <TouchableOpacity
+    <View style={styles.container}>
+      {showRequired && !value && (
+        <Text style={styles.requiredAbsolute}>*</Text>
+      )}
+
+      <LibDropdown
         style={[
-          styles.inputContainer,
-          { borderColor: borderColor || '#000' } // 👈 override here
+          styles.dropdownStyle, 
+          { borderColor: isFocus ? '#2F6BFF' : borderColor }, // Primary glow on focus
+          isFocus && styles.dropdownActiveBackground // Soft tint when active
         ]}
-        onPress={toggleDropdown}
-        activeOpacity={0.8}
-      >
-        {selectedOption === '' && (
-          <View style={styles.placeholderWrapper}>
-            <Text style={[styles.placeholder, { color: placeholderColor }]}>
-              {placeholder}
-            </Text>
-            {showRequired && <Text style={styles.required}>*</Text>}
-          </View>
-        )}
-
-        <TextInput
-          style={styles.input}
-          value={selectedOption}
-          editable={false}
-          pointerEvents="none"
-        />
-
-        {/* LOGO RESTORED HERE */}
-        <Image
-          source={getDropIcon()}
-          style={{ width: hp('2.5%'), height: hp('2.5%') }}
-        />
-      </TouchableOpacity>
-
-      <Modal
-        visible={showDropdown}
-        transparent={true}
-        animationType="none"
-        onRequestClose={() => setShowDropdown(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowDropdown(false)}
-        >
-          <View
-            style={[
-              styles.dropdown,
-              {
-                top: coords.y - 5, // 5px gap below input
-                left: coords.x,
-                width: coords.width,
-                maxHeight: hp('26.8%'),
-              },
-            ]}
-          >
-            <ScrollView
-              bounces={false}
-              nestedScrollEnabled={true}
-              keyboardShouldPersistTaps="handled"
-            >
-              {options.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => handleSelectOption(item)}
-                  style={styles.optionContainer}
-                >
-                  <Text style={styles.option}>{item}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
+        selectedTextStyle={styles.selectedText}
+        containerStyle={styles.menuContainer}
+        activeColor="transparent" // Bypassed default gray box overlay to let custom styles shine
+        data={data}
+        maxHeight={hp('26.8%')}
+        labelField="label"
+        valueField="value"
+        placeholder={placeholder}
+        value={value}
+        onFocus={() => {
+          setIsFocus(true);
+          onOpen?.();
+        }}
+        onBlur={() => {
+          setIsFocus(false);
+          onClose?.();
+        }}
+        onChange={item => {
+          onSelectOption(item.value);
+          setIsFocus(false);
+        }}
+        renderRightIcon={renderRightIcon}
+        renderItem={renderItem}
+      />
     </View>
   );
 };
@@ -167,62 +114,61 @@ const toggleDropdown = () => {
 const styles = StyleSheet.create({
   container: {
     marginBottom: hp('2.5%'),
+    position: 'relative',
   },
-  inputContainer: {
+  dropdownStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: wp('2%'),
-    height: hp('5%'),
+    borderWidth: 1.5, // Upped border width slightly to make active states snappy
+    borderRadius: 12,
+    paddingHorizontal: wp('3.5%'),
+    height: hp('5.5%'), // Slightly taller for better touch targets and prominence
     backgroundColor: '#fff',
   },
-  placeholderWrapper: {
-    flexDirection: 'row',
-    position: 'absolute',
-    left: wp('3%'),
+  dropdownActiveBackground: {
+    backgroundColor: '#F4F7FF', // Subtle background color change when open
   },
   placeholder: {
-    fontSize: wp('3.5%'),
+    fontSize: wp('3.6%'),
+    fontWeight: '400',
+  },
+  selectedText: {
+    fontSize: wp('3.6%'),
     fontWeight: '500',
+    color: '#1A1A1A', // Darker text color for better readability
   },
-  input: {
-    flex: 1,
-    color: '#4B4B4B',
-    fontSize: wp('3.5%'),
-    fontWeight: '500',
-  },
-  modalOverlay: {
-    flex: 1,
-     backgroundColor: 'rgba(0,0,0,0.4)'
-  },
-  dropdown: {
-    position: 'absolute',
-    backgroundColor: '#fff',
-    borderRadius: 10,
+  menuContainer: {
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ccc',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    overflow: 'hidden',
-    padding:5
+    borderColor: '#E2E8F0',
+    marginTop: 4, // Cleans up layout structure so popup menu doesn't crush the input box
+    elevation: 8,
+    shadowColor: '#2F6BFF', // Colored shadow theme accents
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
   },
-  optionContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  itemContainer: {
+    paddingVertical: hp('1.6%'),
+    paddingHorizontal: wp('4%'),
   },
-  option: {
-    paddingVertical: hp('1.4%'),
-    paddingHorizontal: wp('3%'),
+  itemText: {
     fontSize: hp('1.7%'),
-    color: '#333',
+    color: '#4A4A4A',
   },
-  required: {
-    color: 'red',
-    marginLeft: 2,
+  selectedRowBackground: {
+    backgroundColor: '#EBF1FF', // Distinct selection row tracking color
+  },
+  selectedRowText: {
+    color: '#2F6BFF', // Gives selected items a brand-focused callout color
+    fontWeight: '600',
+  },
+  requiredAbsolute: {
+    color: '#FF3B30',
+    position: 'absolute',
+    right: wp('12%'),
+    top: hp('1.5%'),
+    zIndex: 10,
   },
 });
 
