@@ -135,10 +135,7 @@ export default function ServiceBookingScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        // extraScrollHeight={80}
-        keyboardOpeningTime={0}
-        enableAutomaticScroll={true}
+        enableAutomaticScroll={false}
       >
 
         <View style={styles.formContainer}>

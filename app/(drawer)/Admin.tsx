@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react'; import {
+import React, { useState } from 'react'; import {
     View,
     Text,
     Image,
@@ -49,20 +49,6 @@ export default function AdminLogin() {
        router.push('/admin/BookingHistory')
     };
 
-    const scrollRef = useRef<ScrollView>(null);
-    const scrollToForm = () => {
-        scrollRef.current?.scrollTo({
-            y: 200, // adjust if needed
-            animated: true,
-        });
-    };
-
-    const resetScroll = () => {
-        scrollRef.current?.scrollTo({
-            y: 0,
-            animated: true,
-        });
-    };
 
     return (
         <View style={{ flex: 1 }} >
@@ -72,7 +58,6 @@ export default function AdminLogin() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}>
                 <ScrollView
-                    ref={scrollRef}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled">
@@ -102,8 +87,6 @@ export default function AdminLogin() {
 
                                     setphoneNumber(formatted);
                                 }}
-                                onFocus={scrollToForm}
-                                onBlur={resetScroll}
                             />
 
                         </View>
@@ -117,20 +100,11 @@ export default function AdminLogin() {
                                 style={styles.textInput}
                                 value={password}
                                 onChangeText={(value) => {
-                                    // keep only numbers
                                     let cleaned = value.replace(/[^0-9]/g, '');
-
-                                    // limit to 10 digits
                                     cleaned = cleaned.slice(0, 5);
-
-                                    // format 3-3-4
-                                    let formatted = cleaned;
-
-                                    setPassword(formatted);
+                                    setPassword(cleaned);
                                 }}
                                 keyboardType="number-pad"
-                                onFocus={scrollToForm}
-                                onBlur={resetScroll}
                             />
                             <TouchableOpacity onPress={togglePasswordVisibility}>
                                 {passwordVisible ? (

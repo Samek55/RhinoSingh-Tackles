@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,13 @@ import {
   Image,
   Pressable,
   Alert,
-
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { area, positionAppliedFor, services } from '../../src/data/Data';
 import TextArea from '../../components/bookings/TextArea';
-
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import SubmitOverlay from '../../components/bookings/SubmitOverlay';
 import countryLogo from '../../assets/header/right.png';
 import {
   widthPercentageToDP as wp,
@@ -46,7 +47,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 
 export default function CareerScreen() {
 
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -70,6 +70,25 @@ export default function CareerScreen() {
   const [selectedPosition, setSelectedPosition] = useState<string[]>([]);
   const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
   const [selectedArea, setSelectedArea] = useState<string[]>([]);
+
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+
+  const clearAllFields = () => {
+    setName('');
+    setNumber('');
+    setEmail('');
+    setMessage('');
+    setExperience('');
+    setPolicyNumber('');
+    setEmergencyNumber('');
+    setCoverMessage('');
+    setSelectedCV([]);
+    setSelectedID([]);
+    setSelectedPosition([]);
+    setSelectedExpertise([]);
+    setSelectedArea([]);
+  };
 
 
 
@@ -170,21 +189,25 @@ export default function CareerScreen() {
       return Alert.alert('Validation Error', 'Message cannot be empty');
     }
 
-    const [idProofImages, cvImages] = await Promise.all([
-      uploadMultipleToCloudinary(
-        selectedID.map(item => ({
-          uri: item.uri,
-          fileName: item.fileName,
-        }))
-      ),
-      uploadMultipleToCloudinary(
-        selectedCV.map(item => ({
-          uri: item.uri,
-          fileName: item.fileName,
-        }))
-      ),
-    ]);
+    setOverlayStatus('loading');
+    setOverlayVisible(true);
+
     try {
+      const [idProofImages, cvImages] = await Promise.all([
+        uploadMultipleToCloudinary(
+          selectedID.map(item => ({
+            uri: item.uri,
+            fileName: item.fileName,
+          }))
+        ),
+        uploadMultipleToCloudinary(
+          selectedCV.map(item => ({
+            uri: item.uri,
+            fileName: item.fileName,
+          }))
+        ),
+      ]);
+
       const career = {
         "Full Name": name,
         "Phone": number,
@@ -197,19 +220,16 @@ export default function CareerScreen() {
         "Emergency Contact Number": emergencyNumber,
         "Cover Letter": coverMessage,
         "Message": message,
-        "Resume/CV": cvImages.map(url => ({
-          url:url,
-        })),
-        "ID Proof": idProofImages.map(url => ({
-          url:url,
-        })),
+        "Resume/CV": cvImages.map(url => ({ url })),
+        "ID Proof": idProofImages.map(url => ({ url })),
       };
 
-      //  SUCCESS ACTIONS
-      Alert.alert('Success', 'Application submitted successfully!');
+      await createCareer(career);
+      setOverlayStatus('success');
 
     } catch (error) {
       console.log(error);
+      setOverlayVisible(false);
       Alert.alert('Error', 'Submission failed. Please try again.');
     }
   };
@@ -217,10 +237,19 @@ export default function CareerScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header3 />
-      <KeyboardAwareScrollView
+      <SubmitOverlay
+        visible={overlayVisible}
+        status={overlayStatus}
+        onClear={() => { clearAllFields(); setOverlayVisible(false); }}
+        onClose={() => setOverlayVisible(false)}
+      />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+      <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
-        ref={scrollRef}
         keyboardShouldPersistTaps="handled"
       >
 
@@ -423,7 +452,8 @@ export default function CareerScreen() {
           </View>
         </View>
 
-      </KeyboardAwareScrollView >
+      </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 };

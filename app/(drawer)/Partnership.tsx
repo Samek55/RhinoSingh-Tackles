@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,14 @@ import {
   Image,
   Pressable,
   Alert,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import Dropdown from '../../components/bookings/Dropdown';
 import { businessType, city, howduhear, partnershipInterest, services } from '../../src/data/Data';
 import TextArea from '../../components/bookings/TextArea';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import SubmitOverlay from '../../components/bookings/SubmitOverlay';
 import countryLogo from '../../assets/header/right.png';
 import {
   widthPercentageToDP as wp,
@@ -45,7 +46,6 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 };
 
 export default function PartnershipScreen() {
-  const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -66,6 +66,25 @@ export default function PartnershipScreen() {
   const [selectedPartnership, setSelectedPartnership] = useState('');
   const [selectedHowHeard, setSelectedHowHeard] = useState('Google Search');
   const [selectedServicesOffered, setSelectedServicesOffered] = useState<string[]>([]);
+
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+
+  const clearAllFields = () => {
+    setName('');
+    setNumber('');
+    setEmail('');
+    setOrganizationName('');
+    setMessage('');
+    setEmployees('');
+    setSelectCompanyPhotos([]);
+    setSelectCRCphotos([]);
+    setSelectedArea('');
+    setSelectedBusinessType('');
+    setSelectedPartnership('');
+    setSelectedHowHeard('Google Search');
+    setSelectedServicesOffered([]);
+  };
 
   const handleClearForm = () => {
     Alert.alert(
@@ -162,22 +181,25 @@ export default function PartnershipScreen() {
       return Alert.alert('Validation Error', 'Message cannot be empty');
     }
 
-    // 1. Upload images first
-    const [companyImages, crcImages] = await Promise.all([
-      uploadMultipleToCloudinary(
-        selectCompanyPhotos.map(item => ({
-          uri: item.uri,
-          fileName: item.fileName,
-        }))
-      ),
-      uploadMultipleToCloudinary(
-        selectCRCphotos.map(item => ({
-          uri: item.uri,
-          fileName: item.fileName,
-        }))
-      ),
-    ]);
+    setOverlayStatus('loading');
+    setOverlayVisible(true);
+
     try {
+      const [companyImages, crcImages] = await Promise.all([
+        uploadMultipleToCloudinary(
+          selectCompanyPhotos.map(item => ({
+            uri: item.uri,
+            fileName: item.fileName,
+          }))
+        ),
+        uploadMultipleToCloudinary(
+          selectCRCphotos.map(item => ({
+            uri: item.uri,
+            fileName: item.fileName,
+          }))
+        ),
+      ]);
+
       const partnership = {
         "Full Name": name,
         "Name of Organisation": organizationName,
@@ -190,22 +212,15 @@ export default function PartnershipScreen() {
         "Partnership Interests": selectedPartnership,
         "How did you hear about us?": selectedHowHeard,
         "Message": message,
-        "Company Photos": companyImages.map(url => ({
-          url:url,
-        })),
-
-        "Company Registration Certificates": crcImages.map(url => ({
-          url:url,
-        })),
-
+        "Company Photos": companyImages.map(url => ({ url })),
+        "Company Registration Certificates": crcImages.map(url => ({ url })),
       };
 
       await createPartnership(partnership);
-
-
-      Alert.alert('Successful');
+      setOverlayStatus('success');
 
     } catch (error) {
+      setOverlayVisible(false);
       Alert.alert('Error', 'Submission failed. Please try again.');
     }
   };
@@ -215,18 +230,21 @@ export default function PartnershipScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header3 />
+      <SubmitOverlay
+        visible={overlayVisible}
+        status={overlayStatus}
+        onClear={() => { clearAllFields(); setOverlayVisible(false); }}
+        onClose={() => setOverlayVisible(false)}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-
-        <KeyboardAwareScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-          ref={scrollRef}
-          keyboardShouldPersistTaps="handled"
-        >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
 
           <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
             <Text style={styles.title}>Partnership</Text>
@@ -398,7 +416,7 @@ export default function PartnershipScreen() {
             </View>
           </View>
 
-        </KeyboardAwareScrollView >
+      </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
