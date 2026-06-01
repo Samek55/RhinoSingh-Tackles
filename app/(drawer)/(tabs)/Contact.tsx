@@ -185,7 +185,6 @@ const styles = StyleSheet.create({
 
   cardContent: {
     width: '75%',
-    marginLeft: 10,
   },
 
   cardTitle: {
