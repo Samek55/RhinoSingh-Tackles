@@ -20,7 +20,7 @@ export default function CustomDrawer(props: any) {
             source={require('../assets/images/icon.png')}
             style={styles.avatar}
           />
-          <Text style={styles.name}>ROCKET SINGH</Text>
+          <Text style={styles.name}>RocketSingh</Text>
         </View>
 
         {/* MENU */}
@@ -102,8 +102,9 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
+    color:'rgba(0, 0, 0,0.8)'
   },
 
   menu: {

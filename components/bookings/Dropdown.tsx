@@ -79,7 +79,7 @@ const Dropdown = ({
       <LibDropdown
         style={[
           styles.dropdownStyle, 
-          { borderColor: isFocus ? '#2F6BFF' : borderColor }, // Primary glow on focus
+          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor }, // Primary glow on focus
           isFocus && styles.dropdownActiveBackground // Soft tint when active
         ]}
         placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     marginTop: 4, // Cleans up layout structure so popup menu doesn't crush the input box
     elevation: 8,
-    shadowColor: '#2F6BFF', // Colored shadow theme accents
+    shadowColor: 'hsl(142, 71%, 45%)', // Colored shadow theme accents
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EBF1FF', // Distinct selection row tracking color
   },
   selectedRowText: {
-    color: '#2F6BFF', // Gives selected items a brand-focused callout color
+    color: 'hsl(142, 71%, 35%)', // Gives selected items a brand-focused callout color
     fontWeight: '600',
   },
   requiredAbsolute: {

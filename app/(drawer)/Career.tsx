@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   inputActive: {
-    borderColor: '#2F6BFF',      // Dynamic premium highlight glow color
+    borderColor: 'hsl(142, 71%, 45%)',      // Dynamic premium highlight glow color
     backgroundColor: '#F4F7FF',  // Soft backdrop selection tint color
   },
   phoneContainer: {

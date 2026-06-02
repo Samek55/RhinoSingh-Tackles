@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputActive: {
-    borderColor: '#2F6BFF',     // Global theme focus outline tint
+    borderColor: 'hsl(142, 71%, 45%)',     // Global theme focus outline tint
     backgroundColor: '#F4F7FF', // Soft backdrop selection tint color
   },
 });

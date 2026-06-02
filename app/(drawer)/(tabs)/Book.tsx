@@ -153,6 +153,7 @@ export default function ServiceBookingScreen() {
               ]}
               placeholderTextColor={'#4B4B4B'}
             />
+            
 
             {/* Phone Number */}
             <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   inputActive: {
-    borderColor: '#2F6BFF',      // Premium blue border glow
+  borderColor: 'hsl(142, 71%, 45%)',      // Premium blue border glow
     backgroundColor: '#F4F7FF',  // Premium soft blue internal background tint
   },
   phoneContainer: {

@@ -68,8 +68,8 @@ const DropdownAdd = ({
 
     return (
       <View style={[
-        styles.itemContainer, 
-        { backgroundColor }, 
+        styles.itemContainer,
+        { backgroundColor },
         isSelected && styles.selectedOption
       ]}>
         <Text style={[styles.itemText, isSelected && styles.selectedOptionText]}>
@@ -84,7 +84,7 @@ const DropdownAdd = ({
     return (
       <View style={styles.tag}>
         <Text style={styles.tagText}>{item.label}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           onPress={() => unSelect && unSelect(item)}
         >
@@ -102,15 +102,15 @@ const DropdownAdd = ({
 
       <MultiSelect
         style={[
-          styles.dropdownStyle, 
-          { borderColor: isFocus ? '#2F6BFF' : borderColor }, // Primary glow border on focus
+          styles.dropdownStyle,
+          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor }, // Primary glow border on focus
           isFocus && styles.dropdownActiveBackground // Soft tint background when active
         ]}
         placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
         containerStyle={styles.menuContainer}
         activeColor="transparent" // Disables default library highlight layer in favor of custom styles
-        visibleSelectedItem={true} 
-        inside={true} 
+        visibleSelectedItem={true}
+        inside={true}
         data={data}
         maxHeight={hp('26.8%')}
         labelField="label"
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     marginTop: 4, // Leaves a breathing gap right below the main input field
     elevation: 8,
-    shadowColor: '#2F6BFF', // Clean colored blueprint shadow depth
+    shadowColor: 'hsl(142, 71%, 45%)', // Clean colored blueprint shadow depth
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EBF1FF', // Matches active single-dropdown active item rows
   },
   selectedOptionText: {
-    color: '#2F6BFF',
+    color: 'hsl(142, 71%, 25%)',
     fontWeight: '600',
   },
   tag: {
