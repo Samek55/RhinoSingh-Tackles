@@ -1,5 +1,6 @@
 import Header2 from '@/components/Header3drawer';
-import { View, Text, Image, Dimensions, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { View, Text, Image, Dimensions, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 // Get screen dimensions
 const { width, height } = Dimensions.get('window');
 import {
@@ -16,23 +17,25 @@ const scaleFont = (size: number) => {
 const VerifiedScreen = () => {
   return (
 
-    <View style={{ flex: 1 }}>
-      <Header2 />
-      <View style={styles.container}>
-        <Text style={styles.thankYouText}>
-          Thank you! OTP verified successfully. Your booking is now confirmed!
-        </Text>
-        <View style={styles.imageContainer}>
-          <Image
-            source={require('../../assets/icons/admin/check-mark.png')}
-            style={styles.image}
-          />
-          <Text style={styles.confirmationText}>
-            OTP confirmed — booking successful!
+    <TouchableWithoutFeedback onPress={() => router.push('/Home')}>
+      <View style={{ flex: 1 }}>
+        <Header2 />
+        <View style={styles.container}>
+          <Text style={styles.thankYouText}>
+            Thank you! OTP verified successfully. Your booking is now confirmed!
           </Text>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('../../../../assets/icons/admin/check-mark.png')}
+              style={styles.image}
+            />
+            <Text style={styles.confirmationText}>
+              OTP confirmed — booking successful!
+            </Text>
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -41,6 +44,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: '4%',
     paddingVertical: '5%',
     flex: 1,
+    backgroundColor: '#fff'
   },
   thankYouText: {
     fontSize: scaleFont(20),

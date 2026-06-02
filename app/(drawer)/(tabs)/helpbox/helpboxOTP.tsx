@@ -15,8 +15,8 @@ import {
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 const { width, height } = Dimensions.get('window');
-import { createHelpbox } from '../../api/PostApiHelpbox';
-import { verifyOtp } from '../../api/otp'; //  Import your Verify OTP API function
+import { createHelpbox } from '../../../../api/PostApiHelpbox';
+import { verifyOtp } from '../../../../api/otp'; //  Import your Verify OTP API function
 import { router } from 'expo-router';
 import Header2 from '@/components/Header3drawer';
 
@@ -60,7 +60,7 @@ export default function HelpboxOTP() {
 
         // Ensure they filled out all 5 boxes
         if (enteredOtp.length < 6) {
-            Alert.alert('Validation Error', 'Please enter the complete 5-digit verification code.');
+            Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
             return;
         }
 
@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: '5%',
         paddingTop: height * 0.09,
         alignItems: 'center',
+        backgroundColor:'#fff'
     },
     thankYouText: {
         marginTop: hp('3%'),
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 2,
+        gap: 3,
     },
     input: {
         width: width * 0.12,

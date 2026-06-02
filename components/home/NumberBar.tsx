@@ -8,7 +8,7 @@ import {
   Text,
   Alert
 } from 'react-native';
-
+import SubmitOverlay from '../../components/bookings/SubmitOverlay';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -18,7 +18,8 @@ import { router } from 'expo-router';
 
 const NumberBar = () => {
   const [phone, setPhone] = useState('');
-
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
   const fontSize = wp('4.5%');
 
   // always derive clean value inside render
@@ -31,31 +32,41 @@ const NumberBar = () => {
     }
 
     try {
-      // convert to E.164 format (IMPORTANT for Twilio)
+      setOverlayStatus('loading');
+      setOverlayVisible(true);
+
       const formattedPhone = '+977' + cleanPhone;
 
       const res = await sendOtp(formattedPhone);
 
       if (!res?.success) {
+        setOverlayVisible(false);
         Alert.alert('Error', 'Failed to send OTP');
         return;
       }
 
-      // navigate only after OTP sent
+      // 🚀 go immediately (NO success screen)
+      setOverlayVisible(false);
+
       router.push({
         pathname: '/helpbox/helpboxOTP',
         params: { phone: formattedPhone },
       });
 
     } catch (error) {
-      console.log(error);
+      setOverlayVisible(false);
       Alert.alert('Error', 'Something went wrong');
     }
   };
-
+  
   return (
     <View style={[styles.container, { width: wp('75%') }]}>
-
+      <SubmitOverlay
+        visible={overlayVisible}
+        status={overlayStatus}
+        onClose={() => setOverlayVisible(false)}
+        onClear={() => setOverlayVisible(false)}
+      />
       {/* Left side input */}
       <View style={styles.phoneContainer}>
         <Image

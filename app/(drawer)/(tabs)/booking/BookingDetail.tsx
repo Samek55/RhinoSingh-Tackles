@@ -15,6 +15,8 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import { useState } from "react";
+import SubmitOverlay from "@/components/bookings/SubmitOverlay";
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,6 +28,8 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 );
 
 export default function BookingDetails() {
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
   const {
     name,
     number,
@@ -40,22 +44,31 @@ export default function BookingDetails() {
 
   const formattedDate = date
     ? new Date(date as string).toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
     : '';
 
   const handleSubmit = async () => {
     const formattedPhone = '+977' + number;
 
-    const res = await sendOtp(formattedPhone);
-
-    if (!res?.success) {
-      Alert.alert('Error', 'Failed to send OTP');
-      return;
-    }
     try {
+      // 🔄 show loading
+      setOverlayStatus('loading');
+      setOverlayVisible(true);
+
+      const res = await sendOtp(formattedPhone);
+
+      if (!res?.success) {
+        setOverlayVisible(false);
+        Alert.alert('Error', 'Failed to send OTP');
+        return;
+      }
+
+      // 🚀 hide loader before navigation
+      setOverlayVisible(false);
+
       router.push({
         pathname: '/booking/BookingOtp',
         params: {
@@ -70,15 +83,22 @@ export default function BookingDetails() {
           date,
         },
       });
+
     } catch (error) {
+      setOverlayVisible(false);
       console.log(error);
       Alert.alert('Error', 'Something went wrong');
     }
   };
-
   return (
     <View style={styles.screen}>
       <Header2 />
+      <SubmitOverlay
+              visible={overlayVisible}
+              status={overlayStatus}
+              onClose={() => setOverlayVisible(false)}
+              onClear={() => setOverlayVisible(false)}
+            />
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}

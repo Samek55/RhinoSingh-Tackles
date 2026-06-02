@@ -22,6 +22,23 @@ export default function TabsLayout() {
       />
 
       <Tabs.Screen
+        name="helpbox/helpboxOTP"
+        options={{
+          headerShown: false,
+          href: null,
+        }}
+      />
+
+      <Tabs.Screen
+        name="helpbox/otpVerifiedHB"
+        options={{
+          headerShown: false,
+          href: null,
+        }}
+      />
+
+
+      <Tabs.Screen
         name="Service"
         options={{
           tabBarIcon: ({ color, size }) => (
@@ -116,13 +133,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   floatingButton: {
-   
+
 
     justifyContent: 'center',
     alignItems: 'center',
 
     top: -15,
     boxShadow: '0px 0px 0px 3px #ddd',
-    borderRadius:400
+    borderRadius: 400
   },
 })

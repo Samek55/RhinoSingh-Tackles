@@ -6,6 +6,8 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -16,6 +18,7 @@ import {
 import base from '../../../../api/airtable';
 import { verifyOtp } from '../../../../api/otp';
 import { router, useLocalSearchParams } from 'expo-router';
+import Header2 from '@/components/Header2';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
@@ -25,25 +28,25 @@ const scaleFont = (size: number) => {
   return (size * width) / guidelineBaseWidth;
 };
 
-export default function BookingOtp () {
-  const [otp, setOtp] = useState(['', '', '', '', '','']); // Manage OTP state
+export default function BookingOtp() {
+  const [otp, setOtp] = useState(['', '', '', '', '', '']); // Manage OTP state
   const inputRefs = useRef<Array<TextInput | null>>([]);
-   const {
-     name,
-     number,
-     selectedService,
-     selectedShift,
-     selectedArea,
-     selectedPriority,
-     selectedBudget,
-     message,
-     date,
-   } = useLocalSearchParams();
+  const {
+    name,
+    number,
+    selectedService,
+    selectedShift,
+    selectedArea,
+    selectedPriority,
+    selectedBudget,
+    message,
+    date,
+  } = useLocalSearchParams();
 
   // Clear OTP whenever the screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      setOtp(['', '', '', '', '','']); // Reset OTP on screen focus
+      setOtp(['', '', '', '', '', '']); // Reset OTP on screen focus
     }, []),
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,7 +79,7 @@ export default function BookingOtp () {
 
     // Ensure they filled out all 5 boxes
     if (enteredOtp.length < 6) {
-      Alert.alert('Validation Error', 'Please enter the complete 5-digit verification code.');
+      Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
       return;
     }
 
@@ -133,7 +136,7 @@ export default function BookingOtp () {
       await createBooking(booking);
 
 
-    router.push('/booking/BookingVerify')
+      router.push('/booking/BookingVerify')
 
     } catch (error) {
       console.log("BOOKING ERROR:", error);
@@ -144,41 +147,51 @@ export default function BookingOtp () {
   };
 
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
+      <View style={{ flex: 1 }} >
+        <Header2 />
+        <View style={styles.container}>
+          <Text style={styles.thankYouText}>
+            Phone Verification
+          </Text>
 
-      <View style={styles.container}>
-        <Text style={styles.thankYouText}>
-          Phone Verification
-        </Text>
+          <Text style={styles.bookingText}>
+            Booking request received. Awaiting confirmation!
+          </Text>
 
-        <Text style={styles.bookingText}>
-          Booking request received. Awaiting confirmation!
-        </Text>
+          <Text style={styles.otpPromptText}>Enter your OTP to continue.</Text>
 
-        <Text style={styles.otpPromptText}>Enter your OTP to continue.</Text>
+          <View style={styles.otpBox}>
+            {otp.map((_, index) => (
+              <TextInput
+                key={index}
+                ref={ref => {
+                  inputRefs.current[index] = ref;
+                }}
+                style={styles.input}
+                keyboardType="numeric"
+                maxLength={1}
+                value={otp[index]}
+                onChangeText={text => handleChange(text, index)}
+                onKeyPress={event => handleKeyPress(event, index)}
+              />
+            ))}
+          </View>
 
-        <View style={styles.otpBox}>
-          {otp.map((_, index) => (
-            <TextInput
-              key={index}
-              ref={ref => {
-                inputRefs.current[index] = ref;
-              }}
-              style={styles.input}
-              keyboardType="numeric"
-              maxLength={1}
-              value={otp[index]}
-              onChangeText={text => handleChange(text, index)}
-              onKeyPress={event => handleKeyPress(event, index)}
-            />
-          ))}
+          <Text style={styles.resendcode}>{`Didn't get code?`} <Text style={{ color: 'blue' }}>Resend Code</Text></Text>
+
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && { opacity: 0.6 }]}
+            onPress={handleNavigate}
+            disabled={isSubmitting}
+          >
+            <Text style={styles.submitButtonText}>
+              {isSubmitting ? 'Verifying...' : 'Submit'}
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        <Text style={styles.resendcode}><Text style={{ color: 'blue' }}>Resend Code</Text></Text>
-
-        <TouchableOpacity style={styles.submitButton} onPress={handleNavigate}>
-          <Text style={styles.submitButtonText}>Verify</Text>
-        </TouchableOpacity>
-      </View>
+      </View >
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -188,6 +201,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: '5%',
     paddingTop: height * 0.09, // Adjust top padding based on screen size
     alignItems: 'center',
+    backgroundColor: '#fff'
   },
   thankYouText: {
     fontSize: scaleFont(27),
@@ -203,16 +217,16 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   otpPromptText: {
-    fontSize: scaleFont(18.5),
+    fontSize: scaleFont(16.5),
     marginBottom: height * 0.04, // Adjust margin-bottom for larger screens
-    fontWeight: '500',
+    fontWeight: '400',
     color: 'green',
   },
   otpBox: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: 3,
   },
   input: {
     width: width * 0.12, // Dynamic width for better scalability
@@ -232,11 +246,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     textAlign: 'center',
     lineHeight: 22,
+    fontSize: hp('1.5%')
   },
   submitButton: {
     backgroundColor: 'green',
     height: height * 0.05,
-    width: '60%', // Adjust width based on screen size
+    width: '80%', // Adjust width based on screen size
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 100,

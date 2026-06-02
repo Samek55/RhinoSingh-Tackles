@@ -9,6 +9,7 @@ import {
   Platform,
   Dimensions,
   Image,
+  Pressable,
 } from 'react-native';
 import Dropdown from '../../../components/bookings/Dropdown';
 import { area, services, shifts, budget, priority } from '../../../src/data/Data';
@@ -24,6 +25,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
+import ClearFormIcon from '../../../assets/icons/booking/clear.png'
 
 const { width, height } = Dimensions.get('window');
 
@@ -59,6 +61,38 @@ export default function ServiceBookingScreen() {
 
   // New tracking states for handling matching active design glows
   const [activeInput, setActiveInput] = useState<string | null>(null);
+
+  const clearAllFields = () => {
+    setName('');
+    setNumber('');
+    setSelectedService('');
+    setSelectedShift('');
+    setDate(null);
+    setSelectedArea('')
+    setSelectedPriority('')
+    setSelectedBudget('')
+    setMessage('');
+    setActiveInput(null);
+  };
+
+  const handleClearForm = () => {
+    Alert.alert(
+      'Clear Form',
+      'Are you sure you want to clear all fields?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Yes, Clear',
+          style: 'destructive',
+          onPress: clearAllFields,
+        },
+      ]
+    );
+  };
+
 
   const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
@@ -193,6 +227,7 @@ export default function ServiceBookingScreen() {
             {/* Select Service */}
             <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
+            value={selectedService}
               options={services}
               placeholder="Select Services"
               placeholderColor="#4B4B4B"
@@ -218,7 +253,7 @@ export default function ServiceBookingScreen() {
                   style={[
                     styles.datePickerText,
                     {
-                      color: date ? '#1A1A1A' : '#4B4B4B', 
+                      color: date ? '#1A1A1A' : '#4B4B4B',
                     },
                   ]}
                 >
@@ -263,6 +298,7 @@ export default function ServiceBookingScreen() {
               dropdownType="shift"
               onOpen={() => setActiveInput('shift')}
               onClose={() => setActiveInput(null)}
+              value={selectedShift}
             />
 
             {/* Your Location */}
@@ -274,6 +310,7 @@ export default function ServiceBookingScreen() {
               onSelectOption={setSelectedArea}
               onOpen={() => setActiveInput('location')}
               onClose={() => setActiveInput(null)}
+              value={selectedArea}
             />
 
             {/* Priority */}
@@ -325,6 +362,11 @@ export default function ServiceBookingScreen() {
                 SUBMIT
               </Button>
             </View>
+            <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
+              <Image source={ClearFormIcon} style={styles.clearIcon} />
+              <Text style={styles.buttonClear}>Clear form</Text>
+            </Pressable>
+
           </View>
         </View>
       </KeyboardAwareScrollView>
@@ -431,11 +473,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     borderRadius: 10,
-    marginTop: 20,
+    marginTop: 25,
   },
   text: {
     color: '#fff',
     fontSize: width * 0.04,
     fontWeight: '600',
+  },
+//clear btn
+  buttonClearFlex: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop:20,
+    paddingRight:10,
+    justifyContent:'center'
+  },
+
+  buttonClear: {
+    color: '#0a7de1',
+    fontSize: width * 0.038,
+    fontWeight: '500',
+  },
+  clearIcon: {
+    width: wp('6%'),
+    height: hp('2.5%'),
+    resizeMode: 'contain',
+    marginRight: 2,
   },
 });
