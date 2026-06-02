@@ -13,7 +13,6 @@ import {
 import Email from '../../../assets/icons/contact/email_1.png';
 import Location from '../../../assets/icons/contact/location-pin.png';
 import Website from '../../../assets/icons/contact/globe.png';
-import MapView, { Marker } from 'react-native-maps';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -46,22 +45,11 @@ export default function ContactScreen() {
 
           {/* MAP */}
           <View style={styles.imageContainer}>
-            <MapView
-              style={{ flex: 1 }}
-              initialRegion={{
-                latitude: 13.0827,
-                longitude: 80.2707,
-                latitudeDelta: 0.05,
-                longitudeDelta: 0.05,
-              }}
-            >
-              <Marker
-                coordinate={{
-                  latitude: 13.0827,
-                  longitude: 80.2707,
-                }}
-              />
-            </MapView>
+            <Image
+              source={require('../../../assets/images/chennai.jpg')}
+              style={styles.mapImage}
+              resizeMode="cover"
+            />
           </View>
 
           {/* COMPANY */}
