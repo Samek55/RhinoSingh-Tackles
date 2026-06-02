@@ -1,4 +1,4 @@
-package com.pracas.RocketSingh
+package com.pracas.rocketsingh
 
 import android.app.Application
 import android.content.res.Configuration

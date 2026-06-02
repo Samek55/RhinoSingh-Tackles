@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>rocketsingh</string>
-          <string>com.pracas.RocketSingh</string>
+          <string>com.pracas.rocketsingh</string>
         </array>
       </dict>
     </array>
