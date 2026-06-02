@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     fontSize: wp('3.6%'),
-    fontWeight: '400',
+    fontWeight: '500',
   },
   menuContainer: {
     borderRadius: 12,
