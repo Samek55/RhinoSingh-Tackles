@@ -98,7 +98,7 @@ export default function ServiceScreen() {
                   style={styles.headerSubtitle}
                   numberOfLines={2}
                 >
-                  Professional & Reliable Services in Chennai
+                  On Demand Home Service in Chennai
                 </Text>
               </View>
             </ImageBackground>

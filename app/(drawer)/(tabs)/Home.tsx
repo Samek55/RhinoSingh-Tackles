@@ -53,10 +53,10 @@ export default function HomeScreen() {
           {/* Content */}
           <View style={styles.content}>
 
-            <Text style={styles.title}>ROCKETSINGH | Fix it Today</Text>
+            <Text style={styles.title}>RocketSingh | SuperFast Service</Text>
 
             <Text style={styles.subtitle}>
-              Professional Handyman Services in Chennai
+              On Demand Home Service in Chennai
             </Text>
 
             {/* Top Services */}

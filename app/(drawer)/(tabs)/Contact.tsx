@@ -25,11 +25,11 @@ const ICON_SIZE = hp('3.3%');
 export default function ContactScreen() {
 
   const openWebsite = useCallback(() => {
-    Linking.openURL('https://tackles.pro/');
+    Linking.openURL('https://rocketsingh.app/');
   }, []);
 
   const handleEmailPress = useCallback(() => {
-    Linking.openURL('mailto:support@tackles.pro');
+    Linking.openURL('mailto:support@rocketsingh.com');
   }, []);
 
   return (
@@ -67,7 +67,7 @@ export default function ContactScreen() {
           {/* COMPANY */}
           <Text style={styles.companyName}>TACKLES Pro</Text>
           <Text style={styles.companySubtitle}>
-            Professional Handyman Services in Chennai
+            Professional Handyman Service in Chennai
           </Text>
 
           {/* CARDS */}
@@ -91,7 +91,7 @@ export default function ContactScreen() {
                 <Text style={styles.cardTitle}>Email us</Text>
                 <TouchableOpacity onPress={handleEmailPress}>
                   <Text style={styles.cardSubtitle}>
-                    support@tackles.pro
+                    support@rocketsingh.com
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -104,7 +104,7 @@ export default function ContactScreen() {
                 <Text style={styles.cardTitle}>Website</Text>
                 <TouchableOpacity onPress={openWebsite}>
                   <Text style={styles.cardSubtitle}>
-                    tackles.pro
+                    rocketsingh.app
                   </Text>
                 </TouchableOpacity>
               </View>

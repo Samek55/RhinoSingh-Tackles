@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   datePickerText: {
     fontSize: width * 0.035,
     fontWeight: '500',
-    color: '#1A1A1A',
+    color: '#4a4a4a',
   },
   label: {
     marginBottom: 6,

@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E2E8F0',
     marginTop: 4, // Leaves a breathing gap right below the main input field
     elevation: 8,

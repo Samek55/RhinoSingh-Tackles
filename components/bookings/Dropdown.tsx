@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#E2E8F0',
     marginTop: 4, // Cleans up layout structure so popup menu doesn't crush the input box
     elevation: 8,
@@ -147,6 +147,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
+    overflow:'hidden',
   },
   itemContainer: {
     paddingVertical: hp('1.6%'),
