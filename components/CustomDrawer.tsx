@@ -7,9 +7,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 
-export default function CustomDrawer(props: any) {
+export default function CustomDrawer() {
+  const pathname = usePathname();
+
+  const isActive = (route: string) => pathname === route;
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.card}>
@@ -26,22 +30,79 @@ export default function CustomDrawer(props: any) {
         {/* MENU */}
         <View style={styles.menu}>
 
-          <MenuItem icon="home-outline" label="Home" onPress={() => router.push('/Home')} />
-          <MenuItem icon="bag-add-outline" label="Services" onPress={() => router.push('/Service')} />
-          <MenuItem icon="card-outline" label="Booking" onPress={() => router.push('/Book')} />
-          <MenuItem icon="chatbubble-ellipses-outline" label="About Us" onPress={() => router.push('/About')} />
-          <MenuItem icon="call-outline" label="Contact Us" onPress={() => router.push('/Contact')} />
+          <MenuItem
+            icon="home-outline"
+            label="Home"
+            active={isActive('/Home')}
+            onPress={() => router.push('/Home')}
+          />
+
+          <MenuItem
+            icon="construct-outline"
+            label="Services"
+            active={isActive('/Service')}
+            onPress={() => router.push('/Service')}
+          />
+
+          <MenuItem
+            icon="card-outline"
+            label="Booking"
+            active={isActive('/Book')}
+            onPress={() => router.push('/Book')}
+          />
+
+          <MenuItem
+            icon="chatbubble-ellipses-outline"
+            label="About Us"
+            active={isActive('/About')}
+            onPress={() => router.push('/About')}
+          />
+
+          <MenuItem
+            icon="call-outline"
+            label="Contact Us"
+            active={isActive('/Contact')}
+            onPress={() => router.push('/Contact')}
+          />
 
           <View style={styles.divider} />
 
-          <MenuItem icon="people-outline" label="Partnership" onPress={() => router.push('/Partnership')} />
-          <MenuItem icon="briefcase-outline" label="Career" onPress={() => router.push('/Career')} />
-          <MenuItem icon="help-circle-outline" label="FAQs" onPress={() => router.push('/FAQs')} />
-          <MenuItem icon="book-outline" label="Glossary" onPress={() => router.push('/Glossary')} />
+          <MenuItem
+            icon="people-outline"
+            label="Partnership"
+            active={isActive('/Partnership')}
+            onPress={() => router.push('/Partnership')}
+          />
+
+          <MenuItem
+            icon="briefcase-outline"
+            label="Career"
+            active={isActive('/Career')}
+            onPress={() => router.push('/Career')}
+          />
+
+          <MenuItem
+            icon="help-circle-outline"
+            label="FAQs"
+            active={isActive('/FAQs')}
+            onPress={() => router.push('/FAQs')}
+          />
+
+          <MenuItem
+            icon="book-outline"
+            label="Glossary"
+            active={isActive('/Glossary')}
+            onPress={() => router.push('/Glossary')}
+          />
 
           <View style={styles.divider} />
 
-          <MenuItem icon="shield-checkmark-outline" label="Admin" onPress={() => router.push('/Admin')} />
+          <MenuItem
+            icon="shield-checkmark-outline"
+            label="Admin"
+            active={isActive('/Admin')}
+            onPress={() => router.push('/Admin')}
+          />
 
         </View>
 
@@ -51,15 +112,25 @@ export default function CustomDrawer(props: any) {
 }
 
 /* MENU ITEM */
-function MenuItem({ icon, label, onPress }: any) {
+function MenuItem({ icon, label, onPress, active }: any) {
   return (
-    <TouchableOpacity style={styles.item} onPress={onPress}>
-      <Ionicons name={icon} size={20} color="#333" />
-      <Text style={styles.label}>{label}</Text>
+    <TouchableOpacity
+      style={[styles.item, active && styles.itemActive]}
+      onPress={onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={20}
+        color={active ? '#16A34A' : '#333'}
+      />
+      <Text style={[styles.label, active && styles.labelActive]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
 
+/* STYLES */
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
@@ -72,16 +143,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 30,
     overflow: 'hidden',
-
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 15,
     shadowOffset: { width: 0, height: 5 },
-
     elevation: 12,
-
-    // 🔥 IMPORTANT: ensure items distribute nicely
-    justifyContent: 'flex-start',
   },
 
   profileBox: {
@@ -89,9 +155,9 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     borderRadius: 20,
-    marginTop:15,
-    marginLeft:15,
-    marginRight:15
+    marginTop: 15,
+    marginLeft: 15,
+    marginRight: 15,
   },
 
   avatar: {
@@ -104,13 +170,13 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '700',
-    color:'rgba(0, 0, 0,0.8)'
+    color: 'rgba(0, 0, 0,0.8)',
   },
 
   menu: {
     flex: 1,
     paddingHorizontal: 15,
-    justifyContent:'center',
+    justifyContent: 'center',
   },
 
   item: {
@@ -119,12 +185,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 12,
+    marginBottom: 5,
+  },
+
+  itemActive: {
+    backgroundColor: '#DCFCE7', // light green
   },
 
   label: {
     marginLeft: 15,
     fontSize: 14,
     fontWeight: '500',
+    color: '#333',
+  },
+
+  labelActive: {
+    color: '#16A34A',
+    fontWeight: '700',
   },
 
   divider: {

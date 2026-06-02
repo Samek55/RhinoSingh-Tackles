@@ -153,7 +153,7 @@ export default function ServiceBookingScreen() {
               ]}
               placeholderTextColor={'#4B4B4B'}
             />
-            
+
 
             {/* Phone Number */}
             <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
@@ -204,25 +204,32 @@ export default function ServiceBookingScreen() {
             {/* Choose Date */}
             <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
             <View style={{ marginBottom: height * 0.025 }}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setShow(true);
                   setActiveInput('date');
-                }} 
+                }}
                 style={[
                   styles.datePicker,
                   activeInput === 'date' && styles.inputActive
                 ]}
               >
-                <Text style={[styles.datePickerText, { fontSize: width * 0.035 }]}>
+                <Text
+                  style={[
+                    styles.datePickerText,
+                    {
+                      color: date ? '#1A1A1A' : '#4B4B4B', 
+                    },
+                  ]}
+                >
                   {date ? date.toDateString() : 'Pick a Date'}
                 </Text>
-                <Image 
-                  source={CalenderIcon} 
+                <Image
+                  source={CalenderIcon}
                   style={[
                     { height: 21, width: 21 },
                     activeInput === 'date' && { tintColor: '#2F6BFF' }
-                  ]} 
+                  ]}
                 />
               </TouchableOpacity>
 
@@ -363,7 +370,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   inputActive: {
-  borderColor: 'hsl(142, 71%, 45%)',      // Premium blue border glow
+    borderColor: 'hsl(142, 71%, 45%)',      // Premium blue border glow
     backgroundColor: '#F4F7FF',  // Premium soft blue internal background tint
   },
   phoneContainer: {
