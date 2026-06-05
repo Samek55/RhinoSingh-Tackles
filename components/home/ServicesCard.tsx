@@ -5,7 +5,6 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import React from 'react';
 
 import {
   widthPercentageToDP as wp,
@@ -24,7 +23,7 @@ const ServicesCard = ({ title, image, style, onPress }: Props) => {
     <View style={styles.wrapper}>
       <Pressable style={styles.card} onPress={onPress}>
         <Image source={image} style={[styles.image, style]} />
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title} allowFontScaling={false}>{title}</Text>
       </Pressable>
     </View>
   );

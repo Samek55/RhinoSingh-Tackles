@@ -89,7 +89,7 @@ export default function ServiceScreen() {
                 <Text
                   style={styles.headerTitle}
                   numberOfLines={2}
-                  adjustsFontSizeToFit
+                  allowFontScaling={false}
                 >
                   Painting
                 </Text>
