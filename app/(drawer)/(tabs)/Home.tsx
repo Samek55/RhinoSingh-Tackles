@@ -111,22 +111,22 @@ export default function HomeScreen() {
             <View style={styles.row2}>
               <ProfessionalCard
                 image={require('../../../assets/topProfessionals/1_jamesWalker.jpg')}
-                title="James"
+                title="Aravind"
                 subtitle=""
               />
               <ProfessionalCard
                 image={require('../../../assets/topProfessionals/2_michaelTurner.jpg')}
-                title="Michael"
+                title="Anil"
                 subtitle=""
               />
               <ProfessionalCard
                 image={require('../../../assets/topProfessionals/3_matthewKing.jpg')}
-                title="Matthew"
+                title="Vallam"
                 subtitle=""
               />
               <ProfessionalCard
                 image={require('../../../assets/topProfessionals/5_joshua_adams.jpg')}
-                title="Joshua"
+                title="Subra"
                 subtitle=""
               />
             </View>
@@ -206,8 +206,10 @@ const styles = StyleSheet.create({
   },
 
   numberBarContainer: {
-    alignItems: 'center',
-    marginTop: hp('0.5%'),
+    marginTop: hp('2%'),
+    marginBottom: hp('1%'),
+    paddingHorizontal: wp('8%'),  // ✅ more padding = narrower bar
+    alignSelf: 'stretch',
   },
 });
 

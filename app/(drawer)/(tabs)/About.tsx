@@ -73,19 +73,19 @@ export default function AboutScreen() {
               <View style={styles.row}>
                 <OurTeamCard
                   image={require('../../../assets/topProfessionals/1_jamesWalker.jpg')}
-                  title="James Walker"
+                   title="Aravind Srinivas"
                   suBTitle="Deep Cleaning Specialist"
                 />
 
                 <OurTeamCard
                   image={require('../../../assets/topProfessionals/2_michaelTurner.jpg')}
-                  title="Michael Turner"
+                   title="Anil Kumar"
                   suBTitle="Pressure Washing Technician"
                 />
 
                 <OurTeamCard
                   image={require('../../../assets/topProfessionals/3_matthewKing.jpg')}
-                  title="Matthew King"
+                  title="Vallam Sundar"
                   suBTitle="Smart Home Installation Engineer"
                 />
               </View>

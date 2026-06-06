@@ -114,28 +114,28 @@ const NumberBar = () => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: hp('4.5%'),
-    borderRadius: 15,
-    borderWidth: 1,
+    height: hp('5%'),
+    borderRadius: 25,          // more pill-shaped
+    borderWidth: 1.5,
     borderColor: '#0E61CD',
-    justifyContent: 'space-between',
     overflow: 'hidden',
     backgroundColor: '#fff',
-
+    width: '100%',
   },
 
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    paddingHorizontal: wp('2%'),
+    paddingHorizontal: wp('3%'),
   },
 
   icon: {
-    height: hp('4%'),
-    width: wp('7%'),
+    height: hp('3%'),
+    width: wp('5.5%'),
     marginRight: wp('2%'),
   },
+
   inputContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -145,20 +145,22 @@ const styles = StyleSheet.create({
     width: '100%',
     color: '#4B4B4B',
     fontWeight: '600',
-    textAlign: 'center',
+    textAlign: 'center',         // left align looks cleaner
     includeFontPadding: false,
+    fontSize: wp('3.8%'),
   },
 
   helpButton: {
     backgroundColor: '#0E61CD',
-    width: wp('20%'),
+    paddingHorizontal: wp('4%'), // padding instead of fixed width
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   helpText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: wp('3.2%'),
+    fontSize: wp('3.5%'),
   },
 });
 
