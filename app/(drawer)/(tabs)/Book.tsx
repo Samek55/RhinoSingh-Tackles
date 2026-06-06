@@ -345,8 +345,6 @@ export default function ServiceBookingScreen() {
               placeholder=""
               placeholderTextColor="#4B4B4B"
               maxHeight={160}
-              borderColor="#3CB371"
-              // Pass layout handlers down to custom textareas if built to handle them
               onFocus={() => setActiveInput('message')}
               onBlur={() => setActiveInput(null)}
               style={activeInput === 'message' ? styles.inputActive : undefined}
