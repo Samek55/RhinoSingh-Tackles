@@ -10,7 +10,11 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: 'green',
         tabBarInactiveTintColor: 'gray',
+        tabBarStyle: {
+          backgroundColor: 'hsl(0, 0%, 95%)',
+        },
       }}
+      
     >
       <Tabs.Screen
         name="Home"
