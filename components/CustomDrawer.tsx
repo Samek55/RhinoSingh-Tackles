@@ -5,9 +5,12 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 
 export default function CustomDrawer(_props: DrawerContentComponentProps) {
@@ -16,7 +19,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const isActive = (route: string) => pathname === route;
 
   return (
-    <View style={styles.wrapper}>
+    <SafeAreaView style={styles.wrapper} edges={['top', 'bottom']}>
       <View style={styles.card}>
 
         {/* PROFILE */}
@@ -29,8 +32,10 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
         </View>
 
         {/* MENU */}
-        <View style={styles.menu}>
-
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.menu}
+        >
           <MenuItem
             icon="home-outline"
             label="Home"
@@ -104,11 +109,10 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             active={isActive('/Admin')}
             onPress={() => router.push('/Admin')}
           />
-
-        </View>
+        </ScrollView>
 
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -135,30 +139,26 @@ function MenuItem({ icon, label, onPress, active }: any) {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    paddingVertical: 70,
-    paddingHorizontal: 10,
+    backgroundColor: 'transparent',
   },
 
   card: {
     flex: 1,
     backgroundColor: '#fff',
     borderRadius: 30,
+    margin: 10,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 12,
+    elevation: 10,
   },
 
   profileBox: {
     backgroundColor: '#F6F6F6',
-    padding: 15,
+    paddingVertical: 20,
     alignItems: 'center',
-    borderRadius: 20,
+    marginHorizontal: 15,
     marginTop: 15,
-    marginLeft: 15,
-    marginRight: 15,
+    borderRadius: 20,
+     marginBottom: 15,
   },
 
   avatar: {
@@ -175,9 +175,8 @@ const styles = StyleSheet.create({
   },
 
   menu: {
-    flex: 1,
     paddingHorizontal: 15,
-    justifyContent: 'center',
+    paddingVertical: 10,
   },
 
   item: {
@@ -190,7 +189,7 @@ const styles = StyleSheet.create({
   },
 
   itemActive: {
-    backgroundColor: '#DCFCE7', // light green
+    backgroundColor: '#DCFCE7',
   },
 
   label: {

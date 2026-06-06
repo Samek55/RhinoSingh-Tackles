@@ -1,4 +1,4 @@
-import { TouchableOpacity, StyleSheet, View, Image } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Image, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
@@ -7,52 +7,71 @@ export default function Header1() {
   const navigation = useNavigation<any>();
 
   return (
-    <View>
-      <Image
-        source={require('../assets/images/icon.png')}
-        style={styles.leftIcon}
-      />
-      <Image
-        source={require('../assets/header/right.png')}
-        style={styles.rightIcon}
-      />
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() =>
-          navigation.getParent()?.dispatch(DrawerActions.openDrawer())
-        }
-      >
-        <Ionicons name="menu" size={28} color='#fff'/>
-      </TouchableOpacity>
+    <View style={styles.wrapper}>
+
+      {/* LEFT ICON */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <Image
+          source={require('../assets/images/icon.png')}
+          style={styles.leftIcon}
+        />
+        <Text style={{
+          fontSize: 18,
+          fontWeight: 'bold',
+          color: '#064E3B',
+        }}>Rocket Singh</Text>
+      </View>
+
+      {/* RIGHT ICON */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Image
+          source={require('../assets/header/right.png')}
+          style={styles.rightIcon}
+        />
+
+        {/* MENU BUTTON */}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() =>
+            navigation.getParent()?.dispatch(DrawerActions.openDrawer())
+          }
+        >
+          <Ionicons name="menu" size={23} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    top: 41.5,
+    left: 0,
+    right: 0,
+    height: 50,
+    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+  },
 
   button: {
-    position: 'absolute',
-    top: 35,
-    right: 30,
-    zIndex: 10,
+    borderRadius: 100,
+    backgroundColor: '#008000',
+    padding: 3.6,
   },
 
   leftIcon: {
-    position: 'absolute',
-    top: 35,
-    left: 20,
-    zIndex: 10,
-    width: 33,
-    height: 33,
-    resizeMode: 'contain'
+    width: 34,
+    height: 34,
+    resizeMode: 'contain',
   },
-   rightIcon: {
-    position: 'absolute',
-    top: 35,
-    right: 70,
-    zIndex: 10,
+
+  rightIcon: {
     width: 30,
     height: 30,
-    resizeMode: 'contain'
+    resizeMode: 'contain',
   },
 });

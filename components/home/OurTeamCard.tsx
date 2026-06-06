@@ -37,6 +37,8 @@ const styles = StyleSheet.create({
     fontSize: wp('3.5%'), // Responsive font size
     color: '#000',
     textAlign: 'center',
+        width:'80%',
+
   },
   suBTitle:{
     marginTop: hp('0.1%'),

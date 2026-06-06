@@ -2,6 +2,10 @@ import { Drawer } from 'expo-router/drawer';
 import { Ionicons } from '@expo/vector-icons';
 import CustomDrawer from '@/components/CustomDrawer';
 
+import { Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
+
 export default function DrawerLayout() {
   return (
     <Drawer
@@ -12,8 +16,8 @@ export default function DrawerLayout() {
         drawerType: 'front',
 
         drawerStyle: {
-          width: 320,
-          backgroundColor: 'transparent', 
+          width: width * 0.8, // 80% of screen width
+          backgroundColor: 'transparent',
         },
 
         overlayColor: 'rgba(0,0,0,0.5)',

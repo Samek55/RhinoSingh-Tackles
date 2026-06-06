@@ -275,10 +275,15 @@ export default function CareerScreen() {
                 cleaned = cleaned.slice(0, 10);
                 let formatted = cleaned;
 
-                if (cleaned.length > 3) {
+                if (cleaned.length > 3 && cleaned.length <= 6) {
                   formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                } else {
-                  formatted = cleaned;
+                } else if (cleaned.length > 6) {
+                  formatted =
+                    cleaned.slice(0, 3) +
+                    ' ' +
+                    cleaned.slice(3, 6) +
+                    ' ' +
+                    cleaned.slice(6);
                 }
                 setNumber(formatted);
               }}
@@ -405,10 +410,15 @@ export default function CareerScreen() {
                 cleaned = cleaned.slice(0, 10);
                 let formatted = cleaned;
 
-                if (cleaned.length > 3) {
+                if (cleaned.length > 3 && cleaned.length <= 6) {
                   formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                } else {
-                  formatted = cleaned;
+                } else if (cleaned.length > 6) {
+                  formatted =
+                    cleaned.slice(0, 3) +
+                    ' ' +
+                    cleaned.slice(3, 6) +
+                    ' ' +
+                    cleaned.slice(6);
                 }
                 setEmergencyNumber(formatted);
               }}

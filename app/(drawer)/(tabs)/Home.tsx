@@ -18,22 +18,35 @@ import {
 } from 'react-native-responsive-screen';
 import Header1 from '@/components/Header1';
 import { router } from 'expo-router';
+import { useRef } from 'react';
 
 export default function HomeScreen() {
+  const scrollRef = useRef<ScrollView | null>(null);
+
+  const handleScrollToInput = () => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: 200,
+        animated: true,
+      });
+    }, 150);
+  };
+
   return (
     <View style={styles.screen}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+
       >
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-            <Header1 />
+          <Header1 />
           <View style={styles.container}>
             <Image
               source={require('../../../assets/home/home.jpeg')}
@@ -113,13 +126,13 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.numberBarContainer}>
-                <NumberBar />
+                <NumberBar onFocus={handleScrollToInput} />
               </View>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-   
+
     </View>
   );
 }
@@ -181,12 +194,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: hp('0.5%'),
+
   },
   spacer: {
     height: 15,
   },
   numberBarContainer: {
-    marginTop: hp('2%'),
     marginBottom: hp('1%'),
     paddingHorizontal: wp('8%'),
     alignSelf: 'stretch',

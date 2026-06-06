@@ -16,7 +16,7 @@ import {
 import { sendOtp } from '../../api/otp';
 import { router } from 'expo-router';
 
-const NumberBar = () => {
+const NumberBar = ({ onFocus = () => {} }) => {
   const [phone, setPhone] = useState('');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
@@ -77,21 +77,27 @@ const NumberBar = () => {
 
         <View style={styles.inputContainer}>
           <TextInput
+            onFocus={() => onFocus?.()}
             value={phone}
             onChangeText={(text) => {
               let cleaned = text.replace(/[^0-9]/g, '').slice(0, 10);
 
               let formatted = cleaned;
 
-              if (cleaned.length > 3) {
+              if (cleaned.length > 3 && cleaned.length <= 6) {
                 formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-              } else {
-                formatted = cleaned;
+              } else if (cleaned.length > 6) {
+                formatted =
+                  cleaned.slice(0, 3) +
+                  ' ' +
+                  cleaned.slice(3, 6) +
+                  ' ' +
+                  cleaned.slice(6);
               }
 
               setPhone(formatted);
             }}
-            placeholder="980 3457466"
+            placeholder="240 345 7466"
             placeholderTextColor="#999"
             style={[styles.input, { fontSize }]}
             keyboardType="numeric"

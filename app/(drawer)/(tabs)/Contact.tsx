@@ -24,11 +24,11 @@ const ICON_SIZE = hp('3.3%');
 export default function ContactScreen() {
 
   const openWebsite = useCallback(() => {
-    Linking.openURL('https://rocketsingh.app/');
+    Linking.openURL('https://RocketSingh.app');
   }, []);
 
   const handleEmailPress = useCallback(() => {
-    Linking.openURL('mailto:support@rocketsingh.com');
+    Linking.openURL('mailto:rocketsingh@sriyog.com');
   }, []);
 
   return (
@@ -53,9 +53,9 @@ export default function ContactScreen() {
           </View>
 
           {/* COMPANY */}
-          <Text style={styles.companyName}>TACKLES Pro</Text>
+          <Text style={styles.companyName}>RocketSingh | SuperFast Service </Text>
           <Text style={styles.companySubtitle}>
-            Professional Handyman Service in Chennai
+           On Demand Home Service in Chennai 
           </Text>
 
           {/* CARDS */}
@@ -79,7 +79,7 @@ export default function ContactScreen() {
                 <Text style={styles.cardTitle}>Email us</Text>
                 <TouchableOpacity onPress={handleEmailPress}>
                   <Text style={styles.cardSubtitle}>
-                    support@rocketsingh.com
+                    rocketsingh@sriyog.com 
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -92,7 +92,7 @@ export default function ContactScreen() {
                 <Text style={styles.cardTitle}>Website</Text>
                 <TouchableOpacity onPress={openWebsite}>
                   <Text style={styles.cardSubtitle}>
-                    rocketsingh.app
+                     https://RocketSingh.app
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
   companySubtitle: {
     fontSize: wp('3.6%'),
     marginBottom: hp('2%'),
+    marginTop: 4,
   },
 
   GridBox: {
