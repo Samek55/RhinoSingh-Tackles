@@ -287,15 +287,10 @@ export default function PartnershipScreen() {
                 cleaned = cleaned.slice(0, 10);
                 let formatted = cleaned;
 
-                if (cleaned.length > 3 && cleaned.length <= 6) {
+                if (cleaned.length > 3) {
                   formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                } else if (cleaned.length > 6) {
-                  formatted =
-                    cleaned.slice(0, 3) +
-                    ' ' +
-                    cleaned.slice(3, 6) +
-                    ' ' +
-                    cleaned.slice(6);
+                } else {
+                  formatted = cleaned;
                 }
                 setNumber(formatted);
               }}
@@ -474,7 +469,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   spacerGap: {
-   marginVertical:20
+    marginVertical: 20
   },
   input: {
     borderWidth: 1.5, // Standard premium design blueprint thickness

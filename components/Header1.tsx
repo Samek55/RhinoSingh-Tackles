@@ -32,14 +32,14 @@ const styles = StyleSheet.create({
 
   button: {
     position: 'absolute',
-    top: 23,
+    top: 35,
     right: 30,
     zIndex: 10,
   },
 
   leftIcon: {
     position: 'absolute',
-    top: 23,
+    top: 35,
     left: 20,
     zIndex: 10,
     width: 33,
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
    rightIcon: {
     position: 'absolute',
-    top: 23,
+    top: 35,
     right: 70,
     zIndex: 10,
     width: 30,

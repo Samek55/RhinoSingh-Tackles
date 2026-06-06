@@ -202,16 +202,11 @@ export default function ServiceBookingScreen() {
                   let cleaned = value.replace(/[^0-9]/g, '');
                   cleaned = cleaned.slice(0, 10);
                   let formatted = cleaned;
-
-                  if (cleaned.length > 3 && cleaned.length <= 6) {
+                  
+                  if (cleaned.length > 3) {
                     formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                  } else if (cleaned.length > 6) {
-                    formatted =
-                      cleaned.slice(0, 3) +
-                      ' ' +
-                      cleaned.slice(3, 6) +
-                      ' ' +
-                      cleaned.slice(6);
+                  } else {
+                    formatted = cleaned;
                   }
                   setNumber(formatted);
                 }}
@@ -227,7 +222,7 @@ export default function ServiceBookingScreen() {
             {/* Select Service */}
             <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
             <Dropdown
-            value={selectedService}
+              value={selectedService}
               options={services}
               placeholder="Select Services"
               placeholderColor="#4B4B4B"
@@ -480,14 +475,14 @@ const styles = StyleSheet.create({
     fontSize: width * 0.04,
     fontWeight: '600',
   },
-//clear btn
+  //clear btn
   buttonClearFlex: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
-    marginTop:20,
-    paddingRight:10,
-    justifyContent:'center'
+    marginTop: 20,
+    paddingRight: 10,
+    justifyContent: 'center'
   },
 
   buttonClear: {

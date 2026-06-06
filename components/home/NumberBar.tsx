@@ -45,7 +45,7 @@ const NumberBar = () => {
         return;
       }
 
-      // 🚀 go immediately (NO success screen)
+      //  go immediately (NO success screen)
       setOverlayVisible(false);
 
       router.push({
@@ -58,7 +58,7 @@ const NumberBar = () => {
       Alert.alert('Error', 'Something went wrong');
     }
   };
-  
+
   return (
     <View style={[styles.container, { width: wp('75%') }]}>
       <SubmitOverlay
@@ -83,20 +83,15 @@ const NumberBar = () => {
 
               let formatted = cleaned;
 
-              if (cleaned.length > 3 && cleaned.length <= 6) {
+              if (cleaned.length > 3) {
                 formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-              } else if (cleaned.length > 6) {
-                formatted =
-                  cleaned.slice(0, 3) +
-                  ' ' +
-                  cleaned.slice(3, 6) +
-                  ' ' +
-                  cleaned.slice(6);
+              } else {
+                formatted = cleaned;
               }
 
               setPhone(formatted);
             }}
-            placeholder="240 345 7466"
+            placeholder="980 3457466"
             placeholderTextColor="#999"
             style={[styles.input, { fontSize }]}
             keyboardType="numeric"

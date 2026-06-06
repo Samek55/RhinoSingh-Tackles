@@ -43,7 +43,7 @@ export default function HomeScreen() {
 
           {/* Banner */}
           <Image
-            source={require('../../../assets/home/sanfrancisco.jpg')}
+            source={require('../../../assets/home/home.jpeg')}
             style={styles.banner}
             resizeMode="cover"
           />
