@@ -58,8 +58,9 @@ const TextArea: React.FC<TextAreaProps> = ({
       style={[
         styles.input,
         { height },
-        isFocused && styles.inputActive, // Local premium active glow layer
-        style,                           // Parent layout overrides (e.g., activeInput mapping)
+        !isFocused && borderColor ? { borderColor } : null,
+        isFocused && styles.inputActive,
+        style,
       ]}
       textAlignVertical="top"
       {...rest}

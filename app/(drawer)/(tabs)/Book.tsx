@@ -68,9 +68,9 @@ export default function ServiceBookingScreen() {
     setSelectedService('');
     setSelectedShift('');
     setDate(null);
-    setSelectedArea('')
-    setSelectedPriority('')
-    setSelectedBudget('')
+    setSelectedArea('');
+    setSelectedPriority('');
+    setSelectedBudget('');
     setMessage('');
     setActiveInput(null);
   };
@@ -166,7 +166,7 @@ export default function ServiceBookingScreen() {
         keyboardShouldPersistTaps="handled"
         enableResetScrollToCoords={false}
         resetScrollToCoords={undefined}
-        enableAutomaticScroll={Platform.OS === 'ios'}
+        enableAutomaticScroll
         keyboardDismissMode="on-drag"
       >
         <View style={styles.formContainer}>
@@ -257,8 +257,8 @@ export default function ServiceBookingScreen() {
                 <Image
                   source={CalenderIcon}
                   style={[
-                    { height: 21, width: 21 },
-                    activeInput === 'date' && { tintColor: '#2F6BFF' }
+                    styles.calendarIcon,
+                    activeInput === 'date' && { tintColor: '#2F6BFF' },
                   ]}
                 />
               </TouchableOpacity>
@@ -344,7 +344,7 @@ export default function ServiceBookingScreen() {
               // Pass layout handlers down to custom textareas if built to handle them
               onFocus={() => setActiveInput('message')}
               onBlur={() => setActiveInput(null)}
-              style={activeInput === 'message' && styles.inputActive}
+              style={activeInput === 'message' ? styles.inputActive : undefined}
             />
 
             {/* Submit Button */}
@@ -451,11 +451,16 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
   },
   label: {
-    marginBottom: 6,
-    paddingLeft: 4,
-    fontSize: 14,
+    marginBottom: hp('0.6%'),
+    paddingLeft: wp('1%'),
+    fontSize: wp('3.5%'),
     fontWeight: '600',
     color: '#4A4A4A',
+  },
+  calendarIcon: {
+    height: hp('2.5%'),
+    width: hp('2.5%'),
+    resizeMode: 'contain',
   },
   buttonPadding: {
     paddingBottom: 10,

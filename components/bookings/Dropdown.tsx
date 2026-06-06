@@ -103,6 +103,7 @@ const Dropdown = ({
         onChange={item => {
           onSelectOption(item.value);
           setIsFocus(false);
+          onClose?.();
         }}
         renderRightIcon={renderRightIcon}
         renderItem={renderItem}

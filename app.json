@@ -7,18 +7,17 @@
     "icon": "./assets/images/icon.png",
     "scheme": "rocketsingh",
     "userInterfaceStyle": "automatic",
-    "jsEngine": "hermes",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pracas.rocketsingh"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#dcdcdc",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.pracas.rocketsingh"

@@ -8,8 +8,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
+import { DrawerContentComponentProps } from '@react-navigation/drawer';
 
-export default function CustomDrawer() {
+export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
 
   const isActive = (route: string) => pathname === route;

@@ -1,5 +1,5 @@
 
-import { BookingItem } from "../../components/admin/BookingCard"
+import { BookingItem } from "../../../components/admin/BookingCard";
 
 export const personBooking: BookingItem[] = [
     {

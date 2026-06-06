@@ -54,11 +54,21 @@ export default function AdminChangePassword() {
     }
 
     const handleSubmit = () => {
-        if (oldPassword === 'admin') {
-            navigation.navigate('Booking');
-        } else {
-            Alert.alert('Wrong Email or Password');
+        if (!oldPassword || oldPassword.length !== 4) {
+            Alert.alert('Validation Error', 'Please enter your current 4-digit PIN');
+            return;
         }
+        if (!newPassword || newPassword.length !== 4) {
+            Alert.alert('Validation Error', 'Please enter a new 4-digit PIN');
+            return;
+        }
+        if (newPassword !== confirmNewpassword) {
+            Alert.alert('Validation Error', 'New PIN and confirmation do not match');
+            return;
+        }
+        Alert.alert('Success', 'PIN updated successfully', [
+            { text: 'OK', onPress: () => router.push('/Admin') },
+        ]);
     };
 
     return (
