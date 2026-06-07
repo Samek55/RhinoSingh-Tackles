@@ -13,6 +13,7 @@ export const createBooking = async (data: any) => {
       AIRTABLE_API_URL_BOOKING,
       {
         fields: data,
+        typecast: true,
       },
       {
         headers: {

@@ -10,8 +10,9 @@ import {
   Keyboard,
 } from 'react-native';
 import React, { useRef, useState } from 'react';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { createBooking } from '../../../../api/PostApiBooking';
+import { notifyProfessionals } from '../../../../api/notifications';
 import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
@@ -135,6 +136,11 @@ export default function BookingOtp() {
 
       await createBooking(booking);
 
+      // Fire-and-forget: notify matching professionals
+      notifyProfessionals(
+        Array.isArray(selectedService) ? selectedService[0] : selectedService as string,
+        Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string,
+      ).catch(() => {});
 
       router.push('/booking/BookingVerify')
 

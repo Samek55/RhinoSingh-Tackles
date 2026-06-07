@@ -208,6 +208,8 @@ export default function CareerScreen() {
       };
 
       await createCareer(career);
+
+
       setOverlayStatus('success');
 
     } catch (error) {
@@ -327,12 +329,13 @@ export default function CareerScreen() {
           <Text style={styles.label}>Area of Expertise<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={services}
-            placeholder="Select the area of expertise"
+            placeholder="Select the area of expertise (max 5)"
             placeholderColor="#4B4B4B"
             value={selectedExpertise}
             onSelectOption={setSelectedExpertise}
             onOpen={() => setActiveInput('expertise')}
             onClose={() => setActiveInput(null)}
+            maxSelections={5}
           />
 
           {/* Years of Experience */}
@@ -365,12 +368,13 @@ export default function CareerScreen() {
           <Text style={styles.label}>Preferred Working Area<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={area}
-            placeholder="Select your preferred working area"
+            placeholder="Select your preferred working area (max 5)"
             placeholderColor="#4B4B4B"
             value={selectedArea}
             onSelectOption={setSelectedArea}
             onOpen={() => setActiveInput('workingArea')}
             onClose={() => setActiveInput(null)}
+            maxSelections={5}
           />
 
           {/* Insurance Policy Number */}

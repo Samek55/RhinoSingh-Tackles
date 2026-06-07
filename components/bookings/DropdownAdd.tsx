@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { MultiSelect } from 'react-native-element-dropdown';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
@@ -16,7 +16,8 @@ type Props = {
   borderColor?: string;
   value?: string[];
   onOpen?: () => void;
-  onClose?: () => void; // Added onClose support
+  onClose?: () => void;
+  maxSelections?: number;
 };
 
 const DropdownAdd = ({
@@ -26,10 +27,11 @@ const DropdownAdd = ({
   showRequired = false,
   onSelectOption,
   dropdownType,
-  borderColor = '#E0E0E0', // Softer default gray border
+  borderColor = '#E0E0E0',
   value,
   onOpen,
-  onClose
+  onClose,
+  maxSelections,
 }: Props) => {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [isFocus, setIsFocus] = useState(false); // Track focus state for modern UX enhancements
@@ -126,6 +128,10 @@ const DropdownAdd = ({
           onClose?.();
         }}
         onChange={items => {
+          if (maxSelections !== undefined && items.length > maxSelections) {
+            Alert.alert('Limit Reached', `You can select a maximum of ${maxSelections} options.`);
+            return;
+          }
           setSelectedOptions(items);
           onSelectOption?.(items);
         }}
