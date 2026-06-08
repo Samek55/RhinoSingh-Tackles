@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { MultiSelect } from 'react-native-element-dropdown';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
-// Mocking your asset imports (Matches your original pathing structure)
 const DropIconAdd = require('../../assets/icons/booking/add.png');
 
 type Props = {
@@ -28,43 +27,51 @@ const DropdownAdd = ({
   onSelectOption,
   dropdownType,
   borderColor = '#E0E0E0',
-  value,
+  value = [],
   onOpen,
   onClose,
   maxSelections,
 }: Props) => {
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [isFocus, setIsFocus] = useState(false); // Track focus state for modern UX enhancements
 
-  // Synchronize incoming programmatic values
-  useEffect(() => {
-    setSelectedOptions(value || []);
+  // ✅ single source of truth (FIX)
+  const [selectedOptions, setSelectedOptions] = useState<string[]>(value);
+  const [isFocus, setIsFocus] = useState(false);
+
+  // ✅ sync only when external value changes
+  React.useEffect(() => {
+    setSelectedOptions(value);
   }, [value]);
 
-  // Map plain array strings to the format the library expects
-  const data = options.map((item, index) => ({ label: item, value: item, index }));
+  // ✅ memoized data
+  const data = useMemo(() => {
+    return options.map((item, index) => ({
+      label: item,
+      value: item,
+      index,
+    }));
+  }, [options]);
 
-  const getDropIcon = () => {
+  const getDropIcon = useCallback(() => {
     if (dropdownType === 'shift') {
       return require('../../assets/icons/booking/clock.png');
     }
     return DropIconAdd;
-  };
+  }, [dropdownType]);
 
-  // Custom renderer for the right-side icon
-  const renderRightIcon = () => (
+  const renderRightIcon = useCallback(() => (
     <Image
       source={getDropIcon()}
       style={[
         { width: hp('2.2%'), height: hp('2.2%') },
-        // Rotates the icon 180 degrees smoothly when open if it's a dynamic icon type
-        isFocus && dropdownType !== 'shift' && { transform: [{ rotate: '180deg' }], tintColor: '#2F6BFF' }
+        isFocus && dropdownType !== 'shift' && {
+          transform: [{ rotate: '180deg' }],
+          tintColor: '#2F6BFF'
+        }
       ]}
     />
-  );
+  ), [isFocus, dropdownType, getDropIcon]);
 
-  // Custom renderer for alternating row items
-  const renderItem = (item: { label: string; value: string; index: number }) => {
+  const renderItem = useCallback((item: any) => {
     const backgroundColor = item.index % 2 === 0 ? '#fff' : '#f9f9f9';
     const isSelected = selectedOptions.includes(item.value);
 
@@ -79,25 +86,11 @@ const DropdownAdd = ({
         </Text>
       </View>
     );
-  };
-
-  // Custom renderer for selected tags/chips inside the box
-  const renderSelectedItem = (item: { label: string; value: string; index: number }, unSelect?: (item: any) => void) => {
-    return (
-      <View style={styles.tag}>
-        <Text style={styles.tagText}>{item.label}</Text>
-        <TouchableOpacity
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          onPress={() => unSelect && unSelect(item)}
-        >
-          <Text style={styles.removeText}>✕</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
+  }, [selectedOptions]);
 
   return (
     <View style={styles.container}>
+
       {showRequired && selectedOptions.length === 0 && (
         <Text style={styles.requiredAbsolute}>*</Text>
       )}
@@ -105,43 +98,52 @@ const DropdownAdd = ({
       <MultiSelect
         style={[
           styles.dropdownStyle,
-          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor }, // Primary glow border on focus
-          isFocus && styles.dropdownActiveBackground // Soft tint background when active
+          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor },
+          isFocus && styles.dropdownActiveBackground
         ]}
         placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
         containerStyle={styles.menuContainer}
-        activeColor="transparent" // Disables default library highlight layer in favor of custom styles
-        visibleSelectedItem={true}
-        inside={true}
+        activeColor="transparent"
+
         data={data}
-        maxHeight={hp('26.8%')}
         labelField="label"
         valueField="value"
-        placeholder={placeholder}
         value={selectedOptions}
+        placeholder={placeholder}
+
         onFocus={() => {
           setIsFocus(true);
           onOpen?.();
         }}
-        onBlur={() => {
-          setIsFocus(false);
-          onClose?.();
-        }}
-        onChange={items => {
-          if (maxSelections !== undefined && items.length > maxSelections) {
-            Alert.alert('Limit Reached', `You can select a maximum of ${maxSelections} options.`);
-            return;
+
+        // ❌ avoid relying on onBlur
+        onChange={(items: string[]) => {
+
+          // ✅ pre-check limit BEFORE updating state (FIX)
+          if (maxSelections && items.length > maxSelections) {
+            return; // silently block extra selection
           }
+
           setSelectedOptions(items);
           onSelectOption?.(items);
         }}
+
         renderRightIcon={renderRightIcon}
         renderItem={renderItem}
-        renderSelectedItem={renderSelectedItem}
+
+        renderSelectedItem={(item, unSelect) => (
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>{item.label}</Text>
+            <TouchableOpacity onPress={() => unSelect?.(item)}>
+              <Text style={styles.removeText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

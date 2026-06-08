@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Dropdown as LibDropdown } from 'react-native-element-dropdown';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
@@ -15,7 +15,7 @@ type Props = {
   borderColor?: string;
   value?: string;
   onOpen?: () => void;
-  onClose?: () => void; // Added onClose prop support
+  onClose?: () => void;
 };
 
 const Dropdown = ({
@@ -25,92 +25,111 @@ const Dropdown = ({
   showRequired = false,
   onSelectOption,
   dropdownType,
-  borderColor = '#E0E0E0', // Changed default to a softer grey so focus states stand out
+  borderColor = '#E0E0E0',
   value,
   onOpen,
   onClose
 }: Props) => {
-  // Track focus state to trigger dynamic UI/color upgrades
+
   const [isFocus, setIsFocus] = useState(false);
 
-  const data = options.map((item, index) => ({ label: item, value: item, index }));
+  // ✅ FIX 1: memoize data
+  const data = useMemo(() => {
+    return options.map((item, index) => ({
+      label: item,
+      value: item,
+      index,
+    }));
+  }, [options]);
 
-  const getDropIcon = () => {
+  const getDropIcon = useCallback(() => {
     if (dropdownType === 'shift') {
       return require('../../assets/icons/booking/clock.png');
     }
     return DropIcon;
-  };
+  }, [dropdownType]);
 
-  const renderRightIcon = () => (
+  // ✅ FIX 2: memoized renderItem
+  const renderItem = useCallback(
+    (item: { label: string; value: string; index: number }) => {
+      const backgroundColor = item.index % 2 === 0 ? '#fff' : '#f9f9f9';
+      const isSelected = value === item.value;
+
+      return (
+        <View style={[
+          styles.itemContainer,
+          { backgroundColor },
+          isSelected && styles.selectedRowBackground
+        ]}>
+          <Text style={[styles.itemText, isSelected && styles.selectedRowText]}>
+            {item.label}
+          </Text>
+        </View>
+      );
+    },
+    [value]
+  );
+
+  const renderRightIcon = useCallback(() => (
     <Image
       source={getDropIcon()}
       style={[
         { width: hp('2.2%'), height: hp('2.2%') },
-        // Rotates the icon 180 degrees smoothly when open if it's an arrow
-        isFocus && dropdownType !== 'shift' && { transform: [{ rotate: '180deg' }], tintColor: '#2F6BFF' }
+        isFocus && dropdownType !== 'shift' && {
+          transform: [{ rotate: '180deg' }],
+          tintColor: '#2F6BFF'
+        }
       ]}
     />
-  );
-
-  const renderItem = (item: { label: string; value: string; index: number }) => {
-    const backgroundColor = item.index % 2 === 0 ? '#fff' : '#f9f9f9';
-    const isSelected = value === item.value;
-
-    return (
-      <View style={[
-        styles.itemContainer, 
-        { backgroundColor },
-        isSelected && styles.selectedRowBackground
-      ]}>
-        <Text style={[styles.itemText, isSelected && styles.selectedRowText]}>
-          {item.label}
-        </Text>
-      </View>
-    );
-  };
+  ), [isFocus, dropdownType, getDropIcon]);
 
   return (
     <View style={styles.container}>
+
       {showRequired && !value && (
         <Text style={styles.requiredAbsolute}>*</Text>
       )}
 
       <LibDropdown
         style={[
-          styles.dropdownStyle, 
-          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor }, // Primary glow on focus
-          isFocus && styles.dropdownActiveBackground // Soft tint when active
+          styles.dropdownStyle,
+          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor },
+          isFocus && styles.dropdownActiveBackground
         ]}
+
         placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
         selectedTextStyle={styles.selectedText}
         containerStyle={styles.menuContainer}
-        activeColor="transparent" // Bypassed default gray box overlay to let custom styles shine
+
+        activeColor="transparent"
         data={data}
+
         maxHeight={hp('26.8%')}
         labelField="label"
         valueField="value"
+
         placeholder={placeholder}
         value={value}
+
         onFocus={() => {
           setIsFocus(true);
           onOpen?.();
         }}
-        onBlur={() => {
-          setIsFocus(false);
-          onClose?.();
-        }}
+
+        // ⚠️ better than onBlur reliability
         onChange={item => {
           onSelectOption(item.value);
           setIsFocus(false);
           onClose?.();
         }}
+
         renderRightIcon={renderRightIcon}
         renderItem={renderItem}
       />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

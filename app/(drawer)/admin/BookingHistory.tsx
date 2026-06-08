@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import {
     View,
     Text,
@@ -10,8 +10,9 @@ import {
     TextInput,
     FlatList
 } from 'react-native';
-import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png'
-import SearchIcon from '../../../assets/images/TabIcon/searchbar.png'
+
+import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
+import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
 
 import { personBooking } from '../../../src/data/AdminData/PersonBookingListData';
 
@@ -20,34 +21,53 @@ import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+
 import Header4 from '@/components/Header4Admin';
 import { router } from 'expo-router';
 
-
 export default function BookingHistory() {
-    const [openId, setOpenId] = React.useState<number | null>(null);
-    const [filter, setFilter] = React.useState('All');
+    const [openId, setOpenId] = useState<number | null>(null);
+    const [filter, setFilter] = useState('All');
 
-    const toggleCard = (id: number) => {
+    const toggleCard = useCallback((id: number) => {
         setOpenId(prev => (prev === id ? null : id));
-    };
+    }, []);
 
-    const filteredData = React.useMemo(() => {
+    const filteredData = useMemo(() => {
         if (filter === 'All') return personBooking;
 
-        return personBooking.filter(item =>
-            item.status === filter
+        return personBooking.filter(item => item.status === filter);
+    }, [filter, personBooking]);
+
+    const renderItem = useCallback(({ item }: any) => {
+        return (
+            <BookingCard
+                item={item}
+                isOpen={openId === item.id}
+                onToggle={() => toggleCard(item.id)}
+                onPress={() =>
+                    router.push({
+                        pathname: '/admin/BookingDetails_1',
+                        params: {
+                            id: item.id.toString(),
+                        },
+                    })
+                }
+            />
         );
-    }, [filter]);
+    }, [openId, toggleCard]);
 
     return (
         <View style={{ flex: 1 }}>
             <Header4 />
+
             <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}>
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
 
+                {/* HEADER */}
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.push('/Admin')}
@@ -56,17 +76,18 @@ export default function BookingHistory() {
                     <Text style={styles.title}>Booking History</Text>
                 </TouchableOpacity>
 
+                {/* SEARCH */}
                 <View style={styles.inputContainer}>
-                    <Image source={SearchIcon} style={{ height: 20, width: 20, }} />
+                    <Image source={SearchIcon} style={{ height: 20, width: 20 }} />
                     <TextInput
                         placeholder="Search"
                         placeholderTextColor={'rgba(67, 67, 67,0.8)'}
                         style={styles.textInput}
-                        keyboardType="email-address"
                         autoCapitalize="none"
                     />
                 </View>
 
+                {/* FILTER BUTTONS */}
                 <View style={styles.mainBtns}>
                     <TouchableOpacity style={styles.btn} onPress={() => setFilter('All')}>
                         <Text style={styles.btnText}>All</Text>
@@ -85,36 +106,23 @@ export default function BookingHistory() {
                     </TouchableOpacity>
                 </View>
 
+                {/* LIST */}
                 <FlatList
-                    style={styles.BookingCard}
                     data={filteredData}
+                    renderItem={renderItem}
                     keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <BookingCard
-                            item={item}
-                            isOpen={openId === item.id}
-                            onToggle={() => toggleCard(item.id)}
-                            onPress={() =>
-                                router.push({
-                                    pathname: '/admin/BookingDetails_1',
-                                    params: {
-                                        id: item.id.toString(),
-                                    },
-                                })
-                            }
-                        />
-                    )}
+                    style={styles.BookingCard}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                     contentContainerStyle={{
-                        paddingBottom: hp('15%'), // 👈 adds space at end of list
+                        paddingBottom: hp('15%'),
                     }}
-
                 />
-
 
             </KeyboardAvoidingView>
         </View>
     );
-};
+}
 
 const styles = StyleSheet.create({
     container: {

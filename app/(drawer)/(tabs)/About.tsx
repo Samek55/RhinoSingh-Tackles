@@ -1,9 +1,10 @@
+import React from 'react';
 import {
   View,
   Text,
   Image,
   StyleSheet,
-  FlatList,
+  ScrollView,
 } from 'react-native';
 
 import OurTeamCard from '../../../components/home/OurTeamCard';
@@ -12,91 +13,86 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+
 import Header2 from '@/components/Header2';
 
 export default function AboutScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header2 />
-      <FlatList
-        data={[]}
-        keyExtractor={() => 'about'}
-        renderItem={null}
+
+      <ScrollView
         showsVerticalScrollIndicator={false}
         bounces={false}
+      >
+        <View style={styles.container}>
 
-        ListHeaderComponent={() => (
-          <View style={styles.container}>
+          {/* BANNER */}
+          <View style={styles.banner}>
+            <Image
+              source={require('../../../assets/aboutUs/aboutUS.jpeg')}
+              style={styles.bannerImage}
+              resizeMode="cover"
+              fadeDuration={0}
+            />
+          </View>
 
+          {/* CONTENT */}
+          <View style={styles.content}>
 
+            <Text style={styles.title}>Our Story</Text>
 
-            {/* BANNER (optimized rendering) */}
-            <View style={styles.banner}>
-              <Image
-                source={require('../../../assets/aboutUs/aboutUS.jpeg')}
-                style={styles.bannerImage}
-                resizeMode="cover"
-                fadeDuration={0}
+            <Text style={styles.subtitle}>
+              ROCKETSINGH is the Indian version of TACKLES PRO — a growing
+              platform delivering fast, reliable, and professional on-demand
+              home services across India, powered by skilled and trained
+              professionals available 24 hours a day, 365 days a year.
+            </Text>
+
+            <Text style={styles.lineheighpara}>
+              Our mission is to offer complete repair and maintenance services
+              under one trusted platform, eliminating the need to search
+              multiple providers for different household and commercial
+              requirements.
+            </Text>
+
+            <Text style={styles.lineheighpara}>
+              Our vision is to build a trusted handyman brand recognized for
+              professionalism, accessibility, and service excellence through
+              long-term client relationships and consistent work quality.
+            </Text>
+
+            {/* TEAM */}
+            <View style={{ height: 18 }} />
+
+            <Text style={styles.title}>Our Team</Text>
+
+            <View style={styles.row}>
+              <OurTeamCard
+                image={require('../../../assets/topProfessionals/1_jamesWalker.jpg')}
+                title="Karthik Subburaj"
+                suBTitle="Deep Cleaning Specialist"
+              />
+
+              <OurTeamCard
+                image={require('../../../assets/topProfessionals/2_michaelTurner.jpg')}
+                title="Lokesh Kanagaraj"
+                suBTitle="Pressure Washing Technician"
+              />
+
+              <OurTeamCard
+                image={require('../../../assets/topProfessionals/3_matthewKing.jpg')}
+                title="Anand Amritraj"
+                suBTitle="Smart Home Installation Engineer"
               />
             </View>
 
-            {/* CONTENT */}
-            <View style={styles.content}>
-
-              <Text style={styles.title}>Our Story</Text>
-
-              <Text style={styles.subtitle}>
-                ROCKETSINGH is the Indian version of TACKLES PRO — a growing
-                platform delivering fast, reliable, and professional on-demand
-                home services across India, powered by skilled and trained
-                professionals available 24 hours a day, 365 days a year.
-              </Text>
-
-              <Text style={styles.lineheighpara}>
-                Our mission is to offer complete repair and maintenance services
-                under one trusted platform, eliminating the need to search
-                multiple providers for different household and commercial
-                requirements.
-              </Text>
-
-              <Text style={styles.lineheighpara}>
-                Our vision is to build a trusted handyman brand recognized for
-                professionalism, accessibility, and service excellence through
-                long-term client relationships and consistent work quality.
-              </Text>
-
-              {/* TEAM */}
-              <View style={{ height: 18 }} />
-
-              <Text style={styles.title}>Our Team</Text>
-
-              <View style={styles.row}>
-                <OurTeamCard
-                  image={require('../../../assets/topProfessionals/1_jamesWalker.jpg')}
-                   title="Karthik Subburaj"
-                  suBTitle="Deep Cleaning Specialist"
-                />
-
-                <OurTeamCard
-                  image={require('../../../assets/topProfessionals/2_michaelTurner.jpg')}
-                   title="Lokesh Kanagaraj"
-                  suBTitle="Pressure Washing Technician"
-                />
-
-                <OurTeamCard
-                  image={require('../../../assets/topProfessionals/3_matthewKing.jpg')}
-                  title="Anand Amritraj"
-                  suBTitle="Smart Home Installation Engineer"
-                />
-              </View>
-
-            </View>
           </View>
-        )}
-      />
+        </View>
+      </ScrollView>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -154,4 +150,3 @@ const styles = StyleSheet.create({
     marginBottom: '5%',
   },
 });
-

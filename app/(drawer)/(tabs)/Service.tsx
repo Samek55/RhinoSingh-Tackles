@@ -1,5 +1,11 @@
-import React, { useMemo } from 'react';
-import { View, ImageBackground, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useMemo, useCallback } from 'react';
+import {
+  View,
+  ImageBackground,
+  Text,
+  FlatList,
+  StyleSheet,
+} from 'react-native';
 
 import ServicesCards from '../../../components/services/ServicesCards';
 import ServicesDisplaycard from '../../../components/services/ServicesDisplaycard';
@@ -12,127 +18,120 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+
 import Header1 from '@/components/Header1';
 import { router } from 'expo-router';
 
 export default function ServiceScreen() {
   const numberOfItemsBeforeFooter = 6;
 
+  // ✅ filter only once
   const data = useMemo(() => {
     return servicesData2.filter(
       (item) => item.id !== 1 && item.id !== 6
     );
   }, []);
 
-  const renderItem = ({ item, index }: { item: any; index: number }) => {
-    if (index === numberOfItemsBeforeFooter) {
+  // ✅ memoized renderItem (FIX)
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => {
+      if (index === numberOfItemsBeforeFooter) {
+        return (
+          <View style={styles.sliderCardContainer}>
+            <SliderCard
+              name="Interior Designing"
+              image={require('../../../assets/services/banner4.jpg')}
+            />
+          </View>
+        );
+      }
+
       return (
-        <View style={styles.sliderCardContainer}>
-          <SliderCard
-            name="Interior Designing"
-            image={require('../../../assets/services/banner4.jpg')}
+        <View style={styles.serviceItemContainer}>
+          <ServicesDisplaycard
+            id={item.id}
+            name={item.name}
+            words={item.words}
+            image={item.image}
+            onPress={() =>
+              router.push({
+                pathname: '/service/ServiceDetail',
+                params: { id: item.id.toString() },
+              })
+            }
           />
         </View>
       );
-    }
+    },
+    []
+  );
 
+  // ✅ memoized header (IMPORTANT FIX)
+  const ListHeader = useCallback(() => {
     return (
-      <View style={styles.serviceItemContainer}>
-        <ServicesDisplaycard
-          id={item.id}
-          name={item.name}
-          words={item.words}
-          image={item.image}
-          onPress={() =>
-            router.push({
-              pathname: '/service/ServiceDetail',
-              params: {
-                id: item.id.toString(),
-              },
-            })
-          }
-        />
+      <View style={styles.headerContainer}>
+        <Header1 />
+
+        <ImageBackground
+          source={require('../../../assets/services/bannerServices.jpg')}
+          resizeMode="cover"
+          style={styles.headerBackground}
+        >
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Painting</Text>
+            <Text style={styles.headerSubtitle}>
+              On Demand Home Service in Chennai
+            </Text>
+          </View>
+        </ImageBackground>
+
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle1}>Top Services</Text>
+
+          {topServices.map((item) => (
+            <ServicesCards
+              key={item.id}
+              name={item.name}
+              description={item.description}
+              image={item.image}
+              question={item.question}
+              answer={item.answer}
+              onPress={() =>
+                router.push({
+                  pathname: '/service/ServiceDetail',
+                  params: { id: item.id.toString() },
+                })
+              }
+            />
+          ))}
+
+          <Text style={styles.sectionTitle2}>More Services</Text>
+        </View>
       </View>
     );
-  };
+  }, []);
 
   return (
-    <View>
-
+    <View style={{ flex: 1 }}>
       <FlatList
         data={data}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         numColumns={2}
+        ListHeaderComponent={ListHeader}
 
-        //  PERFORMANCE + LAZY LOADING SETTINGS
-        initialNumToRender={6}        // first screen only
-        maxToRenderPerBatch={10}      //  lazy load next 10 items
-        windowSize={5}                // controls visible window
+        // ✅ PERFORMANCE FIXES
+        initialNumToRender={6}
+        maxToRenderPerBatch={10}
+        windowSize={5}
         updateCellsBatchingPeriod={50}
-        removeClippedSubviews={true}
-        getItemLayout={undefined}
+        removeClippedSubviews
 
         showsVerticalScrollIndicator={false}
-
-        ListHeaderComponent={() => (
-          <View style={styles.headerContainer}>
-            <Header1 />
-            <ImageBackground
-              source={require('../../../assets/services/bannerServices.jpg')}
-              resizeMode="cover"
-              style={styles.headerBackground}
-            >
-
-
-              <View style={styles.headerTextContainer}>
-                <Text
-                  style={styles.headerTitle}
-                  numberOfLines={2}
-                  allowFontScaling={false}
-                >
-                  Painting
-                </Text>
-
-                <Text
-                  style={styles.headerSubtitle}
-                  numberOfLines={2}
-                >
-                  On Demand Home Service in Chennai
-                </Text>
-              </View>
-            </ImageBackground>
-
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle1}>Top Services</Text>
-
-              {topServices.map((item) => (
-                <ServicesCards
-                  key={item.id}
-                  name={item.name}
-                  description={item.description}
-                  image={item.image}
-                  question={item.question}
-                  answer={item.answer}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/service/ServiceDetail',
-                      params: {
-                        id: item.id.toString(),
-                      },
-                    })
-                  }
-                />
-              ))}
-
-              <Text style={styles.sectionTitle2}>More Services</Text>
-            </View>
-          </View>
-        )}
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   headerContainer: {

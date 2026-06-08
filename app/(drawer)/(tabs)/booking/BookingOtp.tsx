@@ -140,7 +140,7 @@ export default function BookingOtp() {
       notifyProfessionals(
         Array.isArray(selectedService) ? selectedService[0] : selectedService as string,
         Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string,
-      ).catch(() => {});
+      ).catch(() => { });
 
       router.push('/booking/BookingVerify')
 
@@ -153,9 +153,9 @@ export default function BookingOtp() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
-      <View style={{ flex: 1 }} >
-        <Header2 />
+    <View style={{ flex: 1 }} >
+      <Header2 />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
         <View style={styles.container}>
           <Text style={styles.thankYouText}>
             Phone Verification
@@ -196,8 +196,8 @@ export default function BookingOtp() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View >
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </View >
   );
 };
 
