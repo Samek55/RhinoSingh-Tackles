@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
-import { personBooking } from '../../../src/data/AdminData/PersonBookingListData';
 import LocationPin from '../../../assets/icons/contact/location-pin.png'
+import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
+
 
 import {
     widthPercentageToDP as wp,
@@ -27,8 +28,18 @@ export default function BookingDetails() {
 
     const { id } = useLocalSearchParams<{ id: string }>();
 
-    const booking = React.useMemo(() => {
-        return personBooking.find(item => item.id.toString() === id);
+    const [booking, setBooking] = useState<any>(null);
+
+    useEffect(() => {
+        const load = async () => {
+            const data = await fetchBookingsFromAirtable();
+
+            const found = data.find((item: any) => item.id === id);
+
+            setBooking(found);
+        };
+
+        load();
     }, [id]);
 
     const [visible, setVisible] = useState(false);
@@ -74,8 +85,8 @@ export default function BookingDetails() {
                     {/* BIG CARD */}
                     <View style={styles.card}>
 
-                        <Text style={styles.heading}>{booking?.name}</Text>
-                        <Text style={styles.bookingId}>Booking ID : {booking?.id}</Text>
+                        <Text style={styles.heading}>{booking?.fullName}</Text>
+                        <Text style={styles.bookingId}>Booking ID : {booking?.bookingId}</Text>
 
                         <View style={styles.rowflex}>
                             <Text style={styles.labelFlex}>Service(s)</Text>
@@ -91,7 +102,7 @@ export default function BookingDetails() {
                             <View style={styles.rowLocationInside}>
 
                                 <Text style={styles.labelFlex}>Location</Text>
-                                <Text style={[styles.value, { paddingLeft: hp('3%') }]}>{booking?.location}</Text>
+                                <Text style={[styles.value, { paddingLeft: hp('3%') }]}>{booking?.area}, {booking?.city} </Text>
                             </View>
                             <View >
                                 <Image source={LocationPin} style={{ height: 20, width: 20 }} />
@@ -100,17 +111,17 @@ export default function BookingDetails() {
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Booking Date & Time</Text>
-                            <Text style={styles.value}>{booking?.date}</Text>
+                            <Text style={styles.value}>{booking?.bookingDate}</Text>
                         </View>
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Service Starting Date & Time</Text>
-                            <Text style={styles.value}>{booking?.date}</Text>
+                            <Text style={styles.value}>{booking?.startingDate}</Text>
                         </View>
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Service Ending Date & Time</Text>
-                            <Text style={styles.value}>{booking?.date}</Text>
+                            <Text style={styles.value}>{booking?.completionDate}</Text>
                         </View>
 
                         <View style={styles.rowflex}>
@@ -124,7 +135,7 @@ export default function BookingDetails() {
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Special Request</Text>
-                            <Text style={[styles.value, { paddingTop: hp('1%') }]}>{booking?.message}</Text>
+                            <Text style={[styles.value, { paddingTop: hp('1%') }]}>{booking?.specialRequests}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>Photos</Text>

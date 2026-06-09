@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import { personBooking } from '../../../src/data/AdminData/PersonBookingListData
 import dropdownIcon from '../../../assets/icons/contact/DropDown.png'
 import LocationPin from '../../../assets/icons/contact/location-pin.png'
 import phoneIcon from '../../../assets/icons/admin/phone.png'
+import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
 
 import {
     widthPercentageToDP as wp,
@@ -22,29 +23,59 @@ import {
 } from 'react-native-responsive-screen';
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
+import { updateBookingStatus } from '../../../api/helper/updateBookingStatus';
 
-type StatusType = 'Completed' | 'Pending' | 'Cancelled';
+type StatusType = 'Completed ' | 'Pending ' | 'Cancelled ';
 
 export default function BookingDetails() {
     const scrollRef = useRef<any>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
 
-    const booking = React.useMemo(() => {
-        return personBooking.find(item => item.id.toString() === id);
+    const [booking, setBooking] = useState<any>(null);
+    useEffect(() => {
+        const load = async () => {
+            const data = await fetchBookingsFromAirtable();
+
+            const found = data.find((item: any) => item.id === id);
+
+            setBooking(found);
+        };
+
+        load();
     }, [id]);
+
+    useEffect(() => {
+        if (booking?.status) {
+            setStatus(booking.status);
+        }
+    }, [booking]);
+
 
     // local state for status
     const [status, setStatus] = useState<StatusType>(
-        (booking?.status as StatusType) || 'Pending'
+        (booking?.status as StatusType) || 'Pending '
     );
     const [openDropdown, setOpenDropdown] = useState(false);
-    const STATUS_OPTIONS: StatusType[] = ['Completed', 'Pending', 'Cancelled'];
+    const STATUS_OPTIONS: StatusType[] = ['Completed ', 'Pending ', 'Cancelled '];
 
-    const handleStatusChange = (newStatus: StatusType) => {
-        setStatus(newStatus);
-        setOpenDropdown(false);
+    const handleStatusChange = async (newStatus: StatusType) => {
+        try {
+            await updateBookingStatus(booking.id, newStatus);
+
+            setStatus(newStatus);
+
+            setBooking((prev: any) => ({
+                ...prev,
+                status: newStatus,
+            }));
+
+            setOpenDropdown(false);
+
+            console.log('Status updated');
+        } catch (error) {
+            console.error(error);
+        }
     };
-
 
 
     return (
@@ -65,7 +96,7 @@ export default function BookingDetails() {
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() =>
-                            router.replace({
+                            router.push({
                                 pathname: '/admin/BookingDetails_1',
                                 params: {
                                     id: id,
@@ -83,7 +114,7 @@ export default function BookingDetails() {
                     {/* BIG CARD */}
                     <View style={[styles.card, { marginBottom: hp('10%') }]}>
 
-                        <Text style={styles.heading}>{booking?.name}</Text>
+                        <Text style={styles.heading}>{booking?.fullName}</Text>
 
 
                         <Text style={styles.labelMain}><Image source={phoneIcon} style={{ width: 14, height: 11.5, tintColor: '#555' }} />  +977 {booking?.phone}</Text>
@@ -101,7 +132,16 @@ export default function BookingDetails() {
                             </View>
                             <View style={{ alignItems: 'flex-end' }} >
                                 <Text style={styles.label}>Status</Text>
-                                <Text style={styles.valuePending}>Pending</Text>
+                                <Text
+                                    style={[
+                                        styles.value,
+                                        status?.includes('Completed ') && styles.completed,
+                                        status?.includes('Pending ') && styles.pending,
+                                        status?.includes('Cancelled ') && styles.cancelled,
+                                    ]}
+                                >
+                                    {booking?.status}
+                                </Text>
 
                             </View>
                         </View>
@@ -110,7 +150,7 @@ export default function BookingDetails() {
                             <View style={styles.rowLocationInside}>
 
                                 <Text style={styles.label}>Location</Text>
-                                <Text style={styles.value}>{booking?.location}</Text>
+                                <Text style={styles.value}>{booking?.area}, {booking?.city}</Text>
                             </View>
                             <View >
                                 <Image source={LocationPin} style={{ height: 30, width: 30, }} />
@@ -119,43 +159,25 @@ export default function BookingDetails() {
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Booking Date & Time</Text>
-                            <Text style={styles.value}>{booking?.date}</Text>
+                            <Text style={styles.value}>{booking?.bookingDate}</Text>
                         </View>
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Service Date & Time</Text>
-                            <Text style={styles.value}>{booking?.date}</Text>
+                            <Text style={styles.value}>{booking?.startingDate}</Text>
                         </View>
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Special Request</Text>
-                            <Text style={styles.value}>{booking?.message}</Text>
+                            <Text style={styles.value}>{booking?.specialRequests}</Text>
                         </View>
 
-                        {/* STATUS INSIDE CARD (LIVE UPDATE) */}
-                        {/* <View style={styles.statusBox}>
-                            <Text
-                                style={[
-                                    styles.statusText,
-                                    status === 'Completed' && styles.completed,
-                                    status === 'Pending' && styles.pending,
-                                    status === 'Cancelled' && styles.cancelled,
-                                ]}
-                            >
-                                {status}
-                            </Text>
-                        </View> */}
+
                         <Text style={styles.statusLabel}>Work Status</Text>
                         {/* STATUS DROPDOWN OUTSIDE CARD */}
                         <View style={styles.dropdownWrapper}>
                             <TouchableOpacity
-                                // onFocus={() => {
-                                //     setIsCardFocused(true);
-                                //     scrollRef.current?.scrollToEnd({ animated: true });
-                                // }}
-                                // onBlur={() => {
-                                //     setIsCardFocused(false);
-                                // }}
+
                                 style={styles.dropdownBtn}
                                 onPress={() => {
                                     setOpenDropdown(!openDropdown);
@@ -193,10 +215,10 @@ export default function BookingDetails() {
                         <View style={styles.ButtonContainer}>
                             <TouchableOpacity style={styles.AcceptButton}
                                 onPress={() => {
-                                    router.push({
-                                        pathname: '/admin/BookingConfirmation',
+                                    router.replace({
+                                        pathname: '/admin/BookingHistory',
                                         params: {
-                                            id: booking?.id?.toString(),
+                                            refresh: Date.now(),
                                         },
                                     });
                                 }}
@@ -371,28 +393,20 @@ const styles = StyleSheet.create({
         fontSize: hp('1.8%'),
         overflow: 'hidden',
     },
-
     completed: {
-        backgroundColor: '#d1fae5',
-        color: '#047857',
-        width: '100%',
-        textAlign: "center"
+        color: 'green',
+        fontWeight: '700',
     },
 
     pending: {
-        backgroundColor: '#fef3c7',
-        color: '#b45309',
-        width: '100%',
-        textAlign: "center"
+        color: '#E8A317',
+        fontWeight: '700',
     },
 
     cancelled: {
-        backgroundColor: '#fee2e2',
-        color: '#dc2626',
-        width: '100%',
-        textAlign: "center"
+        color: 'red',
+        fontWeight: '700',
     },
-
     /* DROPDOWN */
     dropdownWrapper: {
         width: '100%',

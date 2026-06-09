@@ -11,7 +11,8 @@ import { router } from 'expo-router';
 // export type BookingStatus = "Completed" | "Pending" | "Cancelled";
 
 export type BookingItem = {
- id: string;
+  id: string;
+  bookingId: string;
 
   fullName: string;
   email: string;
@@ -26,7 +27,7 @@ export type BookingItem = {
   budget: string;
   priority: string;
 
-  startingDate: string;
+  bookingDate: string;
   status: string;
 };
 
@@ -37,7 +38,18 @@ type Props = {
   onPress: () => void;
 };
 
+const getStatusType = (status: string) => {
+  const s = status?.toLowerCase() || '';
+
+  if (s.includes('completed')) return 'Completed';
+  if (s.includes('pending')) return 'Pending';
+  if (s.includes('cancel')) return 'Cancelled';
+
+  return 'Other';
+};
+
 const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
+  const statusType = getStatusType(item.status);
   return (
     <View style={styles.card}>
 
@@ -54,9 +66,9 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
             <Text
               style={[
                 styles.status,
-                item.status === 'Completed' && styles.completed,
-                item.status === 'Pending' && styles.pending,
-                item.status === 'Cancelled' && styles.cancelled,
+                statusType === 'Completed' && styles.completed,
+                statusType === 'Pending' && styles.pending,
+                statusType === 'Cancelled' && styles.cancelled,
               ]}
             >
               {item.status}
@@ -66,9 +78,9 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
 
         {/* RIGHT SIDE */}
         <View style={styles.rightSection}>
-          <Text style={styles.dateTop}>  {item.startingDate
-              ? new Date(item.startingDate).toDateString()
-              : ''}</Text>
+          <Text style={styles.dateTop}>  {item.bookingDate
+            ? new Date(item.bookingDate).toDateString()
+            : ''}</Text>
 
           <TouchableOpacity
             style={styles.actionButton}
@@ -86,14 +98,15 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
       </View>
 
       {/* DROPDOWN */}
-      {isOpen && (
-        <View style={styles.dropdown}>
-          <TouchableOpacity style={styles.dropdownItem}
-            onPress={onPress}   
+      {
+        isOpen && (
+          <View style={styles.dropdown}>
+            <TouchableOpacity style={styles.dropdownItem}
+              onPress={onPress}
             >
-            <Text style={styles.dropdownText}>View</Text>
-          </TouchableOpacity>
-          {/* 
+              <Text style={styles.dropdownText}>View</Text>
+            </TouchableOpacity>
+            {/* 
           <TouchableOpacity style={styles.dropdownItem}>
             <Text style={styles.dropdownText}>Edit</Text>
           </TouchableOpacity>
@@ -103,8 +116,8 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
               Delete
             </Text>
           </TouchableOpacity> */}
-        </View>
-      )
+          </View>
+        )
       }
 
       <View style={{ borderBottomWidth: 1, borderColor: 'green', marginVertical: hp('1.5%') }} />

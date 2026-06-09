@@ -21,14 +21,24 @@ import {
 } from 'react-native-responsive-screen';
 
 import Header4 from '@/components/Header4Admin';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
 
-
 export default function BookingHistory() {
-
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const loadBookings = useCallback(async () => {
+        setLoading(true);
+        const data = await fetchBookingsFromAirtable();
+        setBookings(data);
+        setLoading(false);
+    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadBookings();
+        }, [loadBookings])
+    );
 
     // load data from airtable on component mount
     useEffect(() => {
@@ -65,6 +75,7 @@ export default function BookingHistory() {
             item.status?.toLowerCase() === filter.toLowerCase()
         );
     }, [filter, bookings]);
+
 
     const renderItem = useCallback(({ item }: any) => {
         return (
@@ -120,15 +131,15 @@ export default function BookingHistory() {
                         <Text style={styles.btnText}>All</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Completed')}>
+                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Completed ')}>
                         <Text style={styles.btnText}>Completed</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Pending')}>
+                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Pending Customer Response ')}>
                         <Text style={styles.btnText}>Pending</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Cancelled')}>
+                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Cancelled ')}>
                         <Text style={styles.btnText}>Cancelled</Text>
                     </TouchableOpacity>
                 </View>
