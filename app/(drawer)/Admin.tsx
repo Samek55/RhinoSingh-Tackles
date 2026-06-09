@@ -24,7 +24,8 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
-
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../src/firebase/firebaseConfig"; // adjust path
 // Get screen dimensions for responsive layout
 const { width, height } = Dimensions.get('window');
 
@@ -45,10 +46,27 @@ export default function AdminLogin() {
         setPasswordVisible(!passwordVisible);
     };
 
-    const handleSubmit = () => {
-       router.push('/admin/BookingHistory')
-    };
+    const handleSubmit = async () => {
+        try {
+            if (!phoneNumber || !password) {
+                alert("Please enter phone and PIN");
+                return;
+            }
 
+            // convert phone → fake email
+            const email = `${phoneNumber}@tackles.app`;
+
+            await signInWithEmailAndPassword(auth, email, password);
+
+            console.log("Login success");
+
+            router.push('/admin/BookingHistory');
+
+        } catch (error: any) {
+            console.log("Login error:", error.message);
+            alert("Invalid phone or PIN");
+        }
+    };
 
     return (
         <View style={{ flex: 1 }} >

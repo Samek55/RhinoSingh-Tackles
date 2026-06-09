@@ -26,6 +26,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="rocketsingh"/>
+        <data android:scheme="exp+rocketsingh"/>
       </intent-filter>
     </activity>
   </application>
