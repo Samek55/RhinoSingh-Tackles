@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -15,85 +15,124 @@ import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
 
 import BookingCard from '../../../components/admin/BookingCard';
+import Header4 from '@/components/Header4Admin';
+import { router, useFocusEffect } from 'expo-router';
+import { fetchBookingsFromAirtable } from '../../../api/helper/fetchBookingDataAirtable';
+
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 
-import Header4 from '@/components/Header4Admin';
-import { router, useFocusEffect } from 'expo-router';
-import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
-
 export default function BookingHistory() {
+
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [openId, setOpenId] = useState<string | null>(null);
+    const [filter, setFilter] = useState('All');
 
+    // 🚀 cache to avoid unnecessary re-renders
+    const lastDataRef = useRef<string>('');
+    const intervalRef = useRef<any>(null);
+
+    // -----------------------------
+    // FETCH BOOKINGS (OPTIMIZED)
+    // -----------------------------
     const loadBookings = useCallback(async () => {
-        setLoading(true);
-        const data = await fetchBookingsFromAirtable();
-        setBookings(data);
-        setLoading(false);
+        try {
+            const data = await fetchBookingsFromAirtable();
+
+            const serialized = JSON.stringify(data);
+
+            // 🚀 skip update if nothing changed
+            if (serialized === lastDataRef.current) return;
+
+            lastDataRef.current = serialized;
+            setBookings(data || []);
+
+        } catch (error) {
+            console.error('Failed to load bookings:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    // -----------------------------
+    // FOCUS + POLLING
+    // -----------------------------
     useFocusEffect(
         useCallback(() => {
+
+            // initial load
             loadBookings();
+
+            // polling
+            intervalRef.current = setInterval(() => {
+                loadBookings();
+            }, 15000);
+
+            return () => {
+                clearInterval(intervalRef.current);
+            };
         }, [loadBookings])
     );
 
-    // load data from airtable on component mount
-    useEffect(() => {
-        let isMounted = true;
-
-        const loadData = async () => {
-            setLoading(true);
-            const data = await fetchBookingsFromAirtable();
-
-            if (isMounted) {
-                setBookings(data);
-                setLoading(false);
-            }
-        };
-
-        loadData();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
-    const [openId, setOpenId] = useState<number | null>(null);
-    const [filter, setFilter] = useState('All');
-
-    const toggleCard = useCallback((id: number) => {
+    // -----------------------------
+    // TOGGLE CARD
+    // -----------------------------
+    const toggleCard = useCallback((id: string) => {
         setOpenId(prev => (prev === id ? null : id));
     }, []);
 
+    // -----------------------------
+    // NAVIGATION (OPTIMIZED)
+    // -----------------------------
+    const handlePress = useCallback((id: string) => {
+        router.push({
+            pathname: '/admin/BookingDetails_1',
+            params: { id },
+        });
+    }, []);
+
+    // -----------------------------
+    // SORT BOOKINGS
+    // -----------------------------
+    const sortedBookings = useMemo(() => {
+        return [...bookings].sort((a, b) => {
+            const aId = Number(a.bookingId) || 0;
+            const bId = Number(b.bookingId) || 0;
+            return bId - aId;
+        });
+    }, [bookings]);
+
+    // -----------------------------
+    // FILTER BOOKINGS
+    // -----------------------------
     const filteredData = useMemo(() => {
-        if (filter === 'All') return bookings;
+        if (filter === 'All') return sortedBookings;
 
-        return bookings.filter(item =>
-            item.status?.toLowerCase() === filter.toLowerCase()
-        );
-    }, [filter, bookings]);
+        return sortedBookings.filter(item => {
+            const status = (item.status || '')
+                .toLowerCase()
+                .trim();
 
+            return status === filter.toLowerCase();
+        });
+    }, [filter, sortedBookings]);
 
+    // -----------------------------
+    // RENDER ITEM (MEMO SAFE)
+    // -----------------------------
     const renderItem = useCallback(({ item }: any) => {
         return (
             <BookingCard
                 item={item}
                 isOpen={openId === item.id}
                 onToggle={() => toggleCard(item.id)}
-                onPress={() =>
-                    router.push({
-                        pathname: '/admin/BookingDetails_1',
-                        params: {
-                            id: item.id.toString(),
-                        },
-                    })
-                }
+                onPress={() => handlePress(item.id)}
             />
         );
-    }, [openId, toggleCard]);
+    }, [openId, toggleCard, handlePress]);
 
     return (
         <View style={{ flex: 1 }}>
@@ -121,27 +160,20 @@ export default function BookingHistory() {
                         placeholder="Search"
                         placeholderTextColor={'rgba(67, 67, 67,0.8)'}
                         style={styles.textInput}
-                        autoCapitalize="none"
                     />
                 </View>
 
-                {/* FILTER BUTTONS */}
+                {/* FILTERS */}
                 <View style={styles.mainBtns}>
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('All')}>
-                        <Text style={styles.btnText}>All</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Completed ')}>
-                        <Text style={styles.btnText}>Completed</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Pending Customer Response ')}>
-                        <Text style={styles.btnText}>Pending</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.btn} onPress={() => setFilter('Cancelled ')}>
-                        <Text style={styles.btnText}>Cancelled</Text>
-                    </TouchableOpacity>
+                    {['All', 'Completed', 'Pending', 'Cancelled'].map((f) => (
+                        <TouchableOpacity
+                            key={f}
+                            style={styles.btn}
+                            onPress={() => setFilter(f)}
+                        >
+                            <Text style={styles.btnText}>{f}</Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
                 {/* LIST */}
@@ -149,12 +181,16 @@ export default function BookingHistory() {
                     data={filteredData}
                     renderItem={renderItem}
                     keyExtractor={(item) => item.id.toString()}
-                    style={styles.BookingCard}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={{
-                        paddingBottom: hp('15%'),
-                    }}
+                    contentContainerStyle={{ paddingBottom: hp('15%') }}
+
+                    // 🚀 PERFORMANCE BOOST
+                    initialNumToRender={8}
+                    maxToRenderPerBatch={6}
+                    windowSize={7}
+                    removeClippedSubviews={true}
+                    updateCellsBatchingPeriod={50}
                 />
 
             </KeyboardAvoidingView>
@@ -228,6 +264,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: wp('4%'),
+        paddingBottom: hp('4%'),
     },
 
     btn: {

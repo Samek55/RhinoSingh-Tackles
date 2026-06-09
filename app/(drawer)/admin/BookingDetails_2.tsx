@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -11,72 +11,86 @@ import {
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
-import { personBooking } from '../../../src/data/AdminData/PersonBookingListData';
 import dropdownIcon from '../../../assets/icons/contact/DropDown.png'
 import LocationPin from '../../../assets/icons/contact/location-pin.png'
 import phoneIcon from '../../../assets/icons/admin/phone.png'
-import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
+import { fetchBookingsFromAirtable } from '../../../api/helper/fetchBookingDataAirtable';
 
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import Header4 from '@/components/Header4Admin';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { updateBookingStatus } from '../../../api/helper/updateBookingStatus';
 
-type StatusType = 'Completed ' | 'Pending ' | 'Cancelled ';
+type StatusType = 'Completed' | 'Pending' | 'Cancelled';
 
 export default function BookingDetails() {
     const scrollRef = useRef<any>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const [booking, setBooking] = useState<any>(null);
-    useEffect(() => {
-        const load = async () => {
-            const data = await fetchBookingsFromAirtable();
+    const [loading, setLoading] = useState(true);
 
-            const found = data.find((item: any) => item.id === id);
+    const loadBooking = useCallback(async () => {
+        setLoading(true);
 
-            setBooking(found);
-        };
+        const data = await fetchBookingsFromAirtable();
 
-        load();
+        const found = data.find((item: any) => item.id === id);
+
+        setBooking(found || null);
+
+        setLoading(false);
     }, [id]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadBooking();
+        }, [loadBooking])
+    );
+
+
+    // local state for status
+    const [status, setStatus] = useState<StatusType>('Pending');
+    const [openDropdown, setOpenDropdown] = useState(false);
+    const STATUS_OPTIONS: StatusType[] = ['Completed', 'Pending', 'Cancelled'];
+
+    const realStatus = booking?.status;
+    const [workStatus, setWorkStatus] = useState<StatusType>('Pending');
 
     useEffect(() => {
         if (booking?.status) {
-            setStatus(booking.status);
+            setWorkStatus(booking.status); // only initialize dropdown
         }
     }, [booking]);
 
 
-    // local state for status
-    const [status, setStatus] = useState<StatusType>(
-        (booking?.status as StatusType) || 'Pending '
-    );
-    const [openDropdown, setOpenDropdown] = useState(false);
-    const STATUS_OPTIONS: StatusType[] = ['Completed ', 'Pending ', 'Cancelled '];
 
-    const handleStatusChange = async (newStatus: StatusType) => {
-        try {
-            await updateBookingStatus(booking.id, newStatus);
 
-            setStatus(newStatus);
-
-            setBooking((prev: any) => ({
-                ...prev,
-                status: newStatus,
-            }));
-
-            setOpenDropdown(false);
-
-            console.log('Status updated');
-        } catch (error) {
-            console.error(error);
-        }
+    const handleStatusChange = (newStatus: StatusType) => {
+        setWorkStatus(newStatus);
+        setOpenDropdown(false);
     };
 
+    const handleSubmit = async () => {
+        try {
+            if (!booking?.id) return;
+
+            await updateBookingStatus(booking.id, workStatus);
+
+            router.replace({
+                pathname: '/admin/BookingHistory',
+                params: {
+                    refresh: Date.now(),
+                },
+            });
+        } catch (error) {
+            console.error('Failed to update status:', error);
+            alert('Failed to update status');
+        }
+    };
 
     return (
         <View style={{ flex: 1 }}>
@@ -132,14 +146,12 @@ export default function BookingDetails() {
                             </View>
                             <View style={{ alignItems: 'flex-end' }} >
                                 <Text style={styles.label}>Status</Text>
-                                <Text
-                                    style={[
-                                        styles.value,
-                                        status?.includes('Completed ') && styles.completed,
-                                        status?.includes('Pending ') && styles.pending,
-                                        status?.includes('Cancelled ') && styles.cancelled,
-                                    ]}
-                                >
+                                <Text style={[
+                                    styles.value,
+                                    booking?.status?.includes('Completed') && styles.completed,
+                                    booking?.status?.includes('Pending') && styles.pending,
+                                    booking?.status?.includes('Cancelled') && styles.cancelled,
+                                ]}>
                                     {booking?.status}
                                 </Text>
 
@@ -189,7 +201,7 @@ export default function BookingDetails() {
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
 
                                     <Text style={styles.dropdownTextContainer}>
-                                        {status}
+                                        {workStatus}
                                     </Text>
                                     <Image source={dropdownIcon} style={{ height: 20, width: 23, tintColor: 'green' }} />
                                 </View>
@@ -214,14 +226,7 @@ export default function BookingDetails() {
                         {/* ButtonContainer */}
                         <View style={styles.ButtonContainer}>
                             <TouchableOpacity style={styles.AcceptButton}
-                                onPress={() => {
-                                    router.replace({
-                                        pathname: '/admin/BookingHistory',
-                                        params: {
-                                            refresh: Date.now(),
-                                        },
-                                    });
-                                }}
+                                onPress={handleSubmit}
                             >
                                 <Text style={styles.AcceptText}> Submit</Text>
                             </TouchableOpacity>

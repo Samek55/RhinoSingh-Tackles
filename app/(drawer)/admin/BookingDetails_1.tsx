@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -13,7 +13,7 @@ import {
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import LocationPin from '../../../assets/icons/contact/location-pin.png'
-import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
+import { fetchBookingsFromAirtable } from '../../../api/helper/fetchBookingDataAirtable';
 
 
 import {
@@ -21,7 +21,7 @@ import {
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import Header4 from '@/components/Header4Admin';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 export default function BookingDetails() {
 
@@ -29,6 +29,24 @@ export default function BookingDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const [booking, setBooking] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    const loadBooking = useCallback(async () => {
+        setLoading(true);
+
+        const data = await fetchBookingsFromAirtable();
+
+        const found = data.find((item: any) => item.id === id);
+
+        setBooking(found || null);
+        setLoading(false);
+    }, [id]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadBooking();
+        }, [loadBooking])
+    );
 
     useEffect(() => {
         const load = async () => {

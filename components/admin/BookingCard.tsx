@@ -6,7 +6,6 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import { router } from 'expo-router';
 
 // export type BookingStatus = "Completed" | "Pending" | "Cancelled";
 
@@ -125,7 +124,7 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
   );
 };
 
-export default BookingCard;
+export default React.memo(BookingCard);
 
 const styles = StyleSheet.create({
   card: {
@@ -245,7 +244,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
 
-    backgroundColor: '#fff',
+    backgroundColor: '#eaeaea',
   },
 
   dropdownText: {
