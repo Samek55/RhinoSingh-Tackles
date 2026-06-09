@@ -40,6 +40,12 @@
           "backgroundColor": "#ffffff"
         }
       ],
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
+      ],
       "expo-font",
       "expo-web-browser",
       "@react-native-community/datetimepicker",
