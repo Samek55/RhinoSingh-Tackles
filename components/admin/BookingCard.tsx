@@ -8,19 +8,26 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 
-export type BookingStatus = "Completed" | "Pending" | "Cancelled";
+// export type BookingStatus = "Completed" | "Pending" | "Cancelled";
 
 export type BookingItem = {
-  id: number;
-  name: string;
-  service: string;
-  date: string;
-  status: BookingStatus;
+ id: string;
+
+  fullName: string;
+  email: string;
   phone: string;
+
+  city?: string;
+  area?: string;
+
+  service: string;
   shift: string;
-  location: string;
-  message: string;
+
   budget: string;
+  priority: string;
+
+  startingDate: string;
+  status: string;
 };
 
 type Props = {
@@ -39,7 +46,7 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
 
         {/* LEFT SIDE */}
         <View style={styles.leftSection}>
-          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.name}>{item.fullName}</Text>
           <Text style={styles.service}>{item.service}</Text>
           <Text style={styles.budget}>{item.budget}</Text>
           {/* INFO */}
@@ -59,7 +66,9 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
 
         {/* RIGHT SIDE */}
         <View style={styles.rightSection}>
-          <Text style={styles.dateTop}>{item.date?.slice(0, 11)}</Text>
+          <Text style={styles.dateTop}>  {item.startingDate
+              ? new Date(item.startingDate).toDateString()
+              : ''}</Text>
 
           <TouchableOpacity
             style={styles.actionButton}

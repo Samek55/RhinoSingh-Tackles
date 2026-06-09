@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -14,8 +14,6 @@ import {
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
 
-import { personBooking } from '../../../src/data/AdminData/PersonBookingListData';
-
 import BookingCard from '../../../components/admin/BookingCard';
 import {
     widthPercentageToDP as wp,
@@ -24,8 +22,35 @@ import {
 
 import Header4 from '@/components/Header4Admin';
 import { router } from 'expo-router';
+import { fetchBookingsFromAirtable } from '../../../api/fetchBookingDataAirtable';
+
 
 export default function BookingHistory() {
+
+    const [bookings, setBookings] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // load data from airtable on component mount
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadData = async () => {
+            setLoading(true);
+            const data = await fetchBookingsFromAirtable();
+
+            if (isMounted) {
+                setBookings(data);
+                setLoading(false);
+            }
+        };
+
+        loadData();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
     const [openId, setOpenId] = useState<number | null>(null);
     const [filter, setFilter] = useState('All');
 
@@ -34,10 +59,12 @@ export default function BookingHistory() {
     }, []);
 
     const filteredData = useMemo(() => {
-        if (filter === 'All') return personBooking;
+        if (filter === 'All') return bookings;
 
-        return personBooking.filter(item => item.status === filter);
-    }, [filter, personBooking]);
+        return bookings.filter(item =>
+            item.status?.toLowerCase() === filter.toLowerCase()
+        );
+    }, [filter, bookings]);
 
     const renderItem = useCallback(({ item }: any) => {
         return (

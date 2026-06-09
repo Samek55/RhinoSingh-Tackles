@@ -48,17 +48,17 @@ export default function AdminLogin() {
 
     const handleSubmit = async () => {
         try {
-            if (!phoneNumber || !password) {
-                alert("Please enter phone and PIN");
-                return;
-            }
+            // if (!phoneNumber || !password) {
+            //     alert("Please enter phone and PIN");
+            //     return;
+            // }
 
-            // convert phone → fake email
-            const email = `${phoneNumber}@tackles.app`;
+            // // convert phone → fake email
+            // const email = `${phoneNumber}@tackles.app`;
 
-            await signInWithEmailAndPassword(auth, email, password);
+            // await signInWithEmailAndPassword(auth, email, password);
 
-            console.log("Login success");
+            // console.log("Login success");
 
             router.push('/admin/BookingHistory');
 
@@ -73,8 +73,8 @@ export default function AdminLogin() {
             <Header4 />
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}>
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -300,21 +300,4 @@ const styles = StyleSheet.create({
         marginTop: hp('7%')
     }
 });
-
-
-
-
-// export default function AdminLogin() {
-//     return (
-//         <View style={styles.container}>
-//             <Text style={styles.text}>Admin Login Screen</Text>
-//             <Pressable
-//                 onPress={() => router.push('/Home')}
-//                 style={styles.button}
-//             >
-//                 <Text style={{color:'white'}} >go back home</Text>
-//             </Pressable>
-//         </View>
-//     );
-// }
 
