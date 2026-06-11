@@ -48,19 +48,19 @@ export default function AdminLogin() {
 
     const handleSubmit = async () => {
         try {
-            // if (!phoneNumber || !password) {
-            //     alert("Please enter phone and PIN");
-            //     return;
-            // }
+            if (!phoneNumber || !password) {
+                alert("Please enter phone and PIN");
+                return;
+            }
 
-            // // convert phone → fake email
-            // const email = `${phoneNumber}@tackles.app`;
+            // convert phone → fake email
+            const email = `${phoneNumber}@tackles.app`;
 
-            // await signInWithEmailAndPassword(auth, email, password);
+            await signInWithEmailAndPassword(auth, email, password);
 
-            // console.log("Login success");
+            console.log("Login success");
 
-            router.push('/admin/BookingHistory');
+            router.replace('/admin/BookingHistory');
 
         } catch (error: any) {
             console.log("Login error:", error.message);
@@ -70,11 +70,11 @@ export default function AdminLogin() {
 
     return (
         <View style={{ flex: 1 }} >
-            <Header4 />
             <KeyboardAvoidingView
                 style={styles.container}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          >
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
+            <Header4 />
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -119,7 +119,7 @@ export default function AdminLogin() {
                                 value={password}
                                 onChangeText={(value) => {
                                     let cleaned = value.replace(/[^0-9]/g, '');
-                                    cleaned = cleaned.slice(0, 5);
+                                    cleaned = cleaned.slice(0, 6);
                                     setPassword(cleaned);
                                 }}
                                 keyboardType="number-pad"
@@ -163,6 +163,11 @@ export default function AdminLogin() {
                         </Text>
                         <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
                             <Text style={styles.btnTextBelow}>Change PIN</Text>
+                            <Text
+                                onPress={()=>router.push('/AdminCreate')}
+                                style={styles.btnTextBelow}
+                            >
+                                Create Admin</Text>
                         </TouchableOpacity>
 
                     </View>
