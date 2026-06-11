@@ -26,6 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
 import ClearFormIcon from '../../../assets/icons/booking/clear.png'
+import DropdownAdd from '@/components/bookings/DropdownAdd';
 
 const { width, height } = Dimensions.get('window');
 
@@ -50,7 +51,7 @@ export default function ServiceBookingScreen() {
   const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
-  const [selectedService, setSelectedService] = useState('');
+  const [selectedService, setSelectedService] =  useState<string[]>([]);
   const [selectedShift, setSelectedShift] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
@@ -65,7 +66,7 @@ export default function ServiceBookingScreen() {
   const clearAllFields = () => {
     setName('');
     setNumber('');
-    setSelectedService('');
+    setSelectedService([]);
     setSelectedShift('');
     setDate(null);
     setSelectedArea('');
@@ -226,15 +227,16 @@ export default function ServiceBookingScreen() {
 
             {/* Select Service */}
             <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
-            <Dropdown
-              value={selectedService}
-              options={services}
-              placeholder="Select Services"
-              placeholderColor="#4B4B4B"
-              onSelectOption={setSelectedService}
-              onOpen={() => setActiveInput('service')}
-              onClose={() => setActiveInput(null)}
-            />
+            <DropdownAdd
+            options={services}
+            placeholder="Select the Services you offer"
+            placeholderColor="#4B4B4B"
+            onSelectOption={setSelectedService}
+            value={selectedService}
+            onOpen={() => setActiveInput('servicesOffered')}
+            onClose={() => setActiveInput(null)}
+             maxSelections={5}
+          />
 
             {/* Choose Date */}
             <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
