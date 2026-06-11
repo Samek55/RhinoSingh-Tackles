@@ -51,7 +51,7 @@ export default function ServiceBookingScreen() {
   const scrollRef = useRef<any>(null);
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
-  const [selectedService, setSelectedService] =  useState<string[]>([]);
+  const [selectedService, setSelectedService] = useState<string[]>([]);
   const [selectedShift, setSelectedShift] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
@@ -60,7 +60,6 @@ export default function ServiceBookingScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [show, setShow] = useState<boolean>(false);
 
-  // New tracking states for handling matching active design glows
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
   const clearAllFields = () => {
@@ -81,19 +80,11 @@ export default function ServiceBookingScreen() {
       'Clear Form',
       'Are you sure you want to clear all fields?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Clear',
-          style: 'destructive',
-          onPress: clearAllFields,
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes, Clear', style: 'destructive', onPress: clearAllFields },
       ]
     );
   };
-
 
   const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
@@ -106,8 +97,9 @@ export default function ServiceBookingScreen() {
       Alert.alert('Validation Error', 'Enter a valid 10-digit phone number');
       return;
     }
-    if (!selectedService) {
-      Alert.alert('Validation Error', 'Please select a service');
+    // FIX: Array length validation check
+    if (!selectedService || selectedService.length === 0) {
+      Alert.alert('Validation Error', 'Please select at least one service');
       return;
     }
     if (!date) {
@@ -141,7 +133,8 @@ export default function ServiceBookingScreen() {
         params: {
           name: name.trim(),
           number: cleanNumber,
-          selectedService,
+          // FIX: Convert array to string safe parameter format
+          selectedService: JSON.stringify(selectedService),
           selectedShift,
           selectedArea,
           selectedPriority,
@@ -189,7 +182,6 @@ export default function ServiceBookingScreen() {
               placeholderTextColor={'#4B4B4B'}
             />
 
-
             {/* Phone Number */}
             <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
             <View style={styles.phoneContainer}>
@@ -228,15 +220,15 @@ export default function ServiceBookingScreen() {
             {/* Select Service */}
             <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
             <DropdownAdd
-            options={services}
-            placeholder="Select the Services you offer"
-            placeholderColor="#4B4B4B"
-            onSelectOption={setSelectedService}
-            value={selectedService}
-            onOpen={() => setActiveInput('servicesOffered')}
-            onClose={() => setActiveInput(null)}
-             maxSelections={5}
-          />
+              options={services}
+              placeholder="Select the Services you offer"
+              placeholderColor="#4B4B4B"
+              onSelectOption={setSelectedService}
+              value={selectedService}
+              onOpen={() => setActiveInput('servicesOffered')}
+              onClose={() => setActiveInput(null)}
+              maxSelections={5}
+            />
 
             {/* Choose Date */}
             <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
@@ -254,9 +246,7 @@ export default function ServiceBookingScreen() {
                 <Text
                   style={[
                     styles.datePickerText,
-                    {
-                      color: date ? '#1A1A1A' : '#4B4B4B',
-                    },
+                    { color: date ? '#1A1A1A' : '#4B4B4B' },
                   ]}
                 >
                   {date ? date.toDateString() : 'Pick a Date'}
@@ -278,7 +268,6 @@ export default function ServiceBookingScreen() {
                   minimumDate={new Date()}
                   onChange={(event, selectedDate) => {
                     setShow(Platform.OS === 'ios');
-                    // Reset styling focus outline when picker resolves on Android
                     if (Platform.OS === 'android') {
                       setActiveInput(null);
                     }
@@ -400,20 +389,20 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.05,
   },
   input: {
-    borderWidth: 1.5, // Match premium look thickness
+    borderWidth: 1.5,
     borderRadius: 12,
     paddingHorizontal: width * 0.035,
-    height: height * 0.055, // Matches the height optimization from before
+    height: height * 0.055,
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
     fontWeight: '500',
-    borderColor: '#E2E8F0', // Cleaner neutral baseline gray
+    borderColor: '#E2E8F0',
     color: '#1A1A1A',
     backgroundColor: '#fff',
   },
   inputActive: {
-    borderColor: 'hsl(142, 71%, 45%)',      // Premium blue border glow
-    backgroundColor: '#F4F7FF',  // Premium soft blue internal background tint
+    borderColor: 'hsl(142, 71%, 45%)',
+    backgroundColor: '#F4F7FF',
   },
   phoneContainer: {
     position: 'relative',
@@ -485,7 +474,6 @@ const styles = StyleSheet.create({
     fontSize: width * 0.04,
     fontWeight: '600',
   },
-  //clear btn
   buttonClearFlex: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -494,7 +482,6 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     justifyContent: 'center'
   },
-
   buttonClear: {
     color: '#0a7de1',
     fontSize: width * 0.038,
