@@ -21,15 +21,16 @@ import { verifyOtp } from '../../../../api/otp';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
+// Font scaling utility function
 const scaleFont = (size: number) => {
-  const guidelineBaseWidth = 375;
+  const guidelineBaseWidth = 375; // Base screen width to scale from
   return (size * width) / guidelineBaseWidth;
 };
 
 export default function BookingOtp() {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']); // Manage OTP state
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const {
     name,
@@ -43,42 +44,41 @@ export default function BookingOtp() {
     date,
   } = useLocalSearchParams();
 
+  // Clear OTP whenever the screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      setOtp(['', '', '', '', '', '']);
+      setOtp(['', '', '', '', '', '']); // Reset OTP on screen focus
     }, []),
   );
-
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleChange = (text: string, index: number) => {
-    // Only accept numbers to prevent unexpected character breakages
-    const cleanText = text.replace(/[^0-9]/g, '');
     const newOtp = [...otp];
-    newOtp[index] = cleanText;
+    newOtp[index] = text;
     setOtp(newOtp);
 
-    if (cleanText && index < otp.length - 1) {
+    // Automatically focus next input box if the user types a number
+    if (text && index < otp.length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyPress = (event: any, index: number) => {
+    // Handle backspace to move focus to the previous box
     if (event.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
-
-  const formatDate = (dateParam: any) => {
-    if (!dateParam) return new Date().toISOString().split('T')[0];
-    return new Date(dateParam).toISOString().split('T')[0];
+  const formatDate = (date: any) => {
+    return new Date(date).toISOString().split('T')[0];
   };
 
   const handleNavigate = async () => {
     const enteredOtp = otp.join('');
 
+    // prevent multiple calls
     if (isSubmitting) return;
 
+    // Ensure they filled out all 5 boxes
     if (enteredOtp.length < 6) {
       Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
       return;
@@ -86,43 +86,39 @@ export default function BookingOtp() {
 
     setIsSubmitting(true);
     const formattedNumber = `+977` + number;
-
     try {
+
       console.log(`Verifying phone: ${formattedNumber} with code: ${enteredOtp}`);
       const verificationResult = await verifyOtp(formattedNumber, enteredOtp);
 
+      // 2. Evaluate the live Twilio approval status response
       if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
         Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
         setIsSubmitting(false);
         return;
       }
 
-      // --- FIX: Robust parsing for stringified params sent from expo-router ---
-      let targetServices: string[] = [];
-      if (selectedService) {
-        try {
-          const parsed = JSON.parse(selectedService as string);
-          targetServices = Array.isArray(parsed) ? parsed : [String(parsed)];
-        } catch {
-          targetServices = [selectedService as string];
-        }
-      }
-
-      const serviceRecords = await base("Services").select().all();
+      const serviceRecords = await base("Services")
+        .select()
+        .all();
 
       const serviceMap = serviceRecords.map((rec: any) => ({
         id: rec.id,
         name: rec.fields.Name,
       }));
 
-      // Map clean raw string names back to Airtable Record IDs
-      const serviceIds = targetServices
-        .map((srvName: string) => serviceMap.find((s: any) => s.name === srvName)?.id)
-        .filter(Boolean);
+      const serviceIds = Array.isArray(selectedService)
+        ? selectedService
+          .map((name: string) =>
+            serviceMap.find((s: any) => s.name === name)?.id
+          )
+          .filter(Boolean)
+        : [
+          serviceMap.find((s: any) => s.name === selectedService)?.id,
+        ].filter(Boolean);
 
       if (serviceIds.length === 0) {
-        Alert.alert("Error", "No valid service selected mapped to database.");
-        setIsSubmitting(false);
+        Alert.alert("Error", "No valid service selected");
         return;
       }
 
@@ -136,18 +132,19 @@ export default function BookingOtp() {
         "Work Description": message,
         "Budget": selectedBudget,
         "Starting Date": formatDate(date),
-        "Status": "New / Open",
       };
 
       await createBooking(booking);
 
-      // Notify professionals out of execution thread cleanly
+      // Fire-and-forget: notify matching professionals
       notifyProfessionals(
-        targetServices[0] || '',
-        (Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string) || '',
-      ).catch((e) => console.log("Notification error bypassed:", e));
+        Array.isArray(selectedService) ? selectedService[0] : selectedService as string,
+        Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string,
+      ).catch(() => { });
 
-      router.push('/booking/BookingVerify');
+      
+
+      router.push('/booking/BookingVerify')
 
     } catch (error) {
       console.log("BOOKING ERROR:", error);
@@ -189,12 +186,7 @@ export default function BookingOtp() {
             ))}
           </View>
 
-          <Text style={styles.resendcode}>
-            {`Didn't get code? `}
-            <Text style={{ color: 'blue' }} onPress={() => Alert.alert("Info", "Resend OTP feature triggered.")}>
-              Resend Code
-            </Text>
-          </Text>
+          <Text style={styles.resendcode}>{`Didn't get code?`} <Text style={{ color: 'blue' }}>Resend Code</Text></Text>
 
           <TouchableOpacity
             style={[styles.submitButton, isSubmitting && { opacity: 0.6 }]}
@@ -215,7 +207,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: '5%',
-    paddingTop: height * 0.09,
+    paddingTop: height * 0.09, // Adjust top padding based on screen size
     alignItems: 'center',
     backgroundColor: '#fff'
   },
@@ -226,15 +218,15 @@ const styles = StyleSheet.create({
   bookingText: {
     width: '70%',
     textAlign: 'center',
-    marginBottom: height * 0.08,
+    marginBottom: height * 0.08, // Adjust margin-bottom based on screen height
     fontSize: scaleFont(17),
-    marginTop: height * 0.03,
+    marginTop: height * 0.03, // Adjust top margin for large screens
     fontWeight: '500',
     lineHeight: 23,
   },
   otpPromptText: {
     fontSize: scaleFont(16.5),
-    marginBottom: height * 0.04,
+    marginBottom: height * 0.04, // Adjust margin-bottom for larger screens
     fontWeight: '400',
     color: 'green',
   },
@@ -245,8 +237,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   input: {
-    width: width * 0.12,
-    height: width * 0.12,
+    width: width * 0.12, // Dynamic width for better scalability
+    height: width * 0.12, // Dynamic height to maintain square shape
     marginHorizontal: 5,
     borderWidth: 1,
     borderColor: 'hsl(0, 0%, 79%)',
@@ -255,6 +247,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(18),
     backgroundColor: '#fff',
     elevation: 3,
+
   },
   resendcode: {
     marginTop: 25,
@@ -266,11 +259,11 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: 'green',
     height: height * 0.05,
-    width: '80%',
+    width: '80%', // Adjust width based on screen size
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 100,
-    marginTop: height * 0.08,
+    marginTop: height * 0.08, // Dynamic margin-top for large screens
   },
   submitButtonText: {
     fontSize: scaleFont(17),

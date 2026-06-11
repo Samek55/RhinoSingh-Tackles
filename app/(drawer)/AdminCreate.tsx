@@ -1,64 +1,68 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Alert, StyleSheet } from "react-native";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  View,
+  TextInput,
+  Button,
+  Alert,
+  StyleSheet,
+} from "react-native";
+
+import {
+  createUserWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+
+import { auth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
-import { signOut } from "@firebase/auth";
-import { auth } from "../../src/firebase/firebaseConfig"; // adjust path
 
+type Role = "admin" | "career" | "user";
 
-export default function CreateAdmin() {
+export default function CreateUser() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pin, setPin] = useState("");
+  const [selectedRole, setSelectedRole] = useState<Role>("admin");
 
-  const handleLogout = async () => {
+  const createUser = async () => {
     try {
-      await signOut(auth);
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
+      const cleanPin = pin.replace(/[^0-9]/g, "");
 
-      try {
-        const { OneSignal } = require('react-native-onesignal');
-        OneSignal.logout();
-      } catch (e) {
-        console.warn('OneSignal clean-up failure:', e);
+      // ✅ STRICT VALIDATION
+      if (cleanPhone.length !== 10) {
+        Alert.alert("Error", "Phone number must be exactly 10 digits");
+        return;
       }
 
-      Alert.alert(
-        "Logged Out",
-        "You have been logged out successfully.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              router.replace('/admin/AdminLogin');
-            }
-          }
-        ]
+      if (cleanPin.length !== 6) {
+        Alert.alert("Error", "PIN must be exactly 6 digits");
+        return;
+      }
+
+      const email = `${cleanPhone}@tackles.app`;
+
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        cleanPin
       );
 
-    } catch (error: any) {
-      alert("Logout error: " + error.message);
-    }
-  };
+      const user = userCredential.user;
 
+      // 🔥 OneSignal setup
+      try {
+        const { OneSignal } = require("react-native-onesignal");
 
-  const createAdmin = async () => {
-    try {
-      if (!phoneNumber || !pin) {
-        Alert.alert("Error", "Please enter phone number and PIN");
-        return;
+        OneSignal.login(user.uid);
+
+        OneSignal.User.addTags({
+          role: selectedRole, // ONLY: admin | career | user
+        });
+      } catch (e) {
+        console.warn("OneSignal error:", e);
       }
 
-      if (pin.length < 6) {
-        Alert.alert("Error", "PIN must be at least 6 digits");
-        return;
-      }
+      Alert.alert("Success", `${selectedRole} created successfully`);
 
-      // Generate the internal dummy email needed for Firebase Email/Password auth
-      const email = `${phoneNumber}@tackles.app`;
-
-      // Create the user inside Firebase Auth only
-      await createUserWithEmailAndPassword(auth, email, pin);
-
-      Alert.alert("Success", "Admin created successfully");
       setPhoneNumber("");
       setPin("");
     } catch (error: any) {
@@ -66,27 +70,73 @@ export default function CreateAdmin() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+
+      try {
+        const { OneSignal } = require("react-native-onesignal");
+        OneSignal.logout();
+      } catch (e) {
+        console.warn("OneSignal logout error:", e);
+      }
+
+      Alert.alert("Logged Out", "You have been logged out.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/admin/AdminLogin"),
+        },
+      ]);
+    } catch (error: any) {
+      Alert.alert("Logout Error", error.message);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.box}>
+
+        {/* PHONE */}
         <TextInput
-          placeholder="Phone Number"
+          placeholder="Phone Number (10 digits)"
           value={phoneNumber}
-          onChangeText={setPhoneNumber}
-          keyboardType="phone-pad"
+          keyboardType="number-pad"
+          onChangeText={(v) => {
+            const cleaned = v.replace(/[^0-9]/g, "");
+            setPhoneNumber(cleaned.slice(0, 10)); // limit 10
+          }}
           style={styles.input}
         />
 
+        {/* PIN */}
         <TextInput
-          placeholder="PIN"
+          placeholder="PIN (6 digits)"
           value={pin}
-          onChangeText={setPin}
           secureTextEntry
+          keyboardType="number-pad"
+          onChangeText={(v) => {
+            const cleaned = v.replace(/[^0-9]/g, "");
+            setPin(cleaned.slice(0, 6)); // limit 6
+          }}
           style={styles.input}
         />
 
-        <Button title="Create Admin" onPress={createAdmin} />
-        <Button title="Go Back" onPress={handleLogout} color="red" />
+        {/* ROLE SELECT */}
+        <View style={styles.roleRow}>
+          {(["admin", "career", "user"] as Role[]).map((role) => (
+            <Button
+              key={role}
+              title={role}
+              onPress={() => setSelectedRole(role)}
+              color={selectedRole === role ? "green" : "gray"}
+            />
+          ))}
+        </View>
+
+        {/* ACTIONS */}
+        <Button title={`Create ${selectedRole}`} onPress={createUser} />
+        <Button title="Logout" onPress={handleLogout} color="red" />
+
       </View>
     </View>
   );
@@ -112,5 +162,10 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     backgroundColor: "#fff",
+  },
+  roleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical: 10,
   },
 });

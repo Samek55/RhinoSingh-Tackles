@@ -23,7 +23,7 @@ const { width, height } = Dimensions.get('window');
 const Row = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.row}>
     <Text style={styles.rowLabel}>{label}</Text>
-    <Text style={styles.rowValue}>{value || 'N/A'}</Text>
+    <Text style={styles.rowValue}>{value}</Text>
   </View>
 );
 
@@ -42,20 +42,6 @@ export default function BookingDetails() {
     date,
   } = useLocalSearchParams();
 
-  // FIX Code applied: This function is now properly called below
-  const parseServices = (): string => {
-    if (!selectedService) return '';
-    try {
-      const parsed = JSON.parse(selectedService as string);
-      if (Array.isArray(parsed)) {
-        return parsed.join(', ');
-      }
-      return String(selectedService);
-    } catch {
-      return String(selectedService);
-    }
-  };
-
   const formattedDate = date
     ? new Date(date as string).toLocaleDateString('en-IN', {
       day: 'numeric',
@@ -68,6 +54,7 @@ export default function BookingDetails() {
     const formattedPhone = '+977' + number;
 
     try {
+      // 🔄 show loading
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
@@ -79,6 +66,7 @@ export default function BookingDetails() {
         return;
       }
 
+      // 🚀 hide loader before navigation
       setOverlayVisible(false);
 
       router.push({
@@ -86,7 +74,7 @@ export default function BookingDetails() {
         params: {
           name,
           number,
-          selectedService, 
+          selectedService,
           selectedShift,
           selectedArea,
           selectedPriority,
@@ -102,16 +90,15 @@ export default function BookingDetails() {
       Alert.alert('Error', 'Something went wrong');
     }
   };
-
   return (
     <View style={styles.screen}>
       <Header2 />
       <SubmitOverlay
-        visible={overlayVisible}
-        status={overlayStatus}
-        onClose={() => setOverlayVisible(false)}
-        onClear={() => setOverlayVisible(false)}
-      />
+              visible={overlayVisible}
+              status={overlayStatus}
+              onClose={() => setOverlayVisible(false)}
+              onClear={() => setOverlayVisible(false)}
+            />
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -129,10 +116,7 @@ export default function BookingDetails() {
           <View style={styles.divider} />
           <Row label="Phone Number" value={number as string} />
           <View style={styles.divider} />
-          
-          {/* FIXED: Changed from selectedService as string -> parseServices() */}
-          <Row label="Service" value={parseServices()} />
-          
+          <Row label="Service" value={selectedService as string} />
           <View style={styles.divider} />
           <Row label="Date" value={formattedDate} />
           <View style={styles.divider} />
@@ -148,7 +132,7 @@ export default function BookingDetails() {
               <View style={styles.divider} />
               <View style={styles.messageBlock}>
                 <Text style={styles.rowLabel}>Message</Text>
-                <Text style={styles.messageText}>{message as string}</Text>
+                <Text style={styles.messageText}>{message}</Text>
               </View>
             </>
           ) : null}

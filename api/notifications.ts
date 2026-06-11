@@ -25,9 +25,7 @@ export async function notifyProfessionals(service: string, bookingArea: string) 
   try {
     await sendNotification({
       filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'admin' },
-        { operator: 'AND' },
-        { field: 'tag', key: 'area', relation: '=', value: bookingArea },
+        { field: 'tag', key: 'role', relation: '=', value: 'career' },
       ],
       headings: { en: 'New Service Booking' },
       contents: { en: `New "${service}" booking in ${bookingArea}. Open RocketSingh to respond.` },
