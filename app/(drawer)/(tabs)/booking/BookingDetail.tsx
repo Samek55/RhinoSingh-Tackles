@@ -1,5 +1,4 @@
-import { sendFirebaseOtp } from "@/api/firebaseOtp";
-import { setOtpConfirmation } from "@/src/store/otpStore";
+import { sendOtp } from "@/api/otp";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   View,
@@ -19,7 +18,7 @@ import {
 import { useState } from "react";
 import SubmitOverlay from "@/components/bookings/SubmitOverlay";
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const Row = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.row}>
@@ -66,14 +65,19 @@ export default function BookingDetails() {
     : '';
 
   const handleSubmit = async () => {
-    const formattedPhone = '+91' + number;
+    const formattedPhone = '+977' + number;
 
     try {
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      const confirmation = await sendFirebaseOtp(formattedPhone);
-      setOtpConfirmation(confirmation);
+      const res = await sendOtp(formattedPhone);
+
+      if (!res?.success) {
+        setOverlayVisible(false);
+        Alert.alert('Error', 'Failed to send OTP');
+        return;
+      }
 
       setOverlayVisible(false);
 

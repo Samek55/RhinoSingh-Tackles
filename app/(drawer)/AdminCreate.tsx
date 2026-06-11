@@ -3,37 +3,57 @@ import { View, TextInput, Button, Alert, StyleSheet } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../src/firebase/firebaseConfig"; // adjust path
 import { router } from "expo-router";
-
+import { OneSignal } from "react-native-onesignal";
 
 export default function CreateAdmin() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pin, setPin] = useState("");
 
-  const createAdmin = async () => {
-    try {
-      if (!phoneNumber || !pin) {
-        Alert.alert("Error", "Please enter phone number and PIN");
-        return;
-      }
-      // 👉 PUT THIS HERE
+const createAdmin = async () => {
+  try {
+    if (!phoneNumber || !pin) {
+      Alert.alert("Error", "Please enter phone number and PIN");
+      return;
+    }
+
     if (pin.length < 6) {
       Alert.alert("Error", "PIN must be at least 6 digits");
       return;
     }
 
+    // 1. Force international formatting for SMS delivery guarantees
+    const formattedPhone = phoneNumber.startsWith("+") ? phoneNumber : `+977${phoneNumber}`;
+    const email = `${phoneNumber}@tackles.app`;
 
-      const email = `${phoneNumber}@tackles.app`;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pin);
+    const user = userCredential.user;
 
-      await createUserWithEmailAndPassword(auth, email, pin);
+    if (user) {
+      console.log("Identifying user in OneSignal with UUID:", user.uid);
+      
+      // 2. Identify the user profile 
+      OneSignal.login(user.uid);
 
-      Alert.alert("Success", "Admin created successfully");
+      // 3. Attach standard communication channels
+      OneSignal.User.addEmail(email);
+      OneSignal.User.addSms(formattedPhone); // Crucial: must have + prefix
 
-      setPhoneNumber("");
-      setPin("");
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
+      // 4. Update data tags
+      OneSignal.User.addTags({
+        role: "career",
+      });
+      
+      // Short delay to let native bridges flush their queues before alerting UI
+      await new Promise((resolve) => setTimeout(resolve, 500));
     }
-  };
+
+    Alert.alert("Success", "Admin created successfully");
+    setPhoneNumber("");
+    setPin("");
+  } catch (error: any) {
+    Alert.alert("Error", error.message);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -55,7 +75,7 @@ export default function CreateAdmin() {
         />
 
         <Button title="Create Admin" onPress={createAdmin} />
-        <Button title="Go Back" onPress={()=> router.push('/Admin')}  color="red"  />
+        <Button title="Go Back" onPress={() => router.push('/Admin')} color="red" />
       </View>
     </View>
   );

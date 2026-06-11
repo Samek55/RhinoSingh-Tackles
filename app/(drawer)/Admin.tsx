@@ -55,10 +55,6 @@ export default function AdminLogin() {
                 alert("Please enter phone and PIN");
                 return;
             }
-            if (!selectedArea) {
-                alert("Please select your service area");
-                return;
-            }
 
             const email = `${phoneNumber}@tackles.app`;
             await signInWithEmailAndPassword(auth, email, password);
@@ -68,7 +64,6 @@ export default function AdminLogin() {
                 const { OneSignal } = require('react-native-onesignal');
                 OneSignal.User.addTag('role', 'admin');
                 OneSignal.User.addTag('phone', phoneNumber);
-                OneSignal.User.addTag('area', selectedArea);
             } catch (e) {
                 console.warn('OneSignal tagging failed:', e);
             }
@@ -147,16 +142,6 @@ export default function AdminLogin() {
                                 )}
                             </TouchableOpacity>
                         </View>
-
-                        {/* Service Area */}
-                        <Text style={styles.areaLabel}>Service Area</Text>
-                        <Dropdown
-                            options={area}
-                            placeholder="Select your area"
-                            value={selectedArea}
-                            onSelectOption={setSelectedArea}
-                            borderColor={selectedArea ? 'green' : 'rgba(0,0,0,0.1)'}
-                        />
 
                         <View style={styles.btnContainerFlex}>
                             <TouchableOpacity>

@@ -17,8 +17,7 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import base from '../../../../api/airtable';
-import { verifyFirebaseOtp } from '../../../../api/firebaseOtp';
-import { getOtpConfirmation, clearOtpConfirmation } from '../../../../src/store/otpStore';
+import { verifyOtp } from '../../../../api/otp';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
 
@@ -86,21 +85,17 @@ export default function BookingOtp() {
     }
 
     setIsSubmitting(true);
-    try {
-      const confirmation = getOtpConfirmation();
-      if (!confirmation) {
-        Alert.alert('Session Expired', 'Please go back and request a new OTP.');
-        setIsSubmitting(false);
-        return;
-      }
+    const formattedNumber = `+977` + number;
 
-      const verified = await verifyFirebaseOtp(confirmation, enteredOtp);
-      if (!verified) {
+    try {
+      console.log(`Verifying phone: ${formattedNumber} with code: ${enteredOtp}`);
+      const verificationResult = await verifyOtp(formattedNumber, enteredOtp);
+
+      if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
         Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
         setIsSubmitting(false);
         return;
       }
-      clearOtpConfirmation();
 
       // --- FIX: Robust parsing for stringified params sent from expo-router ---
       let targetServices: string[] = [];
