@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react'; import {
+import React, { useState } from 'react'; 
+import {
     View,
     Text,
     Image,
@@ -10,13 +10,12 @@ import React, { useState } from 'react'; import {
     Platform,
     Dimensions,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import PhoneIcon from '../../assets/icons/admin/phone.png';
 import EyeOffIcon from '../../assets/icons/admin/eyeOff.png';
 import EyeOnIcon from '../../assets/icons/admin/eyeOn.png';
 import KeyIcon from '../../assets/icons/admin/key.png';
-import Dropdown from '../../components/bookings/Dropdown';
-import { area } from '../../src/data/Data';
 
 import CustomCheckbox from '../../components/admin/CustomCheckbox';
 
@@ -26,24 +25,20 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../src/firebase/firebaseConfig"; // adjust path
-// Get screen dimensions for responsive layout
+
 const { width, height } = Dimensions.get('window');
 
-// Font scaling utility function
 const scaleFont = (size: number) => {
-    const guidelineBaseWidth = 375; // Base screen width to scale from
+    const guidelineBaseWidth = 375; 
     return (size * width) / guidelineBaseWidth;
 };
 
-
 export default function AdminLogin() {
-
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [phoneNumber, setphoneNumber] = useState<any>('');
     const [password, setPassword] = useState<any>('');
-    const [selectedArea, setSelectedArea] = useState('');
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!passwordVisible);
@@ -57,23 +52,44 @@ export default function AdminLogin() {
             }
 
             const email = `${phoneNumber}@tackles.app`;
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-            // Tag this device in OneSignal for targeted notifications
-            try {
-                const { OneSignal } = require('react-native-onesignal');
-                OneSignal.User.addTag('role', 'admin');
-                OneSignal.User.addTag('phone', phoneNumber);
-            } catch (e) {
-                console.warn('OneSignal tagging failed:', e);
+            if (user) {
+                try {
+                    const { OneSignal } = require('react-native-onesignal');
+                    OneSignal.login(user.uid);
+                    OneSignal.User.addTag('role', 'career');
+                    OneSignal.User.addTag('phone', phoneNumber);
+                } catch (e) {
+                    console.warn('OneSignal tagging failed:', e);
+                }
             }
 
             console.log("Login success");
-            router.replace('/admin/BookingHistory');
+            // Root layout will catch this state shift and handle forwarding safely
 
         } catch (error: any) {
             console.log("Login error:", error.message);
             alert("Invalid phone or PIN");
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            try {
+                const { OneSignal } = require('react-native-onesignal');
+                OneSignal.logout();
+            } catch (e) {
+                console.warn('OneSignal clean-up failure:', e);
+            }
+            setphoneNumber('');
+            setPassword('');
+            Alert.alert("Success", "Logged out cleanly.");
+            router.push('/Home');
+        } catch (error: any) {
+            alert("Logout error: " + error.message);
         }
     };
 
@@ -83,7 +99,7 @@ export default function AdminLogin() {
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             >
-            <Header4 />
+                <Header4 />
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -103,19 +119,11 @@ export default function AdminLogin() {
                                 autoCapitalize="none"
                                 value={phoneNumber}
                                 onChangeText={(value) => {
-                                    // keep only numbers
                                     let cleaned = value.replace(/[^0-9]/g, '');
-
-                                    // limit to 10 digits
                                     cleaned = cleaned.slice(0, 10);
-
-                                    // format 3-3-4
-                                    let formatted = cleaned
-
-                                    setphoneNumber(formatted);
+                                    setphoneNumber(cleaned);
                                 }}
                             />
-
                         </View>
 
                         <View style={styles.inputContainer}>
@@ -136,7 +144,6 @@ export default function AdminLogin() {
                             <TouchableOpacity onPress={togglePasswordVisibility}>
                                 {passwordVisible ? (
                                     <Image source={EyeOnIcon} style={{ width: 23, height: 27, tintColor: 'hsl(0, 0%, 30%)' }} />
-
                                 ) : (
                                     <Image source={EyeOffIcon} style={{ width: 22, height: 22, tintColor: 'hsl(0, 0%, 30%)' }} />
                                 )}
@@ -145,16 +152,11 @@ export default function AdminLogin() {
 
                         <View style={styles.btnContainerFlex}>
                             <TouchableOpacity>
-
                                 <CustomCheckbox />
-
                             </TouchableOpacity>
-                            <TouchableOpacity
-
-                            >
+                            <TouchableOpacity>
                                 <Text style={styles.btnText}>Forgot PIN?</Text>
                             </TouchableOpacity>
-
                         </View>
 
                         <TouchableOpacity style={styles.loginButton} onPress={handleSubmit}>
@@ -167,17 +169,23 @@ export default function AdminLogin() {
                             <Text style={{ fontWeight: '900', color: 'black' }}
                                 onPress={() => router.push('/Career')}
                             >
-                                Join Now
+                                 Join Now
                             </Text>
                         </Text>
-                        <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
-                            <Text style={styles.btnTextBelow}>Change PIN</Text>
-                            <Text
-                                onPress={()=>router.push('/AdminCreate')}
-                                style={styles.btnTextBelow}
-                            >
-                                Create Admin</Text>
-                        </TouchableOpacity>
+                        
+                        <View style={{ marginTop: 12, width: '100%', alignItems: 'center', gap: 10 }}>
+                            <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
+                                <Text style={styles.btnTextBelow}>Change PIN</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity onPress={() => router.push('/AdminCreate')}>
+                                <Text style={styles.btnTextBelow}>Create Admin</Text>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity onPress={handleLogout}>
+                                <Text style={[styles.btnTextBelow, { color: 'red', fontWeight: 'bold' }]}>Logout</Text>
+                            </TouchableOpacity>
+                        </View>
 
                     </View>
                 </ScrollView>
@@ -200,7 +208,6 @@ const styles = StyleSheet.create({
         marginTop: hp('2%'),
         paddingHorizontal: wp('4%'),
     },
-
     divider: {
         borderBottomWidth: 1,
         borderColor: '#CAD2DF',
@@ -213,7 +220,6 @@ const styles = StyleSheet.create({
         width: '100%',
         color: 'green',
         paddingLeft: hp('3%')
-
     },
     subtitle: {
         width: '100%',
@@ -238,14 +244,13 @@ const styles = StyleSheet.create({
     btnTextBelow: {
         color: '#333',
         fontWeight: '500',
-        fontSize: hp('1.5%')
+        fontSize: hp('1.5%'),
+        paddingVertical: 2
     },
-
     formContainer: {
         paddingHorizontal: '10%',
         width: '100%',
         alignItems: 'center',
-
         paddingVertical: hp('3%'),
         backgroundColor: '#ebffef',
         paddingBottom: hp('30%'),
@@ -264,8 +269,8 @@ const styles = StyleSheet.create({
     welcomeText: {
         fontSize: scaleFont(22),
         fontWeight: '900',
-        marginTop: height * 0.01, // Margin adjusted based on screen height
-        marginBottom: height * 0.04, // Margin adjusted based on screen height
+        marginTop: height * 0.01, 
+        marginBottom: height * 0.04, 
         width: '100%',
         color: 'green',
         paddingHorizontal: hp('1.3%')
@@ -289,13 +294,11 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: hp('2%'),
         letterSpacing: 0.5
-
     },
     loginButton: {
-        marginTop: height * 0.07, // Adjusted button margin based on screen height
-
+        marginTop: height * 0.07, 
         height: height * 0.06,
-        width: '95%', // Adjust width based on screen size
+        width: '95%', 
         borderRadius: 50,
         justifyContent: 'center',
         alignItems: 'center',
@@ -322,4 +325,3 @@ const styles = StyleSheet.create({
         paddingHorizontal: hp('1%'),
     }
 });
-

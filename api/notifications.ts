@@ -59,7 +59,7 @@ export async function notifyCareerAdmins(applicantName: string) {
   try {
     await sendNotification({
       filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'admin' },
+        { field: 'tag', key: 'role', relation: '=', value: 'career' },
       ],
       headings: { en: 'New Career Application' },
       contents: { en: `${applicantName} submitted a career application. Review it now.` },

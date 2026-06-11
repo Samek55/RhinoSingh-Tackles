@@ -1,7 +1,10 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../src/firebase/firebaseConfig'; // verify this matching path relative to root layout
 
 // Prevent splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync().catch(() => { });
@@ -27,6 +30,42 @@ export function syncPushUser(userId: string, role: 'admin' | 'career' | 'user') 
 }
 
 export default function RootLayout() {
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  
+  const segments = useSegments();
+  const router = useRouter();
+
+  // --- FEATURE 1: FIREBASE AUTH PERSISTENCE TRACKER ---
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setInitializing(false);
+      
+      // Hide Splashscreen once state evaluates on app boot
+      SplashScreen.hideAsync().catch(() => {});
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // --- FEATURE 2: CENTRALIZED SECURITY BOUNCER ---
+  useEffect(() => {
+    if (initializing) return;
+
+    // Evaluates if the current directory route segment matches your protected folder path
+    const inAdminGroup = segments[0] === 'admin';
+
+    if (!user && inAdminGroup) {
+      // Drop session context found while browsing protected assets: Redirect out
+      router.replace('/Admin');
+    } else if (user && segments[0] === 'Admin') {
+      // Active context found when viewing public forms: Forward into panel
+      router.replace('/admin/BookingHistory');
+    }
+  }, [user, initializing, segments]);
+
+  // --- FEATURE 3: ONESIGNAL HARDWARE PROVISIONING CHANNEL ---
   useEffect(() => {
     let isMounted = true;
 
@@ -73,6 +112,15 @@ export default function RootLayout() {
       console.warn('OneSignal Push Channel not available in this environment:', e);
     }
   }, []);
+
+  // Show a neutral loading spinner inside safe layout context during auth evaluation shifts
+  if (initializing) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+        <ActivityIndicator size="large" color="green" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>
