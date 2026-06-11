@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -8,7 +8,8 @@ import {
     Platform,
     StyleSheet,
     TextInput,
-    FlatList
+    FlatList,
+    Alert
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
@@ -23,6 +24,13 @@ import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+
+import { usePathname } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut } from "firebase/auth";
+import { auth } from '@/src/firebase/firebaseConfig';
+
+
 
 export default function BookingHistory() {
 
@@ -134,6 +142,36 @@ export default function BookingHistory() {
         );
     }, [openId, toggleCard, handlePress]);
 
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+
+            try {
+                const { OneSignal } = require('react-native-onesignal');
+                OneSignal.logout();
+            } catch (e) {
+                console.warn('OneSignal clean-up failure:', e);
+            }
+
+            Alert.alert(
+                "Logged Out",
+                "You have been logged out successfully.",
+                [
+                    {
+                        text: "OK",
+                        onPress: () => {
+                            router.replace('/admin/AdminLogin');
+                        }
+                    }
+                ]
+            );
+
+        } catch (error: any) {
+            alert("Logout error: " + error.message);
+        }
+    };
+
+
     return (
         <View style={{ flex: 1 }}>
             <Header4 />
@@ -147,7 +185,7 @@ export default function BookingHistory() {
                 {/* HEADER */}
                 <TouchableOpacity
                     style={styles.backButton}
-                    onPress={() => router.push('/Admin')}
+                    onPress={handleLogout}
                 >
                     <Image source={leftArrowIcon} style={styles.backBtn} />
                     <Text style={styles.title}>Booking History</Text>

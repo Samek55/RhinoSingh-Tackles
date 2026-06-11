@@ -13,6 +13,7 @@ import { router, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 
+
 export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
 
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
     marginTop: 15,
     borderRadius: 20,
-     marginBottom: 15,
+    marginBottom: 15,
   },
 
   avatar: {

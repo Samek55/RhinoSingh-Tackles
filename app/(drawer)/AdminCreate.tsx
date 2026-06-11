@@ -139,7 +139,7 @@ export default function CreateAdmin() {
           <View style={styles.buttonSpacing} />
 
           <Button title={`Create ${selectedRole}`} onPress={createAdmin} />
-          <Button title="Go Back" onPress={() => router.push('/Admin')} color="red" />
+          <Button title="Go Back" onPress={() => router.push('/admin/AdminLogin')} color="red" />
         </View>
       </View>
     </TouchableWithoutFeedback>
