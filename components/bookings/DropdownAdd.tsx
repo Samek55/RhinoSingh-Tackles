@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { MultiSelect } from 'react-native-element-dropdown';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
@@ -33,16 +33,13 @@ const DropdownAdd = ({
   maxSelections,
 }: Props) => {
 
-  // ✅ single source of truth (FIX)
   const [selectedOptions, setSelectedOptions] = useState<string[]>(value);
   const [isFocus, setIsFocus] = useState(false);
 
-  // ✅ sync only when external value changes
   React.useEffect(() => {
     setSelectedOptions(value);
   }, [value]);
 
-  // ✅ memoized data
   const data = useMemo(() => {
     return options.map((item, index) => ({
       label: item,
@@ -98,12 +95,23 @@ const DropdownAdd = ({
       <MultiSelect
         style={[
           styles.dropdownStyle,
-          { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor },
-          isFocus && styles.dropdownActiveBackground
+          {
+            borderColor: isFocus
+              ? 'hsl(142, 71%, 45%)'
+              : borderColor,
+          },
+          isFocus && styles.dropdownActiveBackground,
         ]}
-        placeholderStyle={[styles.placeholder, { color: placeholderColor }]}
+        placeholderStyle={[
+          styles.placeholder,
+          { color: placeholderColor },
+        ]}
         containerStyle={styles.menuContainer}
         activeColor="transparent"
+
+        // 🌟 KEY FIXES FOR INSIDE DISPLAY
+        inside={true} // Forces selected items to stay inside the input container
+        selectedStyle={styles.selectedStyleContainer} // Removes default library margin overrides
 
         data={data}
         labelField="label"
@@ -115,17 +123,26 @@ const DropdownAdd = ({
           setIsFocus(true);
           onOpen?.();
         }}
-
-        // ❌ avoid relying on onBlur
+        onBlur={() => {
+          setIsFocus(false);
+          onClose?.();
+        }}
         onChange={(items: string[]) => {
+          let updatedItems = items;
 
-          // ✅ pre-check limit BEFORE updating state (FIX)
           if (maxSelections && items.length > maxSelections) {
-            return; // silently block extra selection
+            // prevent extra selection
+            updatedItems = items.slice(0, maxSelections);
+
+            // optional UX feedback
+            Alert.alert(
+              "Limit reached",
+              `You can only select up to ${maxSelections} items`
+            );
           }
 
-          setSelectedOptions(items);
-          onSelectOption?.(items);
+          setSelectedOptions(updatedItems);
+          onSelectOption?.(updatedItems);
         }}
 
         renderRightIcon={renderRightIcon}
@@ -133,7 +150,9 @@ const DropdownAdd = ({
 
         renderSelectedItem={(item, unSelect) => (
           <View style={styles.tag}>
-            <Text style={styles.tagText}>{item.label}</Text>
+            <Text style={styles.tagText} numberOfLines={1}>
+              {item.label}
+            </Text>
             <TouchableOpacity onPress={() => unSelect?.(item)}>
               <Text style={styles.removeText}>✕</Text>
             </TouchableOpacity>
@@ -144,7 +163,6 @@ const DropdownAdd = ({
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     marginBottom: hp('2.5%'),
@@ -153,15 +171,16 @@ const styles = StyleSheet.create({
   dropdownStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5, // Matching the prominent look of your single dropdown
+    flexWrap: 'wrap', // 🌟 Allows tags to wrap onto a new line inside the box if space runs out
+    borderWidth: 1.5,
     borderRadius: 12,
     paddingHorizontal: wp('3.5%'),
-    minHeight: hp('5.5%'), // Slightly boosted initial target sizing
+    minHeight: hp('5.5%'),
     backgroundColor: '#fff',
     paddingVertical: hp('0.5%'),
   },
   dropdownActiveBackground: {
-    backgroundColor: '#F4F7FF', // Subtle blue hint background tint when opened
+    backgroundColor: '#F4F7FF',
   },
   placeholder: {
     fontSize: wp('3.6%'),
@@ -171,9 +190,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E2E8F0',
-    marginTop: 4, // Leaves a breathing gap right below the main input field
+    marginTop: 4,
     elevation: 8,
-    shadowColor: 'hsl(142, 71%, 45%)', // Clean colored blueprint shadow depth
+    shadowColor: 'hsl(142, 71%, 45%)',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -188,12 +207,23 @@ const styles = StyleSheet.create({
     color: '#4A4A4A',
   },
   selectedOption: {
-    backgroundColor: '#EBF1FF', // Matches active single-dropdown active item rows
+    backgroundColor: '#EBF1FF',
   },
   selectedOptionText: {
     color: 'hsl(142, 71%, 25%)',
     fontWeight: '600',
   },
+
+  // 🌟 NEW: Resets internal margin constraints from react-native-element-dropdown
+  selectedStyleContainer: {
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    borderRadius: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -201,9 +231,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp('2.5%'),
     paddingVertical: hp('0.6%'),
     borderRadius: 20,
-    marginTop: hp('0.5%'),
-    marginBottom: hp('0.5%'),
-    marginRight: wp('2%'),
+    marginTop: hp('0.4%'),
+    marginBottom: hp('0.4%'),
+    marginRight: wp('1.5%'),
   },
   tagText: {
     color: '#333',

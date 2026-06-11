@@ -111,16 +111,13 @@ const Dropdown = ({
         placeholder={placeholder}
         value={value}
 
-        onFocus={() => {
-          setIsFocus(true);
-          onOpen?.();
-        }}
+        onFocus={() => setIsFocus(true)}
 
-        // ⚠️ better than onBlur reliability
-        onChange={item => {
+        onBlur={() => setIsFocus(false)}
+
+        onChange={(item) => {
           onSelectOption(item.value);
           setIsFocus(false);
-          onClose?.();
         }}
 
         renderRightIcon={renderRightIcon}
@@ -167,7 +164,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
-    overflow:'hidden',
+    overflow: 'hidden',
   },
   itemContainer: {
     paddingVertical: hp('1.6%'),
