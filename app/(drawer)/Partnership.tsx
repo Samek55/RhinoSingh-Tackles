@@ -24,6 +24,7 @@ import FileUploadBox from '../../components/bookings/FileUploadBox';
 import ClearFormIcon from '../../assets/icons/booking/clear.png'
 import DropdownAdd from '../../components/bookings/DropdownAdd';
 import { createPartnership } from '@/api/PostApiPartnership';
+import { notifyAdmins } from '@/api/notifications';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -205,6 +206,8 @@ export default function PartnershipScreen() {
       };
 
       await createPartnership(partnership);
+      // Notify all admins about the new partnership application (fire-and-forget)
+      notifyAdmins(name.trim()).catch(() => {});
       setOverlayStatus('success');
 
     } catch (error) {

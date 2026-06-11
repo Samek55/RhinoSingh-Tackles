@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -31,18 +31,11 @@ export default function BookingDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const [booking, setBooking] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
 
     const loadBooking = useCallback(async () => {
-        setLoading(true);
-
         const data = await fetchBookingsFromAirtable();
-
         const found = data.find((item: any) => item.id === id);
-
         setBooking(found || null);
-
-        setLoading(false);
     }, [id]);
 
     useFocusEffect(
@@ -52,12 +45,8 @@ export default function BookingDetails() {
     );
 
 
-    // local state for status
-    const [status, setStatus] = useState<StatusType>('Pending');
     const [openDropdown, setOpenDropdown] = useState(false);
     const STATUS_OPTIONS: StatusType[] = ['Completed', 'Pending', 'Cancelled'];
-
-    const realStatus = booking?.status;
     const [workStatus, setWorkStatus] = useState<StatusType>('Pending');
 
     useEffect(() => {
@@ -131,7 +120,7 @@ export default function BookingDetails() {
                         <Text style={styles.heading}>{booking?.fullName}</Text>
 
 
-                        <Text style={styles.labelMain}><Image source={phoneIcon} style={{ width: 14, height: 11.5, tintColor: '#555' }} />  +977 {booking?.phone}</Text>
+                        <Text style={styles.labelMain}><Image source={phoneIcon} style={{ width: 14, height: 11.5, tintColor: '#555' }} />  +91 {booking?.phone}</Text>
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Service(s)</Text>

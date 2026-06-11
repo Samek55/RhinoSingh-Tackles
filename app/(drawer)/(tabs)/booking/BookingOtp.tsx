@@ -17,7 +17,8 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import base from '../../../../api/airtable';
-import { verifyOtp } from '../../../../api/otp';
+import { verifyFirebaseOtp } from '../../../../api/firebaseOtp';
+import { getOtpConfirmation, clearOtpConfirmation } from '../../../../src/store/otpStore';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
 
@@ -85,18 +86,21 @@ export default function BookingOtp() {
     }
 
     setIsSubmitting(true);
-    const formattedNumber = `+977` + number;
     try {
+      const confirmation = getOtpConfirmation();
+      if (!confirmation) {
+        Alert.alert('Session Expired', 'Please go back and request a new OTP.');
+        setIsSubmitting(false);
+        return;
+      }
 
-      console.log(`Verifying phone: ${formattedNumber} with code: ${enteredOtp}`);
-      const verificationResult = await verifyOtp(formattedNumber, enteredOtp);
-
-      // 2. Evaluate the live Twilio approval status response
-      if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
+      const verified = await verifyFirebaseOtp(confirmation, enteredOtp);
+      if (!verified) {
         Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
         setIsSubmitting(false);
         return;
       }
+      clearOtpConfirmation();
 
       const serviceRecords = await base("Services")
         .select()

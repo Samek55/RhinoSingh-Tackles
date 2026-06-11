@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import FileUploadBox from '../../components/bookings/FileUploadBox';
 import ClearFormIcon from '../../assets/icons/booking/clear.png'
 import DropdownAdd from '../../components/bookings/DropdownAdd';
 import { createCareer } from '@/api/PostApiCareer';
+import { notifyCareerAdmins } from '@/api/notifications';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -208,8 +209,7 @@ export default function CareerScreen() {
       };
 
       await createCareer(career);
-
-
+      notifyCareerAdmins(name.trim()).catch(() => {});
       setOverlayStatus('success');
 
     } catch (error) {

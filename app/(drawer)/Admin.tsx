@@ -14,7 +14,9 @@ import React, { useState } from 'react'; import {
 import PhoneIcon from '../../assets/icons/admin/phone.png';
 import EyeOffIcon from '../../assets/icons/admin/eyeOff.png';
 import EyeOnIcon from '../../assets/icons/admin/eyeOn.png';
-import KeyIcon from '../../assets/icons/admin/key.png'
+import KeyIcon from '../../assets/icons/admin/key.png';
+import Dropdown from '../../components/bookings/Dropdown';
+import { area } from '../../src/data/Data';
 
 import CustomCheckbox from '../../components/admin/CustomCheckbox';
 
@@ -41,6 +43,7 @@ export default function AdminLogin() {
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [phoneNumber, setphoneNumber] = useState<any>('');
     const [password, setPassword] = useState<any>('');
+    const [selectedArea, setSelectedArea] = useState('');
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!passwordVisible);
@@ -52,14 +55,25 @@ export default function AdminLogin() {
                 alert("Please enter phone and PIN");
                 return;
             }
+            if (!selectedArea) {
+                alert("Please select your service area");
+                return;
+            }
 
-            // convert phone → fake email
             const email = `${phoneNumber}@tackles.app`;
-
             await signInWithEmailAndPassword(auth, email, password);
 
-            console.log("Login success");
+            // Tag this device in OneSignal for targeted notifications
+            try {
+                const { OneSignal } = require('react-native-onesignal');
+                OneSignal.User.addTag('role', 'admin');
+                OneSignal.User.addTag('phone', phoneNumber);
+                OneSignal.User.addTag('area', selectedArea);
+            } catch (e) {
+                console.warn('OneSignal tagging failed:', e);
+            }
 
+            console.log("Login success");
             router.replace('/admin/BookingHistory');
 
         } catch (error: any) {
@@ -133,6 +147,16 @@ export default function AdminLogin() {
                                 )}
                             </TouchableOpacity>
                         </View>
+
+                        {/* Service Area */}
+                        <Text style={styles.areaLabel}>Service Area</Text>
+                        <Dropdown
+                            options={area}
+                            placeholder="Select your area"
+                            value={selectedArea}
+                            onSelectOption={setSelectedArea}
+                            borderColor={selectedArea ? 'green' : 'rgba(0,0,0,0.1)'}
+                        />
 
                         <View style={styles.btnContainerFlex}>
                             <TouchableOpacity>
@@ -303,6 +327,14 @@ const styles = StyleSheet.create({
         borderColor: 'hsl(0, 0%, 33%)',
         marginBottom: hp('2%'),
         marginTop: hp('7%')
+    },
+    areaLabel: {
+        fontSize: hp('1.9%'),
+        fontWeight: '600',
+        width: '100%',
+        marginBottom: hp('1%'),
+        color: 'hsl(0, 0%, 30%)',
+        paddingHorizontal: hp('1%'),
     }
 });
 
