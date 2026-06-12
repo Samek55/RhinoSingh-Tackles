@@ -142,11 +142,16 @@ export default function BookingOtp() {
 
       await createBooking(booking);
 
-      // Await notification transmission to guarantee it hits OneSignal before navigating away
+      // Look down inside handleNavigate where notifyProfessionals is called:
       try {
+        const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
+        const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
+
+        console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
+
         await notifyProfessionals(
-          Array.isArray(selectedService) ? selectedService[0] : selectedService as string,
-          Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string,
+          String(targetService).trim(),
+          String(targetArea).trim()
         );
       } catch (e) {
         console.log("Notification background delivery failed contextually", e);

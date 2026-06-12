@@ -5,8 +5,8 @@ import {
   Button,
   Alert,
   StyleSheet,
-  TouchableOpacity, // Added for custom responsive styling
-  Text,             // Added to style button labels
+  TouchableOpacity,
+  Text,
 } from "react-native";
 
 import {
@@ -20,10 +20,87 @@ import Header4 from "@/components/Header4Admin";
 
 type Role = "admin" | "career" | "user";
 
+const AIRTABLE_API_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_CAREER;
+const SERVICES_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_SERVICES;
+const AIRTABLE_TOKEN = process.env.EXPO_PUBLIC_AIRTABLE_TOKEN;
+
+// 🚀 In-memory cache for Services mapping
+let servicesCache: Record<string, string> | null = null;
+let servicesPromise: Promise<Record<string, string>> | null = null;
+
+const fetchServicesMap = async () => {
+  try {
+    if (servicesCache) return servicesCache;
+    if (servicesPromise) return servicesPromise;
+
+    servicesPromise = (async () => {
+      const res = await fetch(SERVICES_URL!, {
+        headers: {
+          Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+        },
+      });
+
+      const data = await res.json();
+      const map: Record<string, string> = {};
+
+      data.records?.forEach((item: any) => {
+        const id = item.id;
+        const name = item.fields?.["Name"];
+        if (id && name) {
+          map[id] = name;
+        }
+      });
+
+      servicesCache = map;
+      return map;
+    })();
+
+    return await servicesPromise;
+  } catch (error) {
+    console.log("Services fetch error:", error);
+    return {};
+  }
+};
+
 export default function CreateUser() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pin, setPin] = useState("");
   const [selectedRole, setSelectedRole] = useState<Role>("admin");
+
+  // Fetches career data simply matching the phone number
+  const fetchCareerData = async (cleanPhone: string) => {
+    try {
+      if (!AIRTABLE_API_URL || !AIRTABLE_TOKEN) {
+        throw new Error("Airtable environment variables are missing.");
+      }
+
+      const formula = encodeURIComponent(`{Phone} = '${cleanPhone}'`);
+      const url = `${AIRTABLE_API_URL}?filterByFormula=${formula}`;
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${AIRTABLE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error(`Airtable Server Error (${response.status}):`, errText);
+        throw new Error(`Airtable error status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.records && data.records.length > 0) {
+        return data.records[0].fields;
+      }
+      return null;
+    } catch (error) {
+      console.error("Airtable fetch error:", error);
+      throw new Error("Failed to verify user status in the Career database.");
+    }
+  };
 
   const createUser = async () => {
     try {
@@ -41,6 +118,36 @@ export default function CreateUser() {
         return;
       }
 
+      // 🔍 1. VERIFY PHONE NUMBER EXISTS IN CAREER DATABASE
+      const careerRecord = await fetchCareerData(cleanPhone);
+      
+      if (!careerRecord) {
+        Alert.alert("Access Denied", "Please fill up the career form.");
+        return;
+      }
+
+      // 🔄 2. FETCH SERVICES MAP TO MAP RECORD IDs TO PLAIN NAMES
+      const servicesMap = await fetchServicesMap();
+
+      // 🛠️ FIXED: Changed key from "Position Applied For" to "Area of Expertise"
+      const expertiseIds: string[] = Array.isArray(careerRecord["Area of Expertise"])
+        ? careerRecord["Area of Expertise"]
+        : careerRecord["Area of Expertise"]
+        ? [careerRecord["Area of Expertise"]]
+        : [];
+
+      const preferredAreaValues: string[] = Array.isArray(careerRecord["Preferred Working Area"])
+        ? careerRecord["Preferred Working Area"]
+        : careerRecord["Preferred Working Area"]
+        ? [careerRecord["Preferred Working Area"]]
+        : [];
+
+      // Convert Service IDs to clean human-readable text names (e.g. "Plumber")
+      const localizedServiceNames = expertiseIds
+        .map((id) => servicesMap[id] || id)
+        .filter(Boolean);
+
+      // 🔐 3. FIREBASE AUTH CREATION
       const email = `${cleanPhone}@tackles.app`;
 
       const userCredential = await createUserWithEmailAndPassword(
@@ -51,17 +158,18 @@ export default function CreateUser() {
 
       const user = userCredential.user;
 
-      // 🔥 OneSignal setup
+      // 🔥 4. ONESIGNAL REGISTRATION WITH DROPDOWN ROLE AND FETCHED AIRTABLE DETAILS
       try {
         const { OneSignal } = require("react-native-onesignal");
-
         OneSignal.login(user.uid);
-
+        
         OneSignal.User.addTags({
-          role: selectedRole, // ONLY: admin | career | user
+          role: selectedRole, // Passes the chosen UI state value ("admin" | "career" | "user")
+          services: localizedServiceNames.join(","),
+          area: preferredAreaValues.join(","),
         });
       } catch (e) {
-        console.warn("OneSignal error:", e);
+        console.warn("OneSignal tag setup error:", e);
       }
 
       Alert.alert("Success", `${selectedRole} created successfully`);
@@ -76,14 +184,12 @@ export default function CreateUser() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-
       try {
         const { OneSignal } = require("react-native-onesignal");
         OneSignal.logout();
       } catch (e) {
         console.warn("OneSignal logout error:", e);
       }
-
       Alert.alert("Logged Out", "You have been logged out.", [
         {
           text: "OK",
@@ -108,7 +214,7 @@ export default function CreateUser() {
             keyboardType="number-pad"
             onChangeText={(v) => {
               const cleaned = v.replace(/[^0-9]/g, "");
-              setPhoneNumber(cleaned.slice(0, 10)); // limit 10
+              setPhoneNumber(cleaned.slice(0, 10));
             }}
             style={styles.input}
           />
@@ -121,12 +227,12 @@ export default function CreateUser() {
             keyboardType="number-pad"
             onChangeText={(v) => {
               const cleaned = v.replace(/[^0-9]/g, "");
-              setPin(cleaned.slice(0, 6)); // limit 6
+              setPin(cleaned.slice(0, 6));
             }}
             style={styles.input}
           />
 
-          {/* ROLE SELECT - FIXED TO VISUALLY RESPOND */}
+          {/* ROLE SELECT */}
           <View style={styles.roleRow}>
             {(["admin", "career", "user"] as Role[]).map((role) => {
               const isActive = selectedRole === role;
@@ -184,7 +290,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     gap: 6,
   },
-  // New Styles added below for responsive touch feedback
   roleButton: {
     flex: 1,
     paddingVertical: 10,

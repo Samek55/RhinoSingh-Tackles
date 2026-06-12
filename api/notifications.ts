@@ -24,18 +24,17 @@ const sendNotification = async (payload: object) => {
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
     await sendNotification({
-      // We target users who are professionals AND match the service AND match the area
+      // ✅ Removed explicit { operator: 'AND' } structures (OneSignal assumes AND by default)
+      // ✅ Swapped "contains" to "in_array" to correctly parse multi-value comma-separated strings
       filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'professional' }, 
-        { operator: 'AND' },
-        { field: 'tag', key: 'service', relation: '=', value: service },
-        { operator: 'AND' },
-        { field: 'tag', key: 'area', relation: '=', value: bookingArea }
+        { field: 'tag', key: 'role', relation: '=', value: 'career' },
+        { field: 'tag', key: 'services', relation: 'in_array', value: service },
+        { field: 'tag', key: 'area', relation: 'in_array', value: bookingArea }
       ],
       headings: { en: '🚀 New Job Available!' },
       contents: { en: `New "${service}" booking in ${bookingArea}. Open RocketSingh to respond.` },
     });
-    console.log(`Booking notification successfully sent for "${service}" in ${bookingArea}`);
+    console.log(`Booking notification successfully queued for "${service}" in ${bookingArea}`);
   } catch (error: any) {
     console.log('Booking notification error:', error?.response?.data || error.message);
   }
