@@ -7,6 +7,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 
 import {
@@ -120,7 +124,7 @@ export default function CreateUser() {
 
       // 🔍 1. VERIFY PHONE NUMBER EXISTS IN CAREER DATABASE
       const careerRecord = await fetchCareerData(cleanPhone);
-      
+
       if (!careerRecord) {
         Alert.alert("Access Denied", "Please fill up the career form.");
         return;
@@ -133,14 +137,14 @@ export default function CreateUser() {
       const expertiseIds: string[] = Array.isArray(careerRecord["Area of Expertise"])
         ? careerRecord["Area of Expertise"]
         : careerRecord["Area of Expertise"]
-        ? [careerRecord["Area of Expertise"]]
-        : [];
+          ? [careerRecord["Area of Expertise"]]
+          : [];
 
       const preferredAreaValues: string[] = Array.isArray(careerRecord["Preferred Working Area"])
         ? careerRecord["Preferred Working Area"]
         : careerRecord["Preferred Working Area"]
-        ? [careerRecord["Preferred Working Area"]]
-        : [];
+          ? [careerRecord["Preferred Working Area"]]
+          : [];
 
       // Convert Service IDs to clean human-readable text names (e.g. "Plumber")
       const localizedServiceNames = expertiseIds
@@ -162,7 +166,7 @@ export default function CreateUser() {
       try {
         const { OneSignal } = require("react-native-onesignal");
         OneSignal.login(user.uid);
-        
+
         OneSignal.User.addTags({
           role: selectedRole, // Passes the chosen UI state value ("admin" | "career" | "user")
           services: localizedServiceNames.join(","),
@@ -204,62 +208,64 @@ export default function CreateUser() {
   return (
     <View style={{ flex: 1 }}>
       <Header4 />
-      <View style={styles.container}>
-        <View style={styles.box}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
+        <View style={styles.container}>
+          <View style={styles.box}>
 
-          {/* PHONE */}
-          <TextInput
-            placeholder="Phone Number (10 digits)"
-            value={phoneNumber}
-            keyboardType="number-pad"
-            onChangeText={(v) => {
-              const cleaned = v.replace(/[^0-9]/g, "");
-              setPhoneNumber(cleaned.slice(0, 10));
-            }}
-            style={styles.input}
-          />
+            {/* PHONE */}
+            <TextInput
+              placeholder="Phone Number (10 digits)"
+              value={phoneNumber}
+              keyboardType="number-pad"
+              onChangeText={(v) => {
+                const cleaned = v.replace(/[^0-9]/g, "");
+                setPhoneNumber(cleaned.slice(0, 10));
+              }}
+              style={styles.input}
+            />
 
-          {/* PIN */}
-          <TextInput
-            placeholder="PIN (6 digits)"
-            value={pin}
-            secureTextEntry
-            keyboardType="number-pad"
-            onChangeText={(v) => {
-              const cleaned = v.replace(/[^0-9]/g, "");
-              setPin(cleaned.slice(0, 6));
-            }}
-            style={styles.input}
-          />
+            {/* PIN */}
+            <TextInput
+              placeholder="PIN (6 digits)"
+              value={pin}
+              secureTextEntry
+              keyboardType="number-pad"
+              onChangeText={(v) => {
+                const cleaned = v.replace(/[^0-9]/g, "");
+                setPin(cleaned.slice(0, 6));
+              }}
+              style={styles.input}
+            />
 
-          {/* ROLE SELECT */}
-          <View style={styles.roleRow}>
-            {(["admin", "career", "user"] as Role[]).map((role) => {
-              const isActive = selectedRole === role;
-              return (
-                <TouchableOpacity
-                  key={role}
-                  onPress={() => setSelectedRole(role)}
-                  style={[
-                    styles.roleButton,
-                    isActive ? styles.activeRoleButton : styles.inactiveRoleButton
-                  ]}
-                >
-                  <Text style={[styles.roleText, isActive && styles.activeRoleText]}>
-                    {role.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            {/* ROLE SELECT */}
+            <View style={styles.roleRow}>
+              {(["admin", "career", "user"] as Role[]).map((role) => {
+                const isActive = selectedRole === role;
+                return (
+                  <TouchableOpacity
+                    key={role}
+                    onPress={() => setSelectedRole(role)}
+                    style={[
+                      styles.roleButton,
+                      isActive ? styles.activeRoleButton : styles.inactiveRoleButton
+                    ]}
+                  >
+                    <Text style={[styles.roleText, isActive && styles.activeRoleText]}>
+                      {role.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* ACTIONS */}
+            <Button title={`Create ${selectedRole}`} onPress={createUser} color="green" />
+            <Button title="Logout" onPress={handleLogout} color="red" />
           </View>
-
-          {/* ACTIONS */}
-          <Button title={`Create ${selectedRole}`} onPress={createUser} color="green" />
-          <Button title="Logout" onPress={handleLogout} color="red" />
-
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </View>
+
   );
 }
 

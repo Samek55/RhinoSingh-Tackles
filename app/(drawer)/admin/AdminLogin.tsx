@@ -184,7 +184,7 @@ export default function AdminLogin() {
                             </Text>
                         </Text>
 
-                        <View style={{ marginTop: 12, width: '100%', alignItems: 'center', gap: 10 }}>
+                        <View style={{ marginTop: 2, width: '100%', alignItems: 'center',  }}>
                             <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
                                 <Text style={styles.btnTextBelow}>Change PIN</Text>
                             </TouchableOpacity>
@@ -256,7 +256,6 @@ const styles = StyleSheet.create({
         color: '#333',
         fontWeight: '500',
         fontSize: hp('1.5%'),
-        paddingVertical: 2
     },
     formContainer: {
         paddingHorizontal: '10%',
