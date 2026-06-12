@@ -51,20 +51,20 @@ export default function BookingDetails() {
     : '';
 
   const handleSubmit = async () => {
-    const formattedPhone = '+977' + number;
+    // const formattedPhone = '+977' + number;
 
     try {
       // 🔄 show loading
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      const res = await sendOtp(formattedPhone);
+      // const res = await sendOtp(formattedPhone);
 
-      if (!res?.success) {
-        setOverlayVisible(false);
-        Alert.alert('Error', 'Failed to send OTP');
-        return;
-      }
+      // if (!res?.success) {
+      //   setOverlayVisible(false);
+      //   Alert.alert('Error', 'Failed to send OTP');
+      //   return;
+      // }
 
       // 🚀 hide loader before navigation
       setOverlayVisible(false);

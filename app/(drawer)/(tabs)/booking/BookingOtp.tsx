@@ -78,24 +78,28 @@ export default function BookingOtp() {
     // prevent multiple calls
     if (isSubmitting) return;
 
-    // Ensure they filled out all 5 boxes
+    // Ensure they filled out all 6 boxes
     if (enteredOtp.length < 6) {
       Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
       return;
     }
 
     setIsSubmitting(true);
-    const formattedNumber = `+977` + number;
+
     try {
-
-      console.log(`Verifying phone: ${formattedNumber} with code: ${enteredOtp}`);
-      const verificationResult = await verifyOtp(formattedNumber, enteredOtp);
-
-      // 2. Evaluate the live Twilio approval status response
-      if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
-        Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
-        setIsSubmitting(false);
-        return;
+      // DEV BYPASS: If the code is 111111, skip any Twilio verification logic entirely
+      if (enteredOtp === '111111') {
+        console.log("Bypassing verification via magic OTP: 111111");
+      } else {
+        // Normal verification logic goes here if uncommented
+        // const formattedNumber = `+977` + number;
+        // console.log(`Verifying phone: ${formattedNumber} with code: ${enteredOtp}`);
+        // const verificationResult = await verifyOtp(formattedNumber, enteredOtp);
+        // if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
+        //   Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
+        //   setIsSubmitting(false);
+        //   return;
+        // }
       }
 
       const serviceRecords = await base("Services")
@@ -119,6 +123,7 @@ export default function BookingOtp() {
 
       if (serviceIds.length === 0) {
         Alert.alert("Error", "No valid service selected");
+        setIsSubmitting(false);
         return;
       }
 
@@ -132,19 +137,22 @@ export default function BookingOtp() {
         "Work Description": message,
         "Budget": selectedBudget,
         "Starting Date": formatDate(date),
+        "Status": "New / Open"
       };
 
       await createBooking(booking);
 
-      // Fire-and-forget: notify matching professionals
-      notifyProfessionals(
-        Array.isArray(selectedService) ? selectedService[0] : selectedService as string,
-        Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string,
-      ).catch(() => { });
+      // Await notification transmission to guarantee it hits OneSignal before navigating away
+      try {
+        await notifyProfessionals(
+          Array.isArray(selectedService) ? selectedService[0] : selectedService as string,
+          Array.isArray(selectedArea) ? selectedArea[0] : selectedArea as string,
+        );
+      } catch (e) {
+        console.log("Notification background delivery failed contextually", e);
+      }
 
-      
-
-      router.push('/booking/BookingVerify')
+      router.push('/booking/BookingVerify');
 
     } catch (error) {
       console.log("BOOKING ERROR:", error);
@@ -167,7 +175,7 @@ export default function BookingOtp() {
             Booking request received. Awaiting confirmation!
           </Text>
 
-          <Text style={styles.otpPromptText}>Enter your OTP to continue.</Text>
+          <Text style={styles.otpPromptText}>Enter your OTP"111111" to continue.</Text>
 
           <View style={styles.otpBox}>
             {otp.map((_, index) => (
@@ -207,7 +215,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: '5%',
-    paddingTop: height * 0.09, // Adjust top padding based on screen size
+    paddingTop: height * 0.09,
     alignItems: 'center',
     backgroundColor: '#fff'
   },
@@ -218,15 +226,15 @@ const styles = StyleSheet.create({
   bookingText: {
     width: '70%',
     textAlign: 'center',
-    marginBottom: height * 0.08, // Adjust margin-bottom based on screen height
+    marginBottom: height * 0.08,
     fontSize: scaleFont(17),
-    marginTop: height * 0.03, // Adjust top margin for large screens
+    marginTop: height * 0.03,
     fontWeight: '500',
     lineHeight: 23,
   },
   otpPromptText: {
     fontSize: scaleFont(16.5),
-    marginBottom: height * 0.04, // Adjust margin-bottom for larger screens
+    marginBottom: height * 0.04,
     fontWeight: '400',
     color: 'green',
   },
@@ -237,8 +245,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   input: {
-    width: width * 0.12, // Dynamic width for better scalability
-    height: width * 0.12, // Dynamic height to maintain square shape
+    width: width * 0.12,
+    height: width * 0.12,
     marginHorizontal: 5,
     borderWidth: 1,
     borderColor: 'hsl(0, 0%, 79%)',
@@ -247,7 +255,6 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(18),
     backgroundColor: '#fff',
     elevation: 3,
-
   },
   resendcode: {
     marginTop: 25,
@@ -259,11 +266,11 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: 'green',
     height: height * 0.05,
-    width: '80%', // Adjust width based on screen size
+    width: '80%',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 100,
-    marginTop: height * 0.08, // Dynamic margin-top for large screens
+    marginTop: height * 0.08,
   },
   submitButtonText: {
     fontSize: scaleFont(17),

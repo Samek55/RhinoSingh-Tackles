@@ -20,17 +20,22 @@ const sendNotification = async (payload: object) => {
   );
 };
 
-// Service booking → service providers who serve that area
+// Service booking → service providers who serve that specific area and service
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
     await sendNotification({
+      // We target users who are professionals AND match the service AND match the area
       filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'career' },
+        { field: 'tag', key: 'role', relation: '=', value: 'professional' }, 
+        { operator: 'AND' },
+        { field: 'tag', key: 'service', relation: '=', value: service },
+        { operator: 'AND' },
+        { field: 'tag', key: 'area', relation: '=', value: bookingArea }
       ],
-      headings: { en: 'New Service Booking' },
+      headings: { en: '🚀 New Job Available!' },
       contents: { en: `New "${service}" booking in ${bookingArea}. Open RocketSingh to respond.` },
     });
-    console.log(`Booking notification sent for "${service}" in ${bookingArea}`);
+    console.log(`Booking notification successfully sent for "${service}" in ${bookingArea}`);
   } catch (error: any) {
     console.log('Booking notification error:', error?.response?.data || error.message);
   }
