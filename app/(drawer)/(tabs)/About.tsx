@@ -43,23 +43,15 @@ export default function AboutScreen() {
             <Text style={styles.title}>Our Story</Text>
 
             <Text style={styles.subtitle}>
-              ROCKETSINGH is the Indian version of TACKLES PRO — a growing
-              platform delivering fast, reliable, and professional on-demand
-              home services across India, powered by skilled and trained
-              professionals available 24 hours a day, 365 days a year.
+              ROCKETSINGH is an on-demand hyperlocal service platform delivering fast, reliable, and professional home services across India, powered by skilled and trained professionals available 24 hours a day, 365 days a year.
             </Text>
 
             <Text style={styles.lineheighpara}>
-              Our mission is to offer complete repair and maintenance services
-              under one trusted platform, eliminating the need to search
-              multiple providers for different household and commercial
-              requirements.
+              Our mission is to offer complete on demand multiple home service services under one trusted platform, eliminating the need to search multiple providers for different household and commercial requirements.
             </Text>
 
             <Text style={styles.lineheighpara}>
-              Our vision is to build a trusted handyman brand recognized for
-              professionalism, accessibility, and service excellence through
-              long-term client relationships and consistent work quality.
+              Our vision is to build a trusted workForce network recognized for professionalism, accessibility, and service excellence through long-term client relationships and consistent work quality.
             </Text>
 
             {/* TEAM */}
@@ -69,21 +61,21 @@ export default function AboutScreen() {
 
             <View style={styles.row}>
               <OurTeamCard
-                image={require('../../../assets/topProfessionals/1_jamesWalker.jpg')}
-                title="Karthik Subburaj"
-                suBTitle="Deep Cleaning Specialist"
+                image={require('../../../assets/aboutUs/1_keshab.jpeg')}
+                title="Keshab"
+                suBTitle="Founder"
               />
 
               <OurTeamCard
-                image={require('../../../assets/topProfessionals/2_michaelTurner.jpg')}
-                title="Lokesh Kanagaraj"
-                suBTitle="Pressure Washing Technician"
+                image={require('../../../assets/aboutUs/2_raju.jpeg')}
+                title="Raju"
+                suBTitle="CEP"
               />
 
               <OurTeamCard
-                image={require('../../../assets/topProfessionals/3_matthewKing.jpg')}
-                title="Anand Amritraj"
-                suBTitle="Smart Home Installation Engineer"
+                image={require('../../../assets/aboutUs/3_birendra.jpeg')}
+                title="Birendra"
+                suBTitle="Community Manager"
               />
             </View>
 

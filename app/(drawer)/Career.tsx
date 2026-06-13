@@ -23,7 +23,6 @@ import FileUploadBox from '../../components/bookings/FileUploadBox';
 import ClearFormIcon from '../../assets/icons/booking/clear.png'
 import DropdownAdd from '../../components/bookings/DropdownAdd';
 import { createCareer } from '@/api/PostApiCareer';
-import { notifyCareerAdmins } from '@/api/notifications';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -209,7 +208,6 @@ export default function CareerScreen() {
       };
 
       await createCareer(career);
-      notifyCareerAdmins(name.trim()).catch(() => {});
       setOverlayStatus('success');
 
     } catch (error) {
@@ -240,7 +238,7 @@ export default function CareerScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
-          <Text style={styles.title}>TACKLES - Join Now</Text>
+          <Text style={styles.title}>RocketSingh - Join Now</Text>
 
           <View style={styles.spacerGap} />
 

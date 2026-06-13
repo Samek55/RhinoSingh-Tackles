@@ -237,8 +237,8 @@ export default function PartnershipScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
-          <Text style={styles.title}>Partnership</Text>
-          <Text style={styles.subTitle}>Partnership opportunity with TACKLES</Text>
+          <Text style={styles.title}>Become a Partner</Text>
+          <Text style={styles.subTitle}>Partnership opportunity with RocketSingh</Text>
 
           <View style={styles.spacerGap} />
 

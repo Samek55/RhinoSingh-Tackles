@@ -67,10 +67,12 @@ export const positionAppliedFor = [
 export const shifts = ['Morning', 'Day', 'Afternoon', 'Night'];
 
 export const budget = [
-  'Below ₹ 1,000',
-  'Above ₹ 2,000',
-  'Above ₹ 5,000',
-  'Above ₹ 10,000',
+  "Below 5,000",
+  "Above 10,000",
+  "Above 25,000",
+  "Above 50,000",
+  "Above 1,00,000",
+  "Above 5,00,000"
 ];
 
 export const priority = ['Normal', 'Urgent'];

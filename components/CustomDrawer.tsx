@@ -53,21 +53,21 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
           <MenuItem
             icon="card-outline"
-            label="Booking"
+            label="Book a Service"
             active={isActive('/Book')}
             onPress={() => router.push('/Book')}
           />
 
           <MenuItem
             icon="chatbubble-ellipses-outline"
-            label="About Us"
+            label="About"
             active={isActive('/About')}
             onPress={() => router.push('/About')}
           />
 
           <MenuItem
             icon="call-outline"
-            label="Contact Us"
+            label="Contact"
             active={isActive('/Contact')}
             onPress={() => router.push('/Contact')}
           />
@@ -76,14 +76,14 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
           <MenuItem
             icon="people-outline"
-            label="Partnership"
+            label="Become a Partner"
             active={isActive('/Partnership')}
             onPress={() => router.push('/Partnership')}
           />
 
           <MenuItem
             icon="briefcase-outline"
-            label="Career"
+            label="Join as a Professional"
             active={isActive('/Career')}
             onPress={() => router.push('/Career')}
           />

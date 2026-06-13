@@ -104,22 +104,22 @@ export default function HomeScreen() {
 
               <View style={styles.row2}>
                 <ProfessionalCard
-                  image={require('../../../assets/topProfessionals/1_jamesWalker.jpg')}
+                  image={require('../../../assets/topProfessionals/1_aravind.jpeg')}
                   title="Aravind"
                   subtitle=""
                 />
                 <ProfessionalCard
-                  image={require('../../../assets/topProfessionals/2_michaelTurner.jpg')}
+                  image={require('../../../assets/topProfessionals/2_anil.jpeg')}
                   title="Anil"
                   subtitle=""
                 />
                 <ProfessionalCard
-                  image={require('../../../assets/topProfessionals/3_matthewKing.jpg')}
+                  image={require('../../../assets/topProfessionals/3_vallam.jpeg')}
                   title="Vallam"
                   subtitle=""
                 />
                 <ProfessionalCard
-                  image={require('../../../assets/topProfessionals/5_joshua_adams.jpg')}
+                  image={require('../../../assets/topProfessionals/4_subra.jpeg')}
                   title="Subra"
                   subtitle=""
                 />

@@ -30,6 +30,8 @@ const styles = StyleSheet.create({
     width: wp('18%'), // Default image width (can be overridden with prop)
     height: wp('18%'), // Square image
     resizeMode: 'contain',
+    borderRadius:100,
+    boxShadow:'0px 0px 3px #000'
   },
   title: {
     marginTop: hp('1%'),
