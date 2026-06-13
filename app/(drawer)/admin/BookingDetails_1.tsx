@@ -9,6 +9,7 @@ import {
     Platform,
     StyleSheet,
     Modal,
+    Alert,
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
@@ -21,6 +22,7 @@ import {
 } from 'react-native-responsive-screen';
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
+import { notifyUsers } from '@/api/notifications';
 
 export default function BookingDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,11 +30,8 @@ export default function BookingDetails() {
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [visible, setVisible] = useState(false);
-    
-    // Fixed initialization type mismatch from [] to null
     const [selectedImage, setSelectedImage] = useState<any>(null);
 
-    // Runs ONLY ONCE when the component mounts
     useEffect(() => {
         const load = async () => {
             setLoading(true);
@@ -50,7 +49,6 @@ export default function BookingDetails() {
         load();
     }, [id]);
 
-    // Static assets
     const photos = [
         require('../../../assets/services/HomeRepairANDMaintenance/carpentry.jpg'),
         require('../../../assets/services/HomeRepairANDMaintenance/handyman.jpg'),
@@ -62,6 +60,55 @@ export default function BookingDetails() {
     const openImage = (image: any) => {
         setSelectedImage(image);
         setVisible(true);
+    };
+    useEffect(() => {
+        const load = async () => {
+            setLoading(true);
+            try {
+                const data = await fetchBookingsFromAirtable();
+                const found = data.find((item: any) => item.id === id);
+
+                // 👇 ADD THIS LINE TO SEE ALL AVAILABLE KEYS
+                console.log("👉 CURRENT BOOKING OBJECT DATA:", found);
+
+                setBooking(found || null);
+            } catch (error) {
+                console.error("Error fetching booking details:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        load();
+    }, [id]);
+
+    // Handle Offer Acceptance
+    const handleAcceptOffer = async () => {
+        if (!booking) return;
+
+        try {
+            // Extract the phone string directly from your Airtable booking object log data
+            const customerPhone = booking?.phone || "";
+
+            console.log("Passing customer phone directly to notification:", customerPhone);
+
+            // Trigger the push notification
+            await notifyUsers(booking?.service, booking?.area, customerPhone);
+
+            // Navigate forward
+            router.push({
+                pathname: '/admin/BookingDetails_2',
+                params: { id: booking?.id?.toString() },
+            });
+        } catch (error) {
+            console.error("Failed to process order acceptance:", error);
+
+            // Navigate anyway so the UI doesn't freeze up for the admin
+            router.push({
+                pathname: '/admin/BookingDetails_2',
+                params: { id: booking?.id?.toString() },
+            });
+        }
     };
 
     return (
@@ -183,14 +230,7 @@ export default function BookingDetails() {
                             <View style={styles.ButtonContainer}>
                                 <TouchableOpacity
                                     style={styles.AcceptButton}
-                                    onPress={() => {
-                                        router.push({
-                                            pathname: '/admin/BookingDetails_2',
-                                            params: {
-                                                id: booking?.id?.toString(),
-                                            },
-                                        });
-                                    }}
+                                    onPress={handleAcceptOffer}
                                 >
                                     <Text style={styles.AcceptText}>Accept This Offer</Text>
                                 </TouchableOpacity>

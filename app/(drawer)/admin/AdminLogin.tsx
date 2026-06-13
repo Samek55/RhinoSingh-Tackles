@@ -57,6 +57,14 @@ export default function AdminLogin() {
             const user = userCredential.user;
 
             if (user) {
+                // 🟩 SET FLAG TO TRUE SO BOOKING SCREEN ALLOWS ENTRY
+                try {
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    await AsyncStorage.setItem('userProfileSetupCompleted', 'true');
+                } catch (storageError) {
+                    console.warn('Failed to save profile setup flag:', storageError);
+                }
+
                 try {
                     const { OneSignal } = require('react-native-onesignal');
                     OneSignal.login(user.uid);
@@ -65,6 +73,7 @@ export default function AdminLogin() {
                 } catch (e) {
                     console.warn('OneSignal tagging failed:', e);
                 }
+
                 Alert.alert(
                     "Login Successful",
                     "Welcome back!",
@@ -78,7 +87,6 @@ export default function AdminLogin() {
                     ]
                 );
             }
-
 
         } catch (error: any) {
             console.log("Login error:", error.message);
@@ -184,13 +192,14 @@ export default function AdminLogin() {
                             </Text>
                         </Text>
 
-                        <View style={{ marginTop: 2, width: '100%', alignItems: 'center',  }}>
+                        <View style={{ marginTop: 2, width: '100%', alignItems: 'center', }}>
                             <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
                                 <Text style={styles.btnTextBelow}>Change PIN</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => router.push('/AdminCreate')}>
-                                <Text style={styles.btnTextBelow}>Create Admin</Text>
+
+                                <Text style={styles.btnTextBelow}>Create Account</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={handleLogout}>

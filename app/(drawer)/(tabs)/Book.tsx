@@ -26,6 +26,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
 import ClearFormIcon from '../../../assets/icons/booking/clear.png'
+import { useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router'; // Keeps state fresh on page change
 
 const { width, height } = Dimensions.get('window');
 
@@ -62,6 +65,25 @@ export default function ServiceBookingScreen() {
   // New tracking states for handling matching active design glows
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
+  // NOTE: Replace this flag with your global authentication state/context hooks 
+  // e.g., const { isAccountCreated } = useAuth();
+  const [isAccountCreated, setIsAccountCreated] = useState<boolean>(false);
+
+  // Inside ServiceBookingScreen component:
+  const [isProfileSetup, setIsProfileSetup] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const verifyProfileStatus = async () => {
+        const completionStatus = await AsyncStorage.getItem('userProfileSetupCompleted');
+        if (completionStatus === 'true') {
+          setIsProfileSetup(true);
+        }
+      };
+      verifyProfileStatus();
+    }, [])
+  );
+
   const clearAllFields = () => {
     setName('');
     setNumber('');
@@ -94,9 +116,32 @@ export default function ServiceBookingScreen() {
   };
 
 
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
 
+    // 🟩 ENFORCED ACCOUNT CHECK: Swapped from placeholder to your actual verified state
+    if (!isProfileSetup) {
+      Alert.alert(
+        'Account Required',
+        'You must log in or complete your account profile layout configuration before submitting a booking.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Go to Login / Create',
+            onPress: () => {
+              // Redirecting to the admin login page
+              router.push('/admin/AdminLogin');
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // 2. Standard Form Field Validations
     if (!name.trim()) {
       Alert.alert('Validation Error', 'Full Name is required');
       return;
@@ -269,22 +314,23 @@ export default function ServiceBookingScreen() {
               </TouchableOpacity>
 
               {show && (
-                <DateTimePicker
-                  value={date || new Date()}
-                  mode="date"
-                  display="default"
-                  minimumDate={new Date()}
-                  onChange={(event, selectedDate) => {
-                    setShow(Platform.OS === 'ios');
-                    // Reset styling focus outline when picker resolves on Android
-                    if (Platform.OS === 'android') {
-                      setActiveInput(null);
-                    }
-                    if (event.type === 'set' && selectedDate) {
-                      setDate(selectedDate);
-                    }
-                  }}
-                />
+                <View>
+                  <DateTimePicker
+                    value={date || new Date()}
+                    mode="date"
+                    display="default"
+                    minimumDate={new Date()}
+                    onChange={(event, selectedDate) => {
+                      setShow(Platform.OS === 'ios');
+                      if (Platform.OS === 'android') {
+                        setActiveInput(null);
+                      }
+                      if (event.type === 'set' && selectedDate) {
+                        setDate(selectedDate);
+                      }
+                    }}
+                  />
+                </View>
               )}
             </View>
 
@@ -398,20 +444,20 @@ const styles = StyleSheet.create({
     marginBottom: height * 0.05,
   },
   input: {
-    borderWidth: 1.5, // Match premium look thickness
+    borderWidth: 1.5,
     borderRadius: 12,
     paddingHorizontal: width * 0.035,
-    height: height * 0.055, // Matches the height optimization from before
+    height: height * 0.055,
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
     fontWeight: '500',
-    borderColor: '#E2E8F0', // Cleaner neutral baseline gray
+    borderColor: '#E2E8F0',
     color: '#1A1A1A',
     backgroundColor: '#fff',
   },
   inputActive: {
-    borderColor: 'hsl(142, 71%, 45%)',      // Premium blue border glow
-    backgroundColor: '#F4F7FF',  // Premium soft blue internal background tint
+    borderColor: 'hsl(142, 71%, 45%)',
+    backgroundColor: '#F4F7FF',
   },
   phoneContainer: {
     position: 'relative',
@@ -483,7 +529,6 @@ const styles = StyleSheet.create({
     fontSize: width * 0.04,
     fontWeight: '600',
   },
-  //clear btn
   buttonClearFlex: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -492,7 +537,6 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     justifyContent: 'center'
   },
-
   buttonClear: {
     color: '#0a7de1',
     fontSize: width * 0.038,

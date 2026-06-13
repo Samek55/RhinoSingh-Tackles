@@ -7,9 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  KeyboardAvoidingView,
-  Platform,
-  TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
 
@@ -28,7 +25,6 @@ const AIRTABLE_API_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_CAREER;
 const SERVICES_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_SERVICES;
 const AIRTABLE_TOKEN = process.env.EXPO_PUBLIC_AIRTABLE_TOKEN;
 
-// 🚀 In-memory cache for Services mapping
 let servicesCache: Record<string, string> | null = null;
 let servicesPromise: Promise<Record<string, string>> | null = null;
 
@@ -71,7 +67,6 @@ export default function CreateUser() {
   const [pin, setPin] = useState("");
   const [selectedRole, setSelectedRole] = useState<Role>("admin");
 
-  // Fetches career data simply matching the phone number
   const fetchCareerData = async (cleanPhone: string) => {
     try {
       if (!AIRTABLE_API_URL || !AIRTABLE_TOKEN) {
@@ -111,7 +106,6 @@ export default function CreateUser() {
       const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
       const cleanPin = pin.replace(/[^0-9]/g, "");
 
-      // ✅ STRICT VALIDATION
       if (cleanPhone.length !== 10) {
         Alert.alert("Error", "Phone number must be exactly 10 digits");
         return;
@@ -122,36 +116,38 @@ export default function CreateUser() {
         return;
       }
 
-      // 🔍 1. VERIFY PHONE NUMBER EXISTS IN CAREER DATABASE
-      const careerRecord = await fetchCareerData(cleanPhone);
+      let localizedServiceNames: string[] = [];
+      let preferredAreaValues: string[] = [];
 
-      if (!careerRecord) {
-        Alert.alert("Access Denied", "Please fill up the career form.");
-        return;
+      // 🔍 STRICT CHECK: Only check Airtable if role is exactly "career"
+      if (selectedRole === "career") {
+        const careerRecord = await fetchCareerData(cleanPhone);
+
+        if (!careerRecord) {
+          Alert.alert("Access Denied", "Please fill up the career form first.");
+          return;
+        }
+
+        const servicesMap = await fetchServicesMap();
+
+        const expertiseIds: string[] = Array.isArray(careerRecord["Area of Expertise"])
+          ? careerRecord["Area of Expertise"]
+          : careerRecord["Area of Expertise"]
+            ? [careerRecord["Area of Expertise"]]
+            : [];
+
+        preferredAreaValues = Array.isArray(careerRecord["Preferred Working Area"])
+          ? careerRecord["Preferred Working Area"]
+          : careerRecord["Preferred Working Area"]
+            ? [careerRecord["Preferred Working Area"]]
+            : [];
+
+        localizedServiceNames = expertiseIds
+          .map((id) => servicesMap[id] || id)
+          .filter(Boolean);
       }
 
-      // 🔄 2. FETCH SERVICES MAP TO MAP RECORD IDs TO PLAIN NAMES
-      const servicesMap = await fetchServicesMap();
-
-      // 🛠️ FIXED: Changed key from "Position Applied For" to "Area of Expertise"
-      const expertiseIds: string[] = Array.isArray(careerRecord["Area of Expertise"])
-        ? careerRecord["Area of Expertise"]
-        : careerRecord["Area of Expertise"]
-          ? [careerRecord["Area of Expertise"]]
-          : [];
-
-      const preferredAreaValues: string[] = Array.isArray(careerRecord["Preferred Working Area"])
-        ? careerRecord["Preferred Working Area"]
-        : careerRecord["Preferred Working Area"]
-          ? [careerRecord["Preferred Working Area"]]
-          : [];
-
-      // Convert Service IDs to clean human-readable text names (e.g. "Plumber")
-      const localizedServiceNames = expertiseIds
-        .map((id) => servicesMap[id] || id)
-        .filter(Boolean);
-
-      // 🔐 3. FIREBASE AUTH CREATION
+      // 🔐 Firebase Setup
       const email = `${cleanPhone}@tackles.app`;
 
       const userCredential = await createUserWithEmailAndPassword(
@@ -162,16 +158,29 @@ export default function CreateUser() {
 
       const user = userCredential.user;
 
-      // 🔥 4. ONESIGNAL REGISTRATION WITH DROPDOWN ROLE AND FETCHED AIRTABLE DETAILS
+      // 🔥 Conditional OneSignal Registration
       try {
         const { OneSignal } = require("react-native-onesignal");
         OneSignal.login(user.uid);
 
-        OneSignal.User.addTags({
-          role: selectedRole, // Passes the chosen UI state value ("admin" | "career" | "user")
-          services: localizedServiceNames.join(","),
-          area: preferredAreaValues.join(","),
-        });
+        // ✅ Conditional logic for OneSignal tracking segment tags
+        if (selectedRole === "user") {
+          OneSignal.User.addTags({
+            phone: cleanPhone,
+            role: "user",
+          });
+        } else if (selectedRole === "admin") {
+          OneSignal.User.addTags({
+            phone: cleanPhone,
+            role: "admin",
+          });
+        } else if (selectedRole === "career") {
+          OneSignal.User.addTags({
+            role: "career",
+            services: localizedServiceNames.join(","),
+            area: preferredAreaValues.join(","),
+          });
+        }
       } catch (e) {
         console.warn("OneSignal tag setup error:", e);
       }
@@ -208,7 +217,11 @@ export default function CreateUser() {
   return (
     <View style={{ flex: 1 }}>
       <Header4 />
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
+      <TouchableOpacity 
+        activeOpacity={1} 
+        style={{ flex: 1 }} 
+        onPress={Keyboard.dismiss}
+      >
         <View style={styles.container}>
           <View style={styles.box}>
 
@@ -263,9 +276,8 @@ export default function CreateUser() {
             <Button title="Logout" onPress={handleLogout} color="red" />
           </View>
         </View>
-      </TouchableWithoutFeedback>
+      </TouchableOpacity>
     </View>
-
   );
 }
 

@@ -125,7 +125,7 @@ export default function BookingDetails() {
                                     source={phoneIcon}
                                     style={{ width: 14, height: 11.5, tintColor: '#555' }}
                                 />{' '}
-                                +91 {booking?.phone}
+                                +977 {booking?.phone}
                             </Text>
 
                             <View style={styles.row}>

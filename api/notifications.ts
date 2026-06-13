@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAuth } from 'firebase/auth';
 
 const ONESIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY;
@@ -20,7 +21,7 @@ const sendNotification = async (payload: object) => {
   );
 };
 
-// Service booking → service providers who serve that specific area and service
+// Service booking for notifying careers → service providers who serve that specific area and service
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
     // Trim any invisible whitespaces coming out of your input forms
@@ -29,7 +30,7 @@ export async function notifyProfessionals(service: string, bookingArea: string) 
 
     await sendNotification({
       filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'career' }, 
+        { field: 'tag', key: 'role', relation: '=', value: 'career' },
         { field: 'tag', key: 'services', relation: '=', value: cleanService },
         { field: 'tag', key: 'area', relation: '=', value: cleanArea }
       ],
@@ -37,6 +38,47 @@ export async function notifyProfessionals(service: string, bookingArea: string) 
       contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
     });
     console.log(`Booking notification successfully targeted for "${cleanService}" in ${cleanArea}`);
+  } catch (error: any) {
+    console.log('Booking notification error:', error?.response?.data || error.message);
+  }
+}
+
+/**
+ * Notifies the customer that their booking has been accepted.
+ * @param service Name of the service
+ * @param bookingArea Area of the booking
+ * @param customerPhone The direct 10-digit phone number string (e.g., "9803179846")
+ */
+export async function notifyUsers(service: string, bookingArea: string, customerPhone: string) {
+  try {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+
+    const providerPhone = currentUser?.email?.slice(0, 10) || 'A service provider';
+    const cleanCustomerPhone = customerPhone?.trim();
+
+    if (!cleanCustomerPhone) {
+      console.log('Notification skipped: No customer phone target provided.');
+      return;
+    }
+
+    const cleanService = service?.trim() || '';
+    const cleanArea = bookingArea?.trim() || '';
+
+    await sendNotification({
+      // Explicitly targeting the App Push channel along with your custom tags
+      filters: [
+        { field: 'tag', key: 'role', relation: '=', value: 'user' },
+        { operator: 'AND' },
+        { field: 'tag', key: 'phone', relation: '=', value: cleanCustomerPhone }
+      ],
+      // This forces OneSignal to only count users with valid, subscribed Push tokens
+      is_wp_wns: false,
+      headings: { en: 'Booking Accepted 🚀' },
+      contents: { en: `Provider (${providerPhone}) has accepted your request for "${cleanService}" in ${cleanArea}.` },
+    });
+
+    console.log(`Notification safely sent to customer tag phone: ${cleanCustomerPhone}`);
   } catch (error: any) {
     console.log('Booking notification error:', error?.response?.data || error.message);
   }
@@ -55,22 +97,6 @@ export async function notifyAdmins(applicantName: string) {
     console.log('Admin notification sent for partnership:', applicantName);
   } catch (error: any) {
     console.log('Admin notification error:', error?.response?.data || error.message);
-  }
-}
-
-// Career form submitted → admin only
-export async function notifyCareerAdmins(applicantName: string) {
-  try {
-    await sendNotification({
-      filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'career' },
-      ],
-      headings: { en: 'New Career Application' },
-      contents: { en: `${applicantName} submitted a career application. Review it now.` },
-    });
-    console.log('Admin notification sent for career application:', applicantName);
-  } catch (error: any) {
-    console.log('Career notification error:', error?.response?.data || error.message);
   }
 }
 
