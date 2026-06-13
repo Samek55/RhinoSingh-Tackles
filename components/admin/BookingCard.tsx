@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import DropdownIcon from '../../assets/icons/contact/DropDown.png'
+import ResearchIcon from '../../assets/icons/admin/research.png'
 
 import {
   widthPercentageToDP as wp,
@@ -83,12 +83,12 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={onToggle}
+             onPress={onPress}
           >
-            <Text style={styles.actionText}>Action</Text>
+            <Text style={styles.actionText}>View</Text>
 
             <Image
-              source={DropdownIcon}
+              source={ResearchIcon}
               style={styles.dropdownIcon}
             />
           </TouchableOpacity>
@@ -96,28 +96,7 @@ const BookingCard = ({ item, isOpen, onToggle, onPress }: Props) => {
 
       </View>
 
-      {/* DROPDOWN */}
-      {
-        isOpen && (
-          <View style={styles.dropdown}>
-            <TouchableOpacity style={styles.dropdownItem}
-              onPress={onPress}
-            >
-              <Text style={styles.dropdownText}>View</Text>
-            </TouchableOpacity>
-            {/* 
-          <TouchableOpacity style={styles.dropdownItem}>
-            <Text style={styles.dropdownText}>Edit</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.dropdownItem}>
-            <Text style={[styles.dropdownText, { color: 'red' }]}>
-              Delete
-            </Text>
-          </TouchableOpacity> */}
-          </View>
-        )
-      }
+      
 
       <View style={{ borderBottomWidth: 1, borderColor: 'green', marginVertical: hp('1.5%') }} />
     </View >
@@ -199,7 +178,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',      // ✅ key fix
     alignItems: 'center',      // ✅ vertical alignment
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingVertical: 6,
     borderRadius: 8,
     gap: 6,

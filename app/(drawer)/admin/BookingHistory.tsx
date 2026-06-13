@@ -95,12 +95,35 @@ export default function BookingHistory() {
     // -----------------------------
     // NAVIGATION (OPTIMIZED)
     // -----------------------------
+    // -----------------------------
+    // NAVIGATION (WITH CONDITIONAL ROUTING)
+    // -----------------------------
     const handlePress = useCallback((id: string) => {
-        router.push({
-            pathname: '/admin/BookingDetails_1',
-            params: { id },
-        });
-    }, []);
+        // Find the specific booking object from our state array
+        const selectedBooking = bookings.find(b => b.id === id);
+
+        // Normalize the status string to lowercase for safe matching
+        const currentStatus = selectedBooking?.status?.toLowerCase()?.trim() || '';
+
+        // Check if the status matches any of your 3 specific criteria
+        if (
+            currentStatus.includes('completed') ||
+            currentStatus.includes('pending') ||
+            currentStatus.includes('cancel') // handles both 'Cancel' and 'Cancelled'
+        ) {
+            // Route directly to standard BookingDetails
+            router.push({
+                pathname: '/admin/BookingDetails_2',
+                params: { id },
+            });
+        } else {
+            // Fallback for all other statuses (e.g., "New / Open") to Details_1
+            router.push({
+                pathname: '/admin/BookingDetails_1',
+                params: { id },
+            });
+        }
+    }, [bookings]);
 
     // -----------------------------
     // SORT BOOKINGS
