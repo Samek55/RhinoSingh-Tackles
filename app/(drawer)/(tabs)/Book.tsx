@@ -10,6 +10,7 @@ import {
   Dimensions,
   Image,
   Pressable,
+  ActivityIndicator, // Added for loading state during API check
 } from 'react-native';
 import Dropdown from '../../../components/bookings/Dropdown';
 import { area, services, shifts, budget, priority } from '../../../src/data/Data';
@@ -26,17 +27,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
 import ClearFormIcon from '../../../assets/icons/booking/clear.png'
-import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router'; // Keeps state fresh on page change
+import { useFocusEffect } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
-const Button = ({ children, style, textStyle, onPress }: any) => {
+const Button = ({ children, style, textStyle, onPress, disabled }: any) => {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} disabled={disabled}>
       <LinearGradient
-        colors={['#047857', '#15803d', '#65a30d']}
+        colors={disabled ? ['#9ca3af', '#6b7280', '#4b5563'] : ['#047857', '#15803d', '#65a30d']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={[styles.button1, style]}
@@ -61,16 +61,11 @@ export default function ServiceBookingScreen() {
   const [message, setMessage] = useState('');
   const [date, setDate] = useState<Date | null>(null);
   const [show, setShow] = useState<boolean>(false);
-
-  // New tracking states for handling matching active design glows
   const [activeInput, setActiveInput] = useState<string | null>(null);
-
-  // NOTE: Replace this flag with your global authentication state/context hooks 
-  // e.g., const { isAccountCreated } = useAuth();
-  const [isAccountCreated, setIsAccountCreated] = useState<boolean>(false);
-
-  // Inside ServiceBookingScreen component:
   const [isProfileSetup, setIsProfileSetup] = useState(false);
+
+  // New loading state to handle API checking delay
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -102,80 +97,109 @@ export default function ServiceBookingScreen() {
       'Clear Form',
       'Are you sure you want to clear all fields?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Clear',
-          style: 'destructive',
-          onPress: clearAllFields,
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes, Clear', style: 'destructive', onPress: clearAllFields },
       ]
     );
   };
 
+  // 🛠️ Function to check daily limit from Airtable
+  const BASE_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_BOOKING;
+  const TOKEN = process.env.EXPO_PUBLIC_AIRTABLE_TOKEN;
 
-const handleSubmit = async () => {
+  /**
+   * Checks if a specific phone number has reached the maximum allowance 
+   * of 5 bookings for today's date.
+   */
+  /**
+   * Checks if a specific phone number has reached the maximum allowance 
+   * of 5 bookings for today's current calendar date.
+   */
+  const checkDailyBookingLimit = async (phoneNumber: string): Promise<boolean> => {
+    try {
+      if (!BASE_URL || !TOKEN) {
+        console.warn("Airtable environment configuration is missing.");
+        return false;
+      }
+
+      // 1. Get today's local date (ignoring UTC timezone offsets)
+      const localDate = new Date();
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0'); // Ensures 2 digits e.g. "06"
+      const day = String(localDate.getDate()).padStart(2, '0');        // Ensures 2 digits e.g. "13"
+
+      // Generates standard "2026-06-13" string structure accepted universally by dates
+      const todayStr = `${year}-${month}-${day}`;
+
+      // 2. Build the Airtable Formula 
+      // This looks at your exact {Phone} string and extracts the date part of {Service Booking Date & Time *} 
+      // to compare it to today's date stamp.
+      const formula = `AND({Phone} = '${phoneNumber}', DATETIME_FORMAT({Service Booking Date & Time *}, 'YYYY-MM-DD') = '${todayStr}')`;
+
+      // 3. Append the formula as a URL query parameter
+      const requestUrl = `${BASE_URL}?filterByFormula=${encodeURIComponent(formula)}`;
+
+      const response = await fetch(requestUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log("Airtable Rate Limit Check Error:", data);
+        return false; // Fail open to keep app usable if network drops
+      }
+
+      // If Airtable returns 5 or more rows for today, block them!
+      return data.records.length >= 5;
+
+    } catch (error) {
+      console.log("Rate Limit Check Fetch Error:", error);
+      return false;
+    }
+  };
+
+  const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
 
-    // 🟩 ENFORCED ACCOUNT CHECK: Swapped from placeholder to your actual verified state
     if (!isProfileSetup) {
       Alert.alert(
         'Account Required',
         'You must log in or complete your account profile layout configuration before submitting a booking.',
         [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Go to Login / Create',
-            onPress: () => {
-              // Redirecting to the admin login page
-              router.push('/admin/AdminLogin');
-            },
-          },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Login / Create', onPress: () => router.push('/admin/AdminLogin') },
         ]
       );
       return;
     }
 
     // 2. Standard Form Field Validations
-    if (!name.trim()) {
-      Alert.alert('Validation Error', 'Full Name is required');
-      return;
-    }
-    if (!cleanNumber || cleanNumber.length !== 10) {
-      Alert.alert('Validation Error', 'Enter a valid 10-digit phone number');
-      return;
-    }
-    if (!selectedService) {
-      Alert.alert('Validation Error', 'Please select a service');
-      return;
-    }
-    if (!date) {
-      Alert.alert('Validation Error', 'Please select a date');
-      return;
-    }
-    if (!selectedShift) {
-      Alert.alert('Validation Error', 'Please choose a time shift');
-      return;
-    }
-    if (!selectedArea) {
-      Alert.alert('Validation Error', 'Please select your location');
-      return;
-    }
-    if (!selectedBudget.trim()) {
-      Alert.alert('Validation Error', 'Budget cannot be empty');
-      return;
-    }
-    if (!selectedPriority.trim()) {
-      Alert.alert('Validation Error', 'Please choose a Priority');
-      return;
-    }
-    if (!message.trim()) {
-      Alert.alert('Validation Error', 'Message cannot be empty');
+    if (!name.trim()) { return Alert.alert('Validation Error', 'Full Name is required'); }
+    if (!cleanNumber || cleanNumber.length !== 10) { return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number'); }
+    if (!selectedService) { return Alert.alert('Validation Error', 'Please select a service'); }
+    if (!date) { return Alert.alert('Validation Error', 'Please select a date'); }
+    if (!selectedShift) { return Alert.alert('Validation Error', 'Please choose a time shift'); }
+    if (!selectedArea) { return Alert.alert('Validation Error', 'Please select your location'); }
+    if (!selectedBudget.trim()) { return Alert.alert('Validation Error', 'Budget cannot be empty'); }
+    if (!selectedPriority.trim()) { return Alert.alert('Validation Error', 'Please choose a Priority'); }
+    if (!message.trim()) { return Alert.alert('Validation Error', 'Message cannot be empty'); }
+
+    setIsSubmitting(true);
+
+    // 🚀 Airtable Rate Limit Check Execution
+    const isLimitReached = await checkDailyBookingLimit(cleanNumber);
+
+    if (isLimitReached) {
+      setIsSubmitting(false);
+      Alert.alert(
+        'Limit Reached',
+        'This phone number has reached the maximum allowance of 5 bookings for today. Please try again tomorrow.'
+      );
       return;
     }
 
@@ -197,6 +221,8 @@ const handleSubmit = async () => {
     } catch (error) {
       console.log(error);
       Alert.alert('Error', 'Something went wrong');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -226,13 +252,9 @@ const handleSubmit = async () => {
               onChangeText={setName}
               onFocus={() => setActiveInput('name')}
               onBlur={() => setActiveInput(null)}
-              style={[
-                styles.input,
-                activeInput === 'name' && styles.inputActive
-              ]}
+              style={[styles.input, activeInput === 'name' && styles.inputActive]}
               placeholderTextColor={'#4B4B4B'}
             />
-
 
             {/* Phone Number */}
             <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
@@ -251,20 +273,12 @@ const handleSubmit = async () => {
                   if (cleaned.length > 3 && cleaned.length <= 6) {
                     formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
                   } else if (cleaned.length > 6) {
-                    formatted =
-                      cleaned.slice(0, 3) +
-                      ' ' +
-                      cleaned.slice(3, 6) +
-                      ' ' +
-                      cleaned.slice(6);
+                    formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3, 6) + ' ' + cleaned.slice(6);
                   }
                   setNumber(formatted);
                 }}
                 keyboardType="number-pad"
-                style={[
-                  styles.phoneInput,
-                  activeInput === 'phone' && styles.inputActive
-                ]}
+                style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}
                 placeholderTextColor={'#4B4B4B'}
               />
             </View>
@@ -289,27 +303,14 @@ const handleSubmit = async () => {
                   setShow(true);
                   setActiveInput('date');
                 }}
-                style={[
-                  styles.datePicker,
-                  activeInput === 'date' && styles.inputActive
-                ]}
+                style={[styles.datePicker, activeInput === 'date' && styles.inputActive]}
               >
-                <Text
-                  style={[
-                    styles.datePickerText,
-                    {
-                      color: date ? '#1A1A1A' : '#4B4B4B',
-                    },
-                  ]}
-                >
+                <Text style={[styles.datePickerText, { color: date ? '#1A1A1A' : '#4B4B4B' }]}>
                   {date ? date.toDateString() : 'Pick a Date'}
                 </Text>
                 <Image
                   source={CalenderIcon}
-                  style={[
-                    styles.calendarIcon,
-                    activeInput === 'date' && { tintColor: '#2F6BFF' },
-                  ]}
+                  style={[styles.calendarIcon, activeInput === 'date' && { tintColor: '#2F6BFF' }]}
                 />
               </TouchableOpacity>
 
@@ -322,12 +323,8 @@ const handleSubmit = async () => {
                     minimumDate={new Date()}
                     onChange={(event, selectedDate) => {
                       setShow(Platform.OS === 'ios');
-                      if (Platform.OS === 'android') {
-                        setActiveInput(null);
-                      }
-                      if (event.type === 'set' && selectedDate) {
-                        setDate(selectedDate);
-                      }
+                      if (Platform.OS === 'android') { setActiveInput(null); }
+                      if (event.type === 'set' && selectedDate) { setDate(selectedDate); }
                     }}
                   />
                 </View>
@@ -402,10 +399,12 @@ const handleSubmit = async () => {
                 style={styles.button1}
                 textStyle={{ color: 'white', textAlign: 'center' }}
                 onPress={handleSubmit}
+                disabled={isSubmitting} // Disable during lookup to prevent spam taps
               >
-                SUBMIT
+                {isSubmitting ? <ActivityIndicator color="#fff" size="small" /> : 'SUBMIT'}
               </Button>
             </View>
+
             <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
               <Image source={ClearFormIcon} style={styles.clearIcon} />
               <Text style={styles.buttonClear}>Clear form</Text>
@@ -418,134 +417,25 @@ const handleSubmit = async () => {
   );
 }
 
+// ... styles remain unchanged ...
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: 'teal',
-    flexGrow: 1,
-  },
-  formContainer: {
-    paddingHorizontal: width * 0.05,
-    paddingTop: height * 0.02,
-    backgroundColor: 'teal',
-  },
-  title: {
-    fontSize: width * 0.06,
-    fontWeight: '700',
-    color: 'white',
-    paddingLeft: 8,
-    marginBottom: 10,
-  },
-  inputGroup: {
-    marginTop: height * 0.015,
-    padding: 20,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    elevation: 10,
-    marginBottom: height * 0.05,
-  },
-  input: {
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingHorizontal: width * 0.035,
-    height: height * 0.055,
-    marginBottom: height * 0.02,
-    fontSize: width * 0.035,
-    fontWeight: '500',
-    borderColor: '#E2E8F0',
-    color: '#1A1A1A',
-    backgroundColor: '#fff',
-  },
-  inputActive: {
-    borderColor: 'hsl(142, 71%, 45%)',
-    backgroundColor: '#F4F7FF',
-  },
-  phoneContainer: {
-    position: 'relative',
-    justifyContent: 'center',
-    marginBottom: height * 0.02,
-  },
-  icon: {
-    width: wp('7%'),
-    height: hp('3%'),
-    position: 'absolute',
-    left: 10,
-    zIndex: 2,
-  },
-  phoneInput: {
-    borderWidth: 1.5,
-    borderRadius: 12,
-    borderColor: '#E2E8F0',
-    height: height * 0.055,
-    paddingLeft: wp('12%'),
-    paddingRight: 10,
-    fontSize: width * 0.035,
-    fontWeight: '500',
-    color: '#1A1A1A',
-    backgroundColor: '#fff',
-  },
-  datePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: width * 0.035,
-    height: height * 0.055,
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-  },
-  datePickerText: {
-    fontSize: width * 0.035,
-    fontWeight: '500',
-    color: '#4a4a4a',
-  },
-  label: {
-    marginBottom: hp('0.6%'),
-    paddingLeft: wp('1%'),
-    fontSize: wp('3.5%'),
-    fontWeight: '600',
-    color: '#4A4A4A',
-  },
-  calendarIcon: {
-    height: hp('2.5%'),
-    width: hp('2.5%'),
-    resizeMode: 'contain',
-  },
-  buttonPadding: {
-    paddingBottom: 10,
-    alignItems: 'center',
-  },
-  button1: {
-    width: width * 0.4,
-    height: height * 0.06,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    borderRadius: 10,
-    marginTop: 25,
-  },
-  text: {
-    color: '#fff',
-    fontSize: width * 0.04,
-    fontWeight: '600',
-  },
-  buttonClearFlex: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 20,
-    paddingRight: 10,
-    justifyContent: 'center'
-  },
-  buttonClear: {
-    color: '#0a7de1',
-    fontSize: width * 0.038,
-    fontWeight: '500',
-  },
-  clearIcon: {
-    width: wp('6%'),
-    height: hp('2.5%'),
-    resizeMode: 'contain',
-    marginRight: 2,
-  },
+  container: { backgroundColor: 'teal', flexGrow: 1 },
+  formContainer: { paddingHorizontal: width * 0.05, paddingTop: height * 0.02, backgroundColor: 'teal' },
+  title: { fontSize: width * 0.06, fontWeight: '700', color: 'white', paddingLeft: 8, marginBottom: 10 },
+  inputGroup: { marginTop: height * 0.015, padding: 20, borderRadius: 20, backgroundColor: '#fff', elevation: 10, marginBottom: height * 0.05 },
+  input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: width * 0.035, height: height * 0.055, marginBottom: height * 0.02, fontSize: width * 0.035, fontWeight: '500', borderColor: '#E2E8F0', color: '#1A1A1A', backgroundColor: '#fff' },
+  inputActive: { borderColor: 'hsl(142, 71%, 45%)', backgroundColor: '#F4F7FF' },
+  phoneContainer: { position: 'relative', justifyContent: 'center', marginBottom: height * 0.02 },
+  icon: { width: wp('7%'), height: hp('3%'), position: 'absolute', left: 10, zIndex: 2 },
+  phoneInput: { borderWidth: 1.5, borderRadius: 12, borderColor: '#E2E8F0', height: height * 0.055, paddingLeft: wp('12%'), paddingRight: 10, fontSize: width * 0.035, fontWeight: '500', color: '#1A1A1A', backgroundColor: '#fff' },
+  datePicker: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: width * 0.035, height: height * 0.055, justifyContent: 'space-between', backgroundColor: '#fff' },
+  datePickerText: { fontSize: width * 0.035, fontWeight: '500', color: '#4a4a4a' },
+  label: { marginBottom: hp('0.6%'), paddingLeft: wp('1%'), fontSize: wp('3.5%'), fontWeight: '600', color: '#4A4A4A' },
+  calendarIcon: { height: hp('2.5%'), width: hp('2.5%'), resizeMode: 'contain' },
+  buttonPadding: { paddingBottom: 10, alignItems: 'center' },
+  button1: { width: width * 0.4, height: height * 0.06, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', borderRadius: 10, marginTop: 25 },
+  text: { color: '#fff', fontSize: width * 0.04, fontWeight: '600' },
+  buttonClearFlex: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 20, paddingRight: 10, justifyContent: 'center' },
+  buttonClear: { color: '#0a7de1', fontSize: width * 0.038, fontWeight: '500' },
+  clearIcon: { width: wp('6%'), height: hp('2.5%'), resizeMode: 'contain', marginRight: 2 },
 });
