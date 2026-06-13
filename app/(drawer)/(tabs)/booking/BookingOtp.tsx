@@ -138,7 +138,7 @@ export default function BookingOtp() {
 
       const booking = {
         "Full name": name,
-        "Phone": '+977' + number,
+        "Phone":number,
         "Select Services": serviceIds,
         "Area": selectedArea,
         "Priority": selectedPriority,

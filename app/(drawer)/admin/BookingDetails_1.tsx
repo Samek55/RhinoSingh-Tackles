@@ -234,6 +234,12 @@ export default function BookingDetails() {
                                 >
                                     <Text style={styles.AcceptText}>Accept This Offer</Text>
                                 </TouchableOpacity>
+                                 <TouchableOpacity
+                                    style={styles.RejectButton}
+                                    onPress={()=> router.push('/admin/BookingHistory')}
+                                >
+                                    <Text style={styles.AcceptText}>Cancel</Text>
+                                </TouchableOpacity>
                             </View>
                         </View>
                     ) : (
@@ -369,6 +375,19 @@ const styles = StyleSheet.create({
         color: '#fff',
         letterSpacing: 0.5,
     },
+        RejectButton: {
+        paddingVertical: hp('1.5%'),
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'red',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 0, 0,0.1)',
+        elevation: 3,
+        width: '100%',
+        marginTop:hp('2%')
+    },
+
     photos: {
         flexDirection: 'row',
         flexWrap: 'wrap',

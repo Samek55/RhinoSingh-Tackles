@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -25,12 +25,8 @@ import {
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 
-import { usePathname } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut } from "firebase/auth";
 import { auth } from '@/src/firebase/firebaseConfig';
-
-
 
 export default function BookingHistory() {
 
@@ -38,21 +34,17 @@ export default function BookingHistory() {
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
     const [filter, setFilter] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // 🚀 cache to avoid unnecessary re-renders
     const lastDataRef = useRef<string>('');
     const intervalRef = useRef<any>(null);
 
-    // -----------------------------
-    // FETCH BOOKINGS (OPTIMIZED)
-    // -----------------------------
+    // FETCH BOOKINGS
     const loadBookings = useCallback(async () => {
         try {
             const data = await fetchBookingsFromAirtable();
-
             const serialized = JSON.stringify(data);
 
-            // 🚀 skip update if nothing changed
             if (serialized === lastDataRef.current) return;
 
             lastDataRef.current = serialized;
@@ -65,16 +57,10 @@ export default function BookingHistory() {
         }
     }, []);
 
-    // -----------------------------
-    // FOCUS + POLLING
-    // -----------------------------
     useFocusEffect(
         useCallback(() => {
-
-            // initial load
             loadBookings();
 
-            // polling
             intervalRef.current = setInterval(() => {
                 loadBookings();
             }, 15000);
@@ -85,39 +71,24 @@ export default function BookingHistory() {
         }, [loadBookings])
     );
 
-    // -----------------------------
-    // TOGGLE CARD
-    // -----------------------------
     const toggleCard = useCallback((id: string) => {
         setOpenId(prev => (prev === id ? null : id));
     }, []);
 
-    // -----------------------------
-    // NAVIGATION (OPTIMIZED)
-    // -----------------------------
-    // -----------------------------
-    // NAVIGATION (WITH CONDITIONAL ROUTING)
-    // -----------------------------
     const handlePress = useCallback((id: string) => {
-        // Find the specific booking object from our state array
         const selectedBooking = bookings.find(b => b.id === id);
-
-        // Normalize the status string to lowercase for safe matching
         const currentStatus = selectedBooking?.status?.toLowerCase()?.trim() || '';
 
-        // Check if the status matches any of your 3 specific criteria
         if (
             currentStatus.includes('completed') ||
             currentStatus.includes('pending') ||
-            currentStatus.includes('cancel') // handles both 'Cancel' and 'Cancelled'
+            currentStatus.includes('cancel')
         ) {
-            // Route directly to standard BookingDetails
             router.push({
                 pathname: '/admin/BookingDetails_2',
                 params: { id },
             });
         } else {
-            // Fallback for all other statuses (e.g., "New / Open") to Details_1
             router.push({
                 pathname: '/admin/BookingDetails_1',
                 params: { id },
@@ -125,35 +96,66 @@ export default function BookingHistory() {
         }
     }, [bookings]);
 
-    // -----------------------------
     // SORT BOOKINGS
-    // -----------------------------
     const sortedBookings = useMemo(() => {
         return [...bookings].sort((a, b) => {
+            const statusA = (a.status || '').toLowerCase().trim();
+            const statusB = (b.status || '').toLowerCase().trim();
+
+            const isNewA = statusA === 'new / open' || statusA === 'new' || statusA === 'open';
+            const isNewB = statusB === 'new / open' || statusB === 'new' || statusB === 'open';
+
+            if (isNewA && !isNewB) return -1;
+            if (!isNewA && isNewB) return 1;
+
             const aId = Number(a.bookingId) || 0;
             const bId = Number(b.bookingId) || 0;
             return bId - aId;
         });
     }, [bookings]);
 
+    // FILTER & SEARCH BOOKINGS (FIXED)
     // -----------------------------
-    // FILTER BOOKINGS
+    // FILTER & SEARCH BOOKINGS (FIXED DATA KEYS)
     // -----------------------------
     const filteredData = useMemo(() => {
-        if (filter === 'All') return sortedBookings;
+        let data = sortedBookings;
 
-        return sortedBookings.filter(item => {
-            const status = (item.status || '')
-                .toLowerCase()
-                .trim();
+        // 1. Apply Status Filter
+        if (filter !== 'All') {
+            data = data.filter(item => {
+                const status = (item.status || '').toLowerCase().trim();
 
-            return status === filter.toLowerCase();
-        });
-    }, [filter, sortedBookings]);
+                if (filter === 'Cancelled') {
+                    return status.includes('cancel');
+                }
+                if (filter === 'New / Open') {
+                    return status.includes('new') || status.includes('open');
+                }
 
-    // -----------------------------
-    // RENDER ITEM (MEMO SAFE)
-    // -----------------------------
+                return status.includes(filter.toLowerCase());
+            });
+        }
+
+        // 2. Apply Text Search Filter
+        if (searchQuery.trim() !== '') {
+            const query = searchQuery.toLowerCase().trim();
+            data = data.filter(item => {
+                // ✅ MATCHED TO YOUR ACTUAL TYPE DEFINITIONS
+                const bookingId = String(item.bookingId || '').toLowerCase();
+                const customerName = String(item.fullName || '').toLowerCase(); // Fixed from item.customerName
+                const phoneNumber = String(item.phone || '').toLowerCase();     // Fixed from item.phoneNumber
+
+                return (
+                    bookingId.includes(query) ||
+                    customerName.includes(query) ||
+                    phoneNumber.includes(query)
+                );
+            });
+        }
+
+        return data;
+    }, [filter, searchQuery, sortedBookings]);
     const renderItem = useCallback(({ item }: any) => {
         return (
             <BookingCard
@@ -168,7 +170,6 @@ export default function BookingHistory() {
     const handleLogout = async () => {
         try {
             await signOut(auth);
-
             try {
                 const { OneSignal } = require('react-native-onesignal');
                 OneSignal.logout();
@@ -176,27 +177,16 @@ export default function BookingHistory() {
                 console.warn('OneSignal clean-up failure:', e);
             }
 
-            Alert.alert(
-                "Logged Out",
-                "You have been logged out successfully.",
-                [
-                    {
-                        text: "OK",
-                        onPress: () => {
-                            router.replace('/admin/AdminLogin');
-                        }
-                    }
-                ]
-            );
-
+            Alert.alert("Logged Out", "You have been logged out successfully.", [
+                { text: "OK", onPress: () => router.replace('/admin/AdminLogin') }
+            ]);
         } catch (error: any) {
             alert("Logout error: " + error.message);
         }
     };
 
-
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
             <Header4 />
 
             <KeyboardAvoidingView
@@ -204,15 +194,13 @@ export default function BookingHistory() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
             >
-
-                {/* HEADER */}
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={handleLogout}
-                >
-                    <Image source={leftArrowIcon} style={styles.backBtn} />
+                {/* HEADER (No longer absolute layout to prevent tap overlapping) */}
+                <View style={styles.headerRow}>
+                    <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
+                        <Image source={leftArrowIcon} style={styles.backBtn} />
+                    </TouchableOpacity>
                     <Text style={styles.title}>Booking History</Text>
-                </TouchableOpacity>
+                </View>
 
                 {/* SEARCH */}
                 <View style={styles.inputContainer}>
@@ -221,15 +209,22 @@ export default function BookingHistory() {
                         placeholder="Search"
                         placeholderTextColor={'rgba(67, 67, 67,0.8)'}
                         style={styles.textInput}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        clearButtonMode="while-editing"
+                        autoCapitalize="none"
                     />
                 </View>
 
                 {/* FILTERS */}
                 <View style={styles.mainBtns}>
-                    {['All', 'Completed', 'Pending', 'Cancelled'].map((f) => (
+                    {['All', 'Completed', 'Pending', 'Cancelled', 'New / Open'].map((f) => (
                         <TouchableOpacity
                             key={f}
-                            style={styles.btn}
+                            style={[
+                                styles.btn,
+                                filter === f && styles.activeBtn
+                            ]}
                             onPress={() => setFilter(f)}
                         >
                             <Text style={styles.btnText}>{f}</Text>
@@ -245,13 +240,13 @@ export default function BookingHistory() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     contentContainerStyle={{ paddingBottom: hp('15%') }}
-
-                    // 🚀 PERFORMANCE BOOST
                     initialNumToRender={8}
                     maxToRenderPerBatch={6}
                     windowSize={7}
                     removeClippedSubviews={true}
                     updateCellsBatchingPeriod={50}
+
+                    keyboardDismissMode="on-drag"
                 />
 
             </KeyboardAvoidingView>
@@ -263,38 +258,22 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-
     },
-    scrollContent: {
-        flexGrow: 1,
+    headerRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-    },
-    header: {
-        marginTop: hp('2%'),
         paddingHorizontal: wp('4%'),
+        marginTop: hp('1.5%'),
+        height: hp('5%'),
     },
-
-    divider: {
-        borderBottomWidth: 1,
-        borderColor: '#CAD2DF',
-        marginTop: 16,
-    },
-
     title: {
-        position: 'absolute',
-        top: hp('0.2%'),
-        left: hp('5%'),
-        width: hp('30%'),
         fontSize: hp('2.3%'),
         fontWeight: '600',
-        color: 'green'
-
+        color: 'green',
+        marginLeft: wp('2%')
     },
     backButton: {
-        position: 'absolute',
-        top: 4,
-        left: 3,
-        zIndex: 10,
+        padding: 4,
     },
     backBtn: {
         width: hp('3.5%'),
@@ -303,18 +282,19 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        paddingHorizontal: hp('3.5%'),
+        paddingHorizontal: hp('2%'),
         borderWidth: 1.5,
         width: '90%',
         marginBottom: '5%',
         borderRadius: 200,
         borderColor: 'rgba(0, 0, 0,0.3)',
         height: hp('5%'),
-        marginTop: hp('8%'),
+        marginTop: hp('2%'), // Reduced from 8% now that layout elements flow safely
         alignItems: 'center',
         alignSelf: 'center',
     },
     textInput: {
+        flex: 1,
         fontSize: hp(1.8),
         fontWeight: '500',
         color: '#000',
@@ -323,25 +303,26 @@ const styles = StyleSheet.create({
     },
     mainBtns: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
         paddingHorizontal: wp('4%'),
-        paddingBottom: hp('4%'),
+        paddingBottom: hp('3%'),
     },
-
     btn: {
         backgroundColor: '#d7edd7',
-        paddingHorizontal: wp('3.5%'),
-        paddingVertical: hp('0.7%'),
+        paddingHorizontal: wp('4%'),
+        paddingVertical: hp('0.8%'),
         borderRadius: 20,
         alignItems: 'center',
+        marginRight: wp('2%'),
+        marginBottom: hp('1.5%'),
     },
-
+    activeBtn: {
+        backgroundColor: '#b3dbb3',
+    },
     btnText: {
-        fontSize: wp('3.2%'),
+        fontSize: wp('3.4%'),
         fontWeight: '500',
         color: 'rgba(0,0,0,0.7)',
-    },
-    BookingCard: {
-        marginTop: hp('5%'),
     }
 });
