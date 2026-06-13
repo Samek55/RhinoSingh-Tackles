@@ -10,15 +10,16 @@ import {
     Keyboard,
 } from 'react-native';
 import React, { useRef, useState } from 'react';
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import {
-    heightPercentageToDP as hp,
-} from 'react-native-responsive-screen';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 const { width, height } = Dimensions.get('window');
 import { createHelpbox } from '../../../../api/PostApiHelpbox';
-import { verifyOtp } from '../../../../api/otp'; //  Import your Verify OTP API function
 import { router } from 'expo-router';
 import Header2 from '@/components/Header3drawer';
+
+// 1. MODULAR SDK IMPORTS
+import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
+import { globalFirebaseConfirmation } from '../../../../components/home/NumberBar'; 
 
 const scaleFont = (size: number) => {
     const guidelineBaseWidth = 375;
@@ -55,10 +56,24 @@ export default function HelpboxOTP() {
         }
     };
 
+    const handleResendCode = async () => {
+        if (!phone) return;
+        try {
+            Alert.alert('Resending', 'Requesting a new verification code...');
+            
+            // 2. FIX SYNC: Pass auth instance explicitly + pass boolean resend trigger
+            const authInstance = getAuth();
+            await (signInWithPhoneNumber as any)(authInstance, phone, true); 
+            
+            Alert.alert('Success', 'A new code has been successfully sent.');
+        } catch (error: any) {
+            Alert.alert('Resend Failed', error.message || 'Unable to re-send token code.');
+        }
+    };
+
     const handleNavigate = async () => {
         const enteredOtp = otp.join('');
 
-        // Ensure they filled out all 5 boxes
         if (enteredOtp.length < 6) {
             Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
             return;
@@ -68,27 +83,27 @@ export default function HelpboxOTP() {
         setIsSubmitting(true);
 
         try {
-            // 1. Call your real Twilio Verify backend verification 
-            console.log(`Verifying phone: ${phone} with code: ${enteredOtp}`);
-            const verificationResult = await verifyOtp(phone, enteredOtp);
-
-            // 2. Evaluate the live Twilio approval status response
-            if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
-                Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
+            console.log(`Verifying phone: ${phone} with Firebase code: ${enteredOtp}`);
+            
+            if (!globalFirebaseConfirmation) {
+                Alert.alert('Session Expired', 'Authentication context missing. Please go back and try again.');
                 setIsSubmitting(false);
                 return;
             }
+
+            // 3. Confirm directly invokes the confirmation session resolution handler
+            await globalFirebaseConfirmation.confirm(enteredOtp);
 
             const booking = {
                 "Phone": phone,
             };
 
             await createHelpbox(booking);
-            router.push('/helpbox/otpVerifiedHB')
+            router.push('/helpbox/otpVerifiedHB');
 
-        } catch (error) {
-            console.log("BOOKING ERROR DURING VERIFICATION:", error);
-            Alert.alert('Error', 'An error occurred during submission. Please try again.');
+        } catch (error: any) {
+            console.log("BOOKING OR VERIFICATION ERROR:", error);
+            Alert.alert('Verification Failed', error.message || 'The code entered is invalid or has expired.');
         } finally {
             setIsSubmitting(false);
         }
@@ -126,7 +141,11 @@ export default function HelpboxOTP() {
                         ))}
                     </View>
 
-                    <Text style={styles.resendcode}>{`Didn't get code?`} <Text style={{ color: 'blue' }}>Resend Code</Text></Text>
+                    <TouchableOpacity onPress={handleResendCode}>
+                        <Text style={styles.resendcode}>
+                            {`Didn't get code?`} <Text style={{ color: 'blue', fontWeight: 'bold' }}>Resend Code</Text>
+                        </Text>
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                         style={[styles.submitButton, isSubmitting && { opacity: 0.6 }]}
@@ -141,9 +160,8 @@ export default function HelpboxOTP() {
             </TouchableWithoutFeedback>
         </View>
     );
-};
+}
 
-// ... keep styles exact same as your source snippet
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -211,5 +229,4 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: '300',
     },
-
 });
