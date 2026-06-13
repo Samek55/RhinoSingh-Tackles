@@ -28,7 +28,7 @@ export default function ContactScreen() {
   }, []);
 
   const handleEmailPress = useCallback(() => {
-    Linking.openURL('mailto:rocketsingh@sriyog.com');
+    Linking.openURL('mailto:help@rocketsingh.app');
   }, []);
 
   return (
@@ -67,7 +67,7 @@ export default function ContactScreen() {
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Visit us</Text>
                 <Text style={styles.cardSubtitle}>
-                  IITM Pravartak, IN-SPAN 2026, Chennai, India.
+                  LLTM, Bartaprak, PIN-SPAN 2026, Chennai, India.
                 </Text>
               </View>
             </View>
@@ -79,7 +79,7 @@ export default function ContactScreen() {
                 <Text style={styles.cardTitle}>Email us</Text>
                 <TouchableOpacity onPress={handleEmailPress}>
                   <Text style={styles.cardSubtitle}>
-                    rocketsingh@sriyog.com 
+                    help@rocketsingh.app
                   </Text>
                 </TouchableOpacity>
               </View>
