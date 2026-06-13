@@ -1,4 +1,3 @@
-import { sendOtp } from "@/api/otp";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   View,
@@ -17,6 +16,12 @@ import {
 } from 'react-native-responsive-screen';
 import { useState } from "react";
 import SubmitOverlay from "@/components/bookings/SubmitOverlay";
+
+// 1. IMPORT MODULAR FIREBASE AUTH METHODS
+import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
+
+// 2. EXPORT THE MEMORY HOLDER VARIABLE FOR SCREEN ORCHESTRATION
+export let globalBookingFirebaseConfirmation: any = null;
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,36 +49,42 @@ export default function BookingDetails() {
 
   const formattedDate = date
     ? new Date(date as string).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    })
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
     : '';
 
   const handleSubmit = async () => {
-    // const formattedPhone = '+977' + number;
+    // Aggressively clean string to extract pure digits
+    const cleanNumber = String(number || '').replace(/[^0-9]/g, '');
+
+    if (cleanNumber.length !== 10) {
+      Alert.alert('Validation Error', 'The associated phone number must be exactly 10 digits.');
+      return;
+    }
 
     try {
-      // 🔄 show loading
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      // const res = await sendOtp(formattedPhone);
+      const formattedPhone = '+977' + cleanNumber;
+      console.log("Initializing Firebase SMS to:", formattedPhone);
 
-      // if (!res?.success) {
-      //   setOverlayVisible(false);
-      //   Alert.alert('Error', 'Failed to send OTP');
-      //   return;
-      // }
+      // 3. EXECUTE THE MODULAR API CHALLENGE SIGN-IN
+      const authInstance = getAuth();
+      const confirmation = await signInWithPhoneNumber(authInstance, formattedPhone);
+      
+      // Save verification session
+      globalBookingFirebaseConfirmation = confirmation;
 
-      // 🚀 hide loader before navigation
       setOverlayVisible(false);
 
       router.push({
         pathname: '/booking/BookingOtp',
         params: {
           name,
-          number,
+          number: cleanNumber, // pass down clean string safely
           selectedService,
           selectedShift,
           selectedArea,
@@ -84,21 +95,22 @@ export default function BookingDetails() {
         },
       });
 
-    } catch (error) {
+    } catch (error: any) {
       setOverlayVisible(false);
-      console.log(error);
-      Alert.alert('Error', 'Something went wrong');
+      console.log("FIREBASE BOOKING SMS ERROR:", error);
+      Alert.alert('SMS Dispatch Error', error.message || 'Something went wrong while sending the code.');
     }
   };
+
   return (
     <View style={styles.screen}>
       <Header2 />
       <SubmitOverlay
-              visible={overlayVisible}
-              status={overlayStatus}
-              onClose={() => setOverlayVisible(false)}
-              onClear={() => setOverlayVisible(false)}
-            />
+        visible={overlayVisible}
+        status={overlayStatus}
+        onClose={() => setOverlayVisible(false)}
+        onClear={() => setOverlayVisible(false)}
+      />
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -162,30 +174,11 @@ export default function BookingDetails() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: 'teal',
-  },
-  container: {
-    paddingHorizontal: width * 0.05,
-    paddingBottom: hp('6%'),
-  },
-  titleArea: {
-    paddingTop: hp('3%'),
-    paddingBottom: hp('2%'),
-    paddingHorizontal: 4,
-  },
-  title: {
-    fontSize: width * 0.065,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  subtitle: {
-    fontSize: width * 0.033,
-    color: 'rgba(255,255,255,0.78)',
-    fontWeight: '400',
-  },
+  screen: { flex: 1, backgroundColor: 'teal' },
+  container: { paddingHorizontal: width * 0.05, paddingBottom: hp('6%') },
+  titleArea: { paddingTop: hp('3%'), paddingBottom: hp('2%'), paddingHorizontal: 4 },
+  title: { fontSize: width * 0.065, fontWeight: '700', color: '#fff', marginBottom: 5 },
+  subtitle: { fontSize: width * 0.033, color: 'rgba(255,255,255,0.78)', fontWeight: '400' },
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
@@ -198,63 +191,14 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     marginBottom: hp('3%'),
   },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: hp('1.8%'),
-  },
-  rowLabel: {
-    fontSize: wp('3.5%'),
-    color: '#999',
-    fontWeight: '500',
-    flex: 1,
-  },
-  rowValue: {
-    fontSize: wp('3.5%'),
-    color: '#111',
-    fontWeight: '600',
-    flex: 1.6,
-    textAlign: 'right',
-  },
-  messageBlock: {
-    paddingVertical: hp('1.8%'),
-    gap: 6,
-  },
-  messageText: {
-    fontSize: wp('3.5%'),
-    color: '#444',
-    fontWeight: '500',
-    lineHeight: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#f2f2f2',
-  },
-  confirmBtn: {
-    height: hp('6.5%'),
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: hp('1.8%'),
-  },
-  confirmBtnText: {
-    color: '#fff',
-    fontSize: wp('4.2%'),
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  backBtn: {
-    height: hp('6.5%'),
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.55)',
-  },
-  backBtnText: {
-    color: '#fff',
-    fontSize: wp('4.2%'),
-    fontWeight: '600',
-  },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: hp('1.8%') },
+  rowLabel: { fontSize: wp('3.5%'), color: '#999', fontWeight: '500', flex: 1 },
+  rowValue: { fontSize: wp('3.5%'), color: '#111', fontWeight: '600', flex: 1.6, textAlign: 'right' },
+  messageBlock: { paddingVertical: hp('1.8%'), gap: 6 },
+  messageText: { fontSize: wp('3.5%'), color: '#444', fontWeight: '500', lineHeight: 20 },
+  divider: { height: 1, backgroundColor: '#f2f2f2' },
+  confirmBtn: { height: hp('6.5%'), borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: hp('1.8%') },
+  confirmBtnText: { color: '#fff', fontSize: wp('4.2%'), fontWeight: '700', letterSpacing: 0.4 },
+  backBtn: { height: hp('6.5%'), borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)' },
+  backBtnText: { color: '#fff', fontSize: wp('4.2%'), fontWeight: '600' },
 });

@@ -13,24 +13,24 @@ import React, { useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { createBooking } from '../../../../api/PostApiBooking';
 import { notifyProfessionals } from '../../../../api/notifications';
-import {
-  heightPercentageToDP as hp,
-} from 'react-native-responsive-screen';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import base from '../../../../api/airtable';
-import { verifyOtp } from '../../../../api/otp';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
 
-const { width, height } = Dimensions.get('window'); // Get screen dimensions
+// 1. IMPORT MODULAR AUTH PACKAGES AND CONTEXT DEPENDENCY FROM COMPONENT 1
+import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
+import { globalBookingFirebaseConfirmation } from './BookingDetail'; // Verify path points to your BookingDetails file
 
-// Font scaling utility function
+const { width, height } = Dimensions.get('window');
+
 const scaleFont = (size: number) => {
-  const guidelineBaseWidth = 375; // Base screen width to scale from
+  const guidelineBaseWidth = 375;
   return (size * width) / guidelineBaseWidth;
 };
 
 export default function BookingOtp() {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']); // Manage OTP state
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const {
     name,
@@ -44,41 +44,55 @@ export default function BookingOtp() {
     date,
   } = useLocalSearchParams();
 
-  // Clear OTP whenever the screen is focused
   useFocusEffect(
     React.useCallback(() => {
-      setOtp(['', '', '', '', '', '']); // Reset OTP on screen focus
+      setOtp(['', '', '', '', '', '']);
     }, []),
   );
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleChange = (text: string, index: number) => {
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
 
-    // Automatically focus next input box if the user types a number
     if (text && index < otp.length - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyPress = (event: any, index: number) => {
-    // Handle backspace to move focus to the previous box
     if (event.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
+
   const formatDate = (date: any) => {
     return new Date(date).toISOString().split('T')[0];
+  };
+
+  // 2. IMPLEMENT MODULAR RESEND TRIGGER
+  const handleResendCode = async () => {
+    if (!number) return;
+    try {
+      Alert.alert('Resending', 'Requesting a new verification code...');
+      const authInstance = getAuth();
+      const formattedPhone = '+977' + number;
+      
+      // Use type assertion to avoid compiler type checking differences against the web SDK
+      await (signInWithPhoneNumber as any)(authInstance, formattedPhone, true);
+      Alert.alert('Success', 'A new code has been successfully sent.');
+    } catch (error: any) {
+      Alert.alert('Resend Failed', error.message || 'Unable to re-send token code.');
+    }
   };
 
   const handleNavigate = async () => {
     const enteredOtp = otp.join('');
 
-    // prevent multiple calls
     if (isSubmitting) return;
 
-    // Ensure they filled out all 6 boxes
     if (enteredOtp.length < 6) {
       Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
       return;
@@ -87,24 +101,23 @@ export default function BookingOtp() {
     setIsSubmitting(true);
 
     try {
-      // DEV BYPASS: If the code is 111111, skip any Twilio verification logic entirely
+      // 3. EXECUTE ACTIVE CONFIRMATION RESOLUTION ROUTINE
+      // Check for dev bypass or verify with Firebase
       if (enteredOtp === '111111') {
         console.log("Bypassing verification via magic OTP: 111111");
       } else {
-        // Normal verification logic goes here if uncommented
-        // const formattedNumber = `+977` + number;
-        // console.log(`Verifying phone: ${formattedNumber} with code: ${enteredOtp}`);
-        // const verificationResult = await verifyOtp(formattedNumber, enteredOtp);
-        // if (!verificationResult || !verificationResult.success || verificationResult.status !== 'approved') {
-        //   Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
-        //   setIsSubmitting(false);
-        //   return;
-        // }
+        if (!globalBookingFirebaseConfirmation) {
+          Alert.alert('Session Expired', 'Authentication context missing. Please return and try again.');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // This validates the code directly through native Firebase backend
+        await globalBookingFirebaseConfirmation.confirm(enteredOtp);
       }
 
-      const serviceRecords = await base("Services")
-        .select()
-        .all();
+      // 4. DATABASE POST PROCESSING ROUTINES (AIRTABLE INTEGRATION)
+      const serviceRecords = await base("Services").select().all();
 
       const serviceMap = serviceRecords.map((rec: any) => ({
         id: rec.id,
@@ -113,13 +126,9 @@ export default function BookingOtp() {
 
       const serviceIds = Array.isArray(selectedService)
         ? selectedService
-          .map((name: string) =>
-            serviceMap.find((s: any) => s.name === name)?.id
-          )
-          .filter(Boolean)
-        : [
-          serviceMap.find((s: any) => s.name === selectedService)?.id,
-        ].filter(Boolean);
+            .map((name: string) => serviceMap.find((s: any) => s.name === name)?.id)
+            .filter(Boolean)
+        : [serviceMap.find((s: any) => s.name === selectedService)?.id].filter(Boolean);
 
       if (serviceIds.length === 0) {
         Alert.alert("Error", "No valid service selected");
@@ -129,7 +138,7 @@ export default function BookingOtp() {
 
       const booking = {
         "Full name": name,
-        "Phone": number,
+        "Phone": '+977' + number,
         "Select Services": serviceIds,
         "Area": selectedArea,
         "Priority": selectedPriority,
@@ -142,11 +151,9 @@ export default function BookingOtp() {
 
       await createBooking(booking);
 
-      // Look down inside handleNavigate where notifyProfessionals is called:
       try {
         const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
         const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
-
         console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
         await notifyProfessionals(
@@ -159,9 +166,9 @@ export default function BookingOtp() {
 
       router.push('/booking/BookingVerify');
 
-    } catch (error) {
+    } catch (error: any) {
       console.log("BOOKING ERROR:", error);
-      Alert.alert('Error', 'Submission failed. Please try again.');
+      Alert.alert('Verification Failed', error.message || 'The code entered is invalid or has expired.');
     } finally {
       setIsSubmitting(false);
     }
@@ -180,7 +187,7 @@ export default function BookingOtp() {
             Booking request received. Awaiting confirmation!
           </Text>
 
-          <Text style={styles.otpPromptText}>Enter your OTP"111111" to continue.</Text>
+          <Text style={styles.otpPromptText}>Enter your verification code below.</Text>
 
           <View style={styles.otpBox}>
             {otp.map((_, index) => (
@@ -199,7 +206,11 @@ export default function BookingOtp() {
             ))}
           </View>
 
-          <Text style={styles.resendcode}>{`Didn't get code?`} <Text style={{ color: 'blue' }}>Resend Code</Text></Text>
+          <TouchableOpacity onPress={handleResendCode}>
+            <Text style={styles.resendcode}>
+              {`Didn't get code?`} <Text style={{ color: 'blue', fontWeight: 'bold' }}>Resend Code</Text>
+            </Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.submitButton, isSubmitting && { opacity: 0.6 }]}
@@ -214,72 +225,16 @@ export default function BookingOtp() {
       </TouchableWithoutFeedback>
     </View >
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: '5%',
-    paddingTop: height * 0.09,
-    alignItems: 'center',
-    backgroundColor: '#fff'
-  },
-  thankYouText: {
-    fontSize: scaleFont(27),
-    fontWeight: '700',
-  },
-  bookingText: {
-    width: '70%',
-    textAlign: 'center',
-    marginBottom: height * 0.08,
-    fontSize: scaleFont(17),
-    marginTop: height * 0.03,
-    fontWeight: '500',
-    lineHeight: 23,
-  },
-  otpPromptText: {
-    fontSize: scaleFont(16.5),
-    marginBottom: height * 0.04,
-    fontWeight: '400',
-    color: 'green',
-  },
-  otpBox: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 3,
-  },
-  input: {
-    width: width * 0.12,
-    height: width * 0.12,
-    marginHorizontal: 5,
-    borderWidth: 1,
-    borderColor: 'hsl(0, 0%, 79%)',
-    borderRadius: 5,
-    textAlign: 'center',
-    fontSize: scaleFont(18),
-    backgroundColor: '#fff',
-    elevation: 3,
-  },
-  resendcode: {
-    marginTop: 25,
-    paddingHorizontal: 20,
-    textAlign: 'center',
-    lineHeight: 22,
-    fontSize: hp('1.5%')
-  },
-  submitButton: {
-    backgroundColor: 'green',
-    height: height * 0.05,
-    width: '80%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 100,
-    marginTop: height * 0.08,
-  },
-  submitButtonText: {
-    fontSize: scaleFont(17),
-    color: '#fff',
-    fontWeight: '300',
-  },
+  container: { flex: 1, paddingHorizontal: '5%', paddingTop: height * 0.09, alignItems: 'center', backgroundColor: '#fff' },
+  thankYouText: { fontSize: scaleFont(27), fontWeight: '700' },
+  bookingText: { width: '70%', textAlign: 'center', marginBottom: height * 0.08, fontSize: scaleFont(17), marginTop: height * 0.03, fontWeight: '500', lineHeight: 23 },
+  otpPromptText: { fontSize: scaleFont(16.5), marginBottom: height * 0.04, fontWeight: '400', color: 'green' },
+  otpBox: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 3 },
+  input: { width: width * 0.12, height: width * 0.12, marginHorizontal: 5, borderWidth: 1, borderColor: 'hsl(0, 0%, 79%)', borderRadius: 5, textAlign: 'center', fontSize: scaleFont(18), backgroundColor: '#fff', elevation: 3 },
+  resendcode: { marginTop: 25, paddingHorizontal: 20, textAlign: 'center', lineHeight: 22, fontSize: hp('1.5%') },
+  submitButton: { backgroundColor: 'green', height: height * 0.05, width: '80%', justifyContent: 'center', alignItems: 'center', borderRadius: 100, marginTop: height * 0.08 },
+  submitButtonText: { fontSize: scaleFont(17), color: '#fff', fontWeight: '300' },
 });
