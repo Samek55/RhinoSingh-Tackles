@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   banner: {
     width: '100%',
-    height: hp('30%'),
+    height: hp('25%'),
   },
   content: {
     paddingHorizontal: wp('4%'),

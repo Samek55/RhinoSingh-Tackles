@@ -2,6 +2,7 @@ import { TouchableOpacity, StyleSheet, View, Image, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
+import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 export default function Header1() {
   const navigation = useNavigation<any>();
@@ -16,9 +17,9 @@ export default function Header1() {
           style={styles.leftIcon}
         />
         <Text style={{
-          fontSize: 18,
+          fontSize: hp('2%'),
           fontWeight: 'bold',
-          color: '#064E3B',
+          color: '#ffffff',
         }}>Rocket Singh</Text>
       </View>
 
