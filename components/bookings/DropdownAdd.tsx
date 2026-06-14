@@ -109,9 +109,12 @@ const DropdownAdd = ({
         containerStyle={styles.menuContainer}
         activeColor="transparent"
 
-        // 🌟 KEY FIXES FOR INSIDE DISPLAY
-        inside={true} // Forces selected items to stay inside the input container
-        selectedStyle={styles.selectedStyleContainer} // Removes default library margin overrides
+        inside={true}
+        selectedStyle={styles.selectedStyleContainer}
+
+        search
+        searchPlaceholder="Search..."
+        inputSearchStyle={styles.searchInput}
 
         data={data}
         labelField="label"
@@ -251,6 +254,13 @@ const styles = StyleSheet.create({
     right: wp('12%'),
     top: hp('1.5%'),
     zIndex: 10,
+  },
+  searchInput: {
+    borderRadius: 8,
+    borderColor: '#E0E0E0',
+    fontSize: wp('3.6%'),
+    color: '#1A1A1A',
+    height: hp('4.5%'),
   },
 });
 

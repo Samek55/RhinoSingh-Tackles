@@ -27,8 +27,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
 import ClearFormIcon from '../../../assets/icons/booking/clear.png'
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -62,22 +60,7 @@ export default function ServiceBookingScreen() {
   const [date, setDate] = useState<Date | null>(null);
   const [show, setShow] = useState<boolean>(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
-  const [isProfileSetup, setIsProfileSetup] = useState(false);
-
-  // New loading state to handle API checking delay
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      const verifyProfileStatus = async () => {
-        const completionStatus = await AsyncStorage.getItem('userProfileSetupCompleted');
-        if (completionStatus === 'true') {
-          setIsProfileSetup(true);
-        }
-      };
-      verifyProfileStatus();
-    }, [])
-  );
 
   const clearAllFields = () => {
     setName('');
@@ -166,19 +149,7 @@ export default function ServiceBookingScreen() {
   const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
 
-    if (!isProfileSetup) {
-      Alert.alert(
-        'Account Required',
-        'You must log in or complete your account profile layout configuration before submitting a booking.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Go to Login / Create', onPress: () => router.push('/admin/AdminLogin') },
-        ]
-      );
-      return;
-    }
-
-    // 2. Standard Form Field Validations
+    // Standard Form Field Validations
     if (!name.trim()) { return Alert.alert('Validation Error', 'Full Name is required'); }
     if (!cleanNumber || cleanNumber.length !== 10) { return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number'); }
     if (!selectedService) { return Alert.alert('Validation Error', 'Please select a service'); }

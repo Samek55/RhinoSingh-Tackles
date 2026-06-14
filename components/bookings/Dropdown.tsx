@@ -108,6 +108,10 @@ const Dropdown = ({
         labelField="label"
         valueField="value"
 
+        search
+        searchPlaceholder="Search..."
+        inputSearchStyle={styles.searchInput}
+
         placeholder={placeholder}
         value={value}
 
@@ -187,6 +191,13 @@ const styles = StyleSheet.create({
     right: wp('12%'),
     top: hp('1.5%'),
     zIndex: 10,
+  },
+  searchInput: {
+    borderRadius: 8,
+    borderColor: '#E0E0E0',
+    fontSize: wp('3.6%'),
+    color: '#1A1A1A',
+    height: hp('4.5%'),
   },
 });
 

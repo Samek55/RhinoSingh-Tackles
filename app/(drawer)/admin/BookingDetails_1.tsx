@@ -30,7 +30,7 @@ export default function BookingDetails() {
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [visible, setVisible] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<any>(null);
+    const [selectedIndex, setSelectedIndex] = useState(0);
 
     useEffect(() => {
         const load = async () => {
@@ -57,10 +57,13 @@ export default function BookingDetails() {
         require('../../../assets/services/HomeRepairANDMaintenance/flooring.jpg'),
     ];
 
-    const openImage = (image: any) => {
-        setSelectedImage(image);
+    const openImage = (index: number) => {
+        setSelectedIndex(index);
         setVisible(true);
     };
+
+    const goPrev = () => setSelectedIndex(i => (i - 1 + photos.length) % photos.length);
+    const goNext = () => setSelectedIndex(i => (i + 1) % photos.length);
     useEffect(() => {
         const load = async () => {
             setLoading(true);
@@ -129,7 +132,9 @@ export default function BookingDetails() {
                     >
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Image source={leftArrowIcon} style={styles.backIcon} />
-                            <Text style={styles.title}>Booking Details_1</Text>
+                            <Text style={styles.title}>
+                                {booking?.bookingId ? `Booking ID: ${booking.bookingId}` : 'Booking Details'}
+                            </Text>
                         </View>
                     </TouchableOpacity>
 
@@ -196,33 +201,47 @@ export default function BookingDetails() {
                                     {photos.map((image, index) => (
                                         <TouchableOpacity
                                             key={index}
-                                            onPress={() => openImage(image)}
+                                            onPress={() => openImage(index)}
                                         >
                                             <Image source={image} style={styles.photoItem} />
                                         </TouchableOpacity>
                                     ))}
                                 </View>
 
-                                {/* Fullscreen Popup */}
+                                {/* Fullscreen Popup with navigation */}
                                 <Modal
                                     visible={visible}
                                     transparent
                                     animationType="fade"
                                     onRequestClose={() => setVisible(false)}
                                 >
-                                    <TouchableOpacity
-                                        style={styles.modalContainer}
-                                        activeOpacity={1}
-                                        onPress={() => setVisible(false)}
-                                    >
-                                        {selectedImage && (
-                                            <Image
-                                                source={selectedImage}
-                                                style={styles.fullImage}
-                                                resizeMode="contain"
-                                            />
-                                        )}
-                                    </TouchableOpacity>
+                                    <View style={styles.modalContainer}>
+                                        {/* Close on background tap */}
+                                        <TouchableOpacity
+                                            style={StyleSheet.absoluteFill}
+                                            activeOpacity={1}
+                                            onPress={() => setVisible(false)}
+                                        />
+
+                                        <Image
+                                            source={photos[selectedIndex]}
+                                            style={styles.fullImage}
+                                            resizeMode="contain"
+                                        />
+
+                                        {/* Counter */}
+                                        <Text style={styles.photoCounter}>
+                                            {selectedIndex + 1} / {photos.length}
+                                        </Text>
+
+                                        {/* Prev / Next arrows */}
+                                        <TouchableOpacity style={styles.arrowLeft} onPress={goPrev}>
+                                            <Text style={styles.arrowText}>‹</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.arrowRight} onPress={goNext}>
+                                            <Text style={styles.arrowText}>›</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </Modal>
                             </View>
 
@@ -411,6 +430,45 @@ const styles = StyleSheet.create({
     fullImage: {
         width: '90%',
         height: '70%',
+    },
+    photoCounter: {
+        position: 'absolute',
+        bottom: hp('12%'),
+        color: '#fff',
+        fontSize: hp('2%'),
+        fontWeight: '600',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        paddingHorizontal: wp('3%'),
+        paddingVertical: hp('0.5%'),
+        borderRadius: 20,
+    },
+    arrowLeft: {
+        position: 'absolute',
+        left: wp('4%'),
+        top: '50%',
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        borderRadius: 30,
+        width: 48,
+        height: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    arrowRight: {
+        position: 'absolute',
+        right: wp('4%'),
+        top: '50%',
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        borderRadius: 30,
+        width: 48,
+        height: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    arrowText: {
+        color: '#fff',
+        fontSize: 32,
+        lineHeight: 36,
+        fontWeight: '300',
     },
     loadingText: {
         fontSize: hp('2%'),

@@ -106,7 +106,9 @@ export default function BookingDetails() {
                     >
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Image source={leftArrowIcon} style={styles.backIcon} />
-                            <Text style={styles.title}>Booking Details_2</Text>
+                            <Text style={styles.title}>
+                                {booking?.bookingId ? `Booking ID: ${booking.bookingId}` : 'Booking Details'}
+                            </Text>
                         </View>
                     </TouchableOpacity>
 

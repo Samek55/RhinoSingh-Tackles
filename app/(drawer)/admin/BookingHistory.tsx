@@ -33,7 +33,7 @@ export default function BookingHistory() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
-    const [filter, setFilter] = useState('All');
+    const [filter, setFilter] = useState('New / Open');
     const [searchQuery, setSearchQuery] = useState('');
 
     const lastDataRef = useRef<string>('');
@@ -218,7 +218,7 @@ export default function BookingHistory() {
 
                 {/* FILTERS */}
                 <View style={styles.mainBtns}>
-                    {['All', 'Completed', 'Pending', 'Cancelled', 'New / Open'].map((f) => (
+                    {['All', 'New / Open', 'Completed', 'Pending', 'Cancelled'].map((f) => (
                         <TouchableOpacity
                             key={f}
                             style={[
