@@ -99,14 +99,7 @@ export default function BookingHistory() {
     // SORT BOOKINGS
     const sortedBookings = useMemo(() => {
         return [...bookings].sort((a, b) => {
-            const statusA = (a.status || '').toLowerCase().trim();
-            const statusB = (b.status || '').toLowerCase().trim();
-
-            const isNewA = statusA === 'new / open' || statusA === 'new' || statusA === 'open';
-            const isNewB = statusB === 'new / open' || statusB === 'new' || statusB === 'open';
-
-            if (isNewA && !isNewB) return -1;
-            if (!isNewA && isNewB) return 1;
+      
 
             const aId = Number(a.bookingId) || 0;
             const bId = Number(b.bookingId) || 0;

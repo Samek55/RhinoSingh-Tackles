@@ -18,9 +18,8 @@ import base from '../../../../api/airtable';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
 
-// 1. IMPORT MODULAR AUTH PACKAGES AND CONTEXT DEPENDENCY FROM COMPONENT 1
-import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-import { globalBookingFirebaseConfirmation } from './BookingDetail'; // Verify path points to your BookingDetails file
+// ONESIGNAL SDK IMPORT
+import { OneSignal } from 'react-native-onesignal';
 
 const { width, height } = Dimensions.get('window');
 
@@ -72,20 +71,10 @@ export default function BookingOtp() {
     return new Date(date).toISOString().split('T')[0];
   };
 
-  // 2. IMPLEMENT MODULAR RESEND TRIGGER
+  // PLACEHOLDER: Handle resend via your own custom API if needed
   const handleResendCode = async () => {
     if (!number) return;
-    try {
-      Alert.alert('Resending', 'Requesting a new verification code...');
-      const authInstance = getAuth();
-      const formattedPhone = '+977' + number;
-      
-      // Use type assertion to avoid compiler type checking differences against the web SDK
-      await (signInWithPhoneNumber as any)(authInstance, formattedPhone, true);
-      Alert.alert('Success', 'A new code has been successfully sent.');
-    } catch (error: any) {
-      Alert.alert('Resend Failed', error.message || 'Unable to re-send token code.');
-    }
+    Alert.alert('Resend', 'Resend functionality needs to be linked to your custom SMS gateway.');
   };
 
   const handleNavigate = async () => {
@@ -101,22 +90,29 @@ export default function BookingOtp() {
     setIsSubmitting(true);
 
     try {
-      // 3. EXECUTE ACTIVE CONFIRMATION RESOLUTION ROUTINE
-      // Check for dev bypass or verify with Firebase
-      if (enteredOtp === '111111') {
-        console.log("Bypassing verification via magic OTP: 111111");
-      } else {
-        if (!globalBookingFirebaseConfirmation) {
-          Alert.alert('Session Expired', 'Authentication context missing. Please return and try again.');
-          setIsSubmitting(false);
-          return;
+      // ==========================================
+      // ONESIGNAL USER CREATION & TAGGING
+      // ==========================================
+      if (number) {
+        try {
+          // Identify/Create the user in OneSignal using phone number as external ID
+          OneSignal.login(String(number));
+
+          // Add targeted tags
+          OneSignal.User.addTags({
+            role: 'user',
+            phone: String(number),
+          });
+
+          console.log("OneSignal user registered and tagged successfully.");
+        } catch (oneSignalError) {
+          console.log("OneSignal integration error:", oneSignalError);
         }
-        
-        // This validates the code directly through native Firebase backend
-        await globalBookingFirebaseConfirmation.confirm(enteredOtp);
       }
 
-      // 4. DATABASE POST PROCESSING ROUTINES (AIRTABLE INTEGRATION)
+      // ==========================================
+      // DATABASE POST PROCESSING (AIRTABLE)
+      // ==========================================
       const serviceRecords = await base("Services").select().all();
 
       const serviceMap = serviceRecords.map((rec: any) => ({
@@ -138,7 +134,7 @@ export default function BookingOtp() {
 
       const booking = {
         "Full name": name,
-        "Phone":number,
+        "Phone": number,
         "Select Services": serviceIds,
         "Area": selectedArea,
         "Priority": selectedPriority,
@@ -168,7 +164,7 @@ export default function BookingOtp() {
 
     } catch (error: any) {
       console.log("BOOKING ERROR:", error);
-      Alert.alert('Verification Failed', error.message || 'The code entered is invalid or has expired.');
+      Alert.alert('Submission Failed', error.message || 'An error occurred while processing your request.');
     } finally {
       setIsSubmitting(false);
     }
