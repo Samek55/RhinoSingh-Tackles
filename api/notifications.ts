@@ -22,50 +22,23 @@ const sendNotification = async (payload: object) => {
 };
 
 // Service booking for notifying careers → service providers who serve that specific area and service
-// Service booking for notifying careers → service providers who serve that specific area and service
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
+    // Trim any invisible whitespaces coming out of your input forms
     const cleanService = service.trim();
     const cleanArea = bookingArea.trim();
 
-    // -------------------------------------------------------------
-    // 1. DISPATCH TARGETED SMS (Filtered by Role, Service, AND Area)
-    // -------------------------------------------------------------
-    try {
-      await sendNotification({
-        filters: [
-          { field: 'tag', key: 'role', relation: '=', value: 'career' },
-          { field: 'tag', key: 'services', relation: '=', value: cleanService },
-          { field: 'tag', key: 'area', relation: '=', value: cleanArea }, // Strict Area Filter
-        ],
-        // Omit headings/contents so this profile segment doesn't receive a duplicate push
-        sms_from: "+1234567890", // Must match your OneSignal SMS dashboard config
-        sms_body: `🚀 RocketSingh Alert: New "${cleanService}" job is available in ${cleanArea}. Open your app to accept the booking!`,
-      });
-      console.log(`SMS broadcast successfully queued for "${cleanService}" in "${cleanArea}"`);
-    } catch (smsError) {
-      console.log('SMS dispatch sub-routine failed:', smsError);
-    }
-
-    // -------------------------------------------------------------
-    // 2. DISPATCH BROAD PUSH NOTIFICATION (Filtered by Role and Service only)
-    // -------------------------------------------------------------
-    try {
-      await sendNotification({
-        filters: [
-          { field: 'tag', key: 'role', relation: '=', value: 'career' },
-          { field: 'tag', key: 'services', relation: '=', value: cleanService }, // No Area Filter
-        ],
-        headings: { en: '🚀 New Job Available!' },
-        contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
-      });
-      console.log(`Push notification broadcast successfully queued for all "${cleanService}" providers`);
-    } catch (pushError) {
-      console.log('Push notification sub-routine failed:', pushError);
-    }
-
+    await sendNotification({
+      filters: [
+        { field: 'tag', key: 'role', relation: '=', value: 'career' },
+        { field: 'tag', key: 'services', relation: '=', value: cleanService },
+      ],
+      headings: { en: '🚀 New Job Available!' },
+      contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
+    });
+    console.log(`Booking notification successfully targeted for "${cleanService}" in ${cleanArea}`);
   } catch (error: any) {
-    console.log('Global notification wrapper execution error:', error?.response?.data || error.message);
+    console.log('Booking notification error:', error?.response?.data || error.message);
   }
 }
 

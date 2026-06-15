@@ -52,7 +52,7 @@ export default function AdminLogin() {
                 return;
             }
 
-            const email = `${phoneNumber}@tackles.app`;
+            const email = `${phoneNumber}@rocketsingh.app`;
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
