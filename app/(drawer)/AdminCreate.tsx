@@ -163,10 +163,17 @@ export default function CreateUser() {
         const { OneSignal } = require("react-native-onesignal");
         OneSignal.login(user.uid);
 
+        // ✅ Conditional logic for OneSignal tracking segment tags
         if (selectedRole === "user") {
-          OneSignal.User.addTags({ phone: cleanPhone, role: "user" });
+          OneSignal.User.addTags({
+            phone: cleanPhone,
+            role: "user",
+          });
         } else if (selectedRole === "admin") {
-          OneSignal.User.addTags({ phone: cleanPhone, role: "admin" });
+          OneSignal.User.addTags({
+            phone: cleanPhone,
+            role: "admin",
+          });
         } else if (selectedRole === "career") {
           OneSignal.User.addTags({
             role: "career",
@@ -178,14 +185,7 @@ export default function CreateUser() {
         console.warn("OneSignal tag setup error:", e);
       }
 
-      // 🛑 ADD THIS LINE HERE: Sign out the new user immediately
-      await signOut(auth);
-
-      // ✅ Updated success alert
-      Alert.alert(
-        "Success",
-        `${selectedRole} created successfully. You can now log in with this account on the login screen.`
-      );
+      Alert.alert("Success", `${selectedRole} created successfully`);
 
       setPhoneNumber("");
       setPin("");
@@ -217,9 +217,9 @@ export default function CreateUser() {
   return (
     <View style={{ flex: 1 }}>
       <Header4 />
-      <TouchableOpacity
-        activeOpacity={1}
-        style={{ flex: 1 }}
+      <TouchableOpacity 
+        activeOpacity={1} 
+        style={{ flex: 1 }} 
         onPress={Keyboard.dismiss}
       >
         <View style={styles.container}>
