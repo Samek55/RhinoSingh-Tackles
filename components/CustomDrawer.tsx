@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,63 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
+import { auth } from '@/src/firebase/firebaseConfig';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 
 export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const isActive = (route: string) => pathname === route;
+
+  // 1. Listen to Firebase Auth state updates automatically
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    });
+
+    // Clean up the subscription on unmount
+    return unsubscribe;
+  }, []);
+
+  // 2. Handle the Logout Action
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+
+      // Clean up local storage flags if needed
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.removeItem('userProfileSetupCompleted');
+      } catch (e) {
+        console.warn('Failed to clear storage flag:', e);
+      }
+
+      // Clean up OneSignal if you're using it
+      try {
+        const { OneSignal } = require('react-native-onesignal');
+        OneSignal.logout();
+      } catch (e) {
+        console.warn('OneSignal logout failed:', e);
+      }
+
+      Alert.alert("Success", "Logged out cleanly.");
+      router.replace('/Home'); // Redirect to your landing or home page
+    } catch (error: any) {
+      Alert.alert("Logout Error", error.message);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.wrapper} edges={['top', 'bottom']}>
@@ -104,12 +150,23 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
           <View style={styles.divider} />
 
-          <MenuItem
-            icon="shield-checkmark-outline"
-            label="Admin"
-            active={isActive('/Admin')}
-            onPress={() => router.push('/Admin')}
-          />
+          {/* DYNAMIC AUTH BUTTON */}
+          {isLoggedIn ? (
+            <MenuItem
+              icon="log-out-outline"
+              label="Log Out"
+              active={false}
+              onPress={handleLogout}
+              isLogout={true} // Passed flag to apply custom styling if desired
+            />
+          ) : (
+            <MenuItem
+              icon="shield-checkmark-outline"
+              label="Admin"
+              active={isActive('/Admin')}
+              onPress={() => router.push('/Admin')}
+            />
+          )}
         </ScrollView>
 
       </View>

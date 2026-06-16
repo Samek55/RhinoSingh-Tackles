@@ -23,6 +23,7 @@ import {
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
 import { notifyUsers } from '@/api/notifications';
+import Header5 from '@/components/Header5Admin';
 
 export default function BookingDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -116,7 +117,7 @@ export default function BookingDetails() {
 
     return (
         <View style={{ flex: 1 }}>
-            <Header4 />
+            <Header5 />
 
             <KeyboardAvoidingView
                 style={styles.container}

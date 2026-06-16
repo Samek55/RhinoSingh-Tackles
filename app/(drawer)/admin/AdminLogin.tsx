@@ -94,23 +94,23 @@ export default function AdminLogin() {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            try {
-                const { OneSignal } = require('react-native-onesignal');
-                OneSignal.logout();
-            } catch (e) {
-                console.warn('OneSignal clean-up failure:', e);
-            }
-            setphoneNumber('');
-            setPassword('');
-            Alert.alert("Success", "Logged out cleanly.");
-            router.push('/Home');
-        } catch (error: any) {
-            alert("Logout error: " + error.message);
-        }
-    };
+    // const handleLogout = async () => {
+    //     try {
+    //         await signOut(auth);
+    //         try {
+    //             const { OneSignal } = require('react-native-onesignal');
+    //             OneSignal.logout();
+    //         } catch (e) {
+    //             console.warn('OneSignal clean-up failure:', e);
+    //         }
+    //         setphoneNumber('');
+    //         setPassword('');
+    //         Alert.alert("Success", "Logged out cleanly.");
+    //         router.push('/Home');
+    //     } catch (error: any) {
+    //         alert("Logout error: " + error.message);
+    //     }
+    // };
 
     return (
         <View style={{ flex: 1 }} >
@@ -202,9 +202,9 @@ export default function AdminLogin() {
                                 <Text style={styles.btnTextBelow}>Create Account</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={handleLogout}>
+                            {/* <TouchableOpacity onPress={handleLogout}>
                                 <Text style={[styles.btnTextBelow, { color: 'red', fontWeight: 'bold' }]}>Logout</Text>
-                            </TouchableOpacity>
+                            </TouchableOpacity> */}
                         </View>
 
                     </View>

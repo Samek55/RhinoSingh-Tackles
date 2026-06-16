@@ -24,6 +24,7 @@ import {
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
 import { updateBookingStatus } from '../../../api/helper/updateBookingStatus';
+import Header5 from '@/components/Header5Admin';
 
 type StatusType = 'Completed' | 'Pending' | 'Cancelled';
 
@@ -87,7 +88,7 @@ export default function BookingDetails() {
 
     return (
         <View style={{ flex: 1 }}>
-            <Header4 />
+            <Header5 />
 
             <KeyboardAvoidingView
                 style={styles.container}

@@ -18,6 +18,7 @@ import {
 import { auth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header4 from "@/components/Header4Admin";
+import Header5 from "@/components/Header5Admin";
 
 type Role = "admin" | "career" | "user";
 
@@ -65,7 +66,9 @@ const fetchServicesMap = async () => {
 export default function CreateUser() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pin, setPin] = useState("");
-  const [selectedRole, setSelectedRole] = useState<Role>("admin");
+
+  // 🔐 FORCED TO "career" DEFAULT BUT LOGICS REMAIN INTACT
+  const [selectedRole, setSelectedRole] = useState<Role>("career");
 
   const fetchCareerData = async (cleanPhone: string) => {
     try {
@@ -197,29 +200,26 @@ export default function CreateUser() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+
       try {
         const { OneSignal } = require("react-native-onesignal");
         OneSignal.logout();
       } catch (e) {
         console.warn("OneSignal logout error:", e);
       }
-      Alert.alert("Logged Out", "You have been logged out.", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/admin/AdminLogin"),
-        },
-      ]);
+
+      router.replace("/admin/AdminLogin");
     } catch (error: any) {
-      Alert.alert("Logout Error", error.message);
+      console.warn("Logout Error:", error.message);
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <Header4 />
-      <TouchableOpacity 
-        activeOpacity={1} 
-        style={{ flex: 1 }} 
+      <Header5 />
+      <TouchableOpacity
+        activeOpacity={1}
+        style={{ flex: 1 }}
         onPress={Keyboard.dismiss}
       >
         <View style={styles.container}>
@@ -250,30 +250,12 @@ export default function CreateUser() {
               style={styles.input}
             />
 
-            {/* ROLE SELECT */}
-            <View style={styles.roleRow}>
-              {(["admin", "career", "user"] as Role[]).map((role) => {
-                const isActive = selectedRole === role;
-                return (
-                  <TouchableOpacity
-                    key={role}
-                    onPress={() => setSelectedRole(role)}
-                    style={[
-                      styles.roleButton,
-                      isActive ? styles.activeRoleButton : styles.inactiveRoleButton
-                    ]}
-                  >
-                    <Text style={[styles.roleText, isActive && styles.activeRoleText]}>
-                      {role.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {/* 🛑 ROLE SELECT SECTION HAS BEEN REMOVED TO FORCE CAREER CREATION ONLY */}
+            {/* The conditional backend logic remains perfectly safely intact above */}
 
             {/* ACTIONS */}
             <Button title={`Create ${selectedRole}`} onPress={createUser} color="green" />
-            <Button title="Logout" onPress={handleLogout} color="red" />
+            <Button title="Back to Login" onPress={handleLogout} color="red" />
           </View>
         </View>
       </TouchableOpacity>

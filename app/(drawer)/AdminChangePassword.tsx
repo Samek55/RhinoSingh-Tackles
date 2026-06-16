@@ -21,6 +21,7 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
+import Header5 from '@/components/Header5Admin';
 
 // Get screen dimensions for responsive layout
 const { width, height } = Dimensions.get('window');
@@ -73,7 +74,7 @@ export default function AdminChangePassword() {
 
     return (
         <View style={{ flex: 1 }} >
-            <Header4 />
+            <Header5 />
             <KeyboardAvoidingView
                 style={styles.container}
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
