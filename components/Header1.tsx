@@ -47,7 +47,7 @@ export default function Header1() {
 const styles = StyleSheet.create({
   wrapper: {
     position: 'absolute',
-    top: 41.5,
+    top: 42,
     left: 0,
     right: 0,
     height: 50,

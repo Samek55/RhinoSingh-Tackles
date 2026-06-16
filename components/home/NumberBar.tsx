@@ -27,8 +27,6 @@ const NumberBar = ({ onFocus = () => { } }) => {
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
   const fontSize = wp('4.5%');
 
-  const cleanPhone = phone.replace(/\s/g, '');
-
   const handleContinue = async () => {
     // 1. Force remove everything except digits just in case
     const structuralClean = phone.replace(/[^0-9]/g, '');

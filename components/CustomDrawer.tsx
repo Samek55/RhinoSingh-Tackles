@@ -163,7 +163,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             <MenuItem
               icon="shield-checkmark-outline"
               label="Admin"
-              active={isActive('/Admin')}
+              active={isActive('/admin/AdminLogin')}
               onPress={() => router.push('/Admin')}
             />
           )}

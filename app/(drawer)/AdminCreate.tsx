@@ -2,12 +2,12 @@ import React, { useState } from "react";
 import {
   View,
   TextInput,
-  Button,
-  Alert,
-  StyleSheet,
   TouchableOpacity,
   Text,
+  Alert,
+  StyleSheet,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 
 import {
@@ -17,7 +17,6 @@ import {
 
 import { auth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
-import Header4 from "@/components/Header4Admin";
 import Header5 from "@/components/Header5Admin";
 
 type Role = "admin" | "career" | "user";
@@ -66,9 +65,10 @@ const fetchServicesMap = async () => {
 export default function CreateUser() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pin, setPin] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   // 🔐 FORCED TO "career" DEFAULT BUT LOGICS REMAIN INTACT
-  const [selectedRole, setSelectedRole] = useState<Role>("career");
+  const [selectedRole] = useState<Role>("career");
 
   const fetchCareerData = async (cleanPhone: string) => {
     try {
@@ -105,20 +105,22 @@ export default function CreateUser() {
   };
 
   const createUser = async () => {
+    const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
+    const cleanPin = pin.replace(/[^0-9]/g, "");
+
+    if (cleanPhone.length !== 10) {
+      Alert.alert("Error", "Phone number must be exactly 10 digits");
+      return;
+    }
+
+    if (cleanPin.length !== 6) {
+      Alert.alert("Error", "PIN must be exactly 6 digits");
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
-      const cleanPin = pin.replace(/[^0-9]/g, "");
-
-      if (cleanPhone.length !== 10) {
-        Alert.alert("Error", "Phone number must be exactly 10 digits");
-        return;
-      }
-
-      if (cleanPin.length !== 6) {
-        Alert.alert("Error", "PIN must be exactly 6 digits");
-        return;
-      }
-
       let localizedServiceNames: string[] = [];
       let preferredAreaValues: string[] = [];
 
@@ -128,6 +130,7 @@ export default function CreateUser() {
 
         if (!careerRecord) {
           Alert.alert("Access Denied", "Please fill up the career form first.");
+          setIsLoading(false);
           return;
         }
 
@@ -166,7 +169,6 @@ export default function CreateUser() {
         const { OneSignal } = require("react-native-onesignal");
         OneSignal.login(user.uid);
 
-        // ✅ Conditional logic for OneSignal tracking segment tags
         if (selectedRole === "user") {
           OneSignal.User.addTags({
             phone: cleanPhone,
@@ -194,6 +196,8 @@ export default function CreateUser() {
       setPin("");
     } catch (error: any) {
       Alert.alert("Error", error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -215,7 +219,7 @@ export default function CreateUser() {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.outerContainer}>
       <Header5 />
       <TouchableOpacity
         activeOpacity={1}
@@ -223,39 +227,64 @@ export default function CreateUser() {
         onPress={Keyboard.dismiss}
       >
         <View style={styles.container}>
-          <View style={styles.box}>
+          <View style={styles.card}>
+            {/* Header Typography Elements */}
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.titleText}>Create Career Account</Text>
+              <Text style={styles.subtitleText}>
+                Register a new career portal credential with a phone number and secure PIN.
+              </Text>
+            </View>
 
-            {/* PHONE */}
-            <TextInput
-              placeholder="Phone Number (10 digits)"
-              value={phoneNumber}
-              keyboardType="number-pad"
-              onChangeText={(v) => {
-                const cleaned = v.replace(/[^0-9]/g, "");
-                setPhoneNumber(cleaned.slice(0, 10));
-              }}
-              style={styles.input}
-            />
+            {/* PHONE INPUT */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Phone Number</Text>
+              <TextInput
+                placeholder="Enter 10-digit number"
+                placeholderTextColor="#94a3b8"
+                value={phoneNumber}
+                keyboardType="number-pad"
+                onChangeText={(v) => {
+                  const cleaned = v.replace(/[^0-9]/g, "");
+                  setPhoneNumber(cleaned.slice(0, 10));
+                }}
+                style={styles.input}
+              />
+            </View>
 
-            {/* PIN */}
-            <TextInput
-              placeholder="PIN (6 digits)"
-              value={pin}
-              secureTextEntry
-              keyboardType="number-pad"
-              onChangeText={(v) => {
-                const cleaned = v.replace(/[^0-9]/g, "");
-                setPin(cleaned.slice(0, 6));
-              }}
-              style={styles.input}
-            />
-
-            {/* 🛑 ROLE SELECT SECTION HAS BEEN REMOVED TO FORCE CAREER CREATION ONLY */}
-            {/* The conditional backend logic remains perfectly safely intact above */}
+            {/* PIN INPUT */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Security PIN</Text>
+              <TextInput
+                placeholder="Enter 6-digit PIN"
+                placeholderTextColor="#94a3b8"
+                value={pin}
+                secureTextEntry
+                keyboardType="number-pad"
+                onChangeText={(v) => {
+                  const cleaned = v.replace(/[^0-9]/g, "");
+                  setPin(cleaned.slice(0, 6));
+                }}
+                style={styles.input}
+              />
+            </View>
 
             {/* ACTIONS */}
-            <Button title={`Create ${selectedRole}`} onPress={createUser} color="green" />
-            <Button title="Back to Login" onPress={handleLogout} color="red" />
+            <TouchableOpacity 
+              style={[styles.primaryButton, isLoading && styles.disabledButton]} 
+              onPress={createUser}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>Create Career Account</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleLogout}>
+              <Text style={styles.secondaryButtonText}>Back to Login</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
@@ -264,54 +293,91 @@ export default function CreateUser() {
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
   container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    paddingHorizontal: 20,
   },
-  box: {
-    width: "85%",
-    padding: 20,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
-    gap: 12,
+  card: {
+    width: "100%",
+    maxWidth: 400,
+    padding: 28,
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  headerTextContainer: {
+    marginBottom: 24,
+  },
+  titleText: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0f172a",
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  subtitleText: {
+    fontSize: 14,
+    color: "#64748b",
+    lineHeight: 20,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    borderColor: "#e2e8f0",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: "#f8fafc",
+    fontSize: 15,
+    color: "#0f172a",
   },
-  roleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 10,
-    gap: 6,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 6,
+  primaryButton: {
+    backgroundColor: "#16a34a",
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
+    marginTop: 12,
+    shadowColor: "#16a34a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  activeRoleButton: {
-    backgroundColor: "green",
-    borderColor: "green",
+  disabledButton: {
+    backgroundColor: "#86efac",
   },
-  inactiveRoleButton: {
-    backgroundColor: "#e0e0e0",
-    borderColor: "#ccc",
-  },
-  roleText: {
-    fontSize: 12,
+  primaryButtonText: {
+    fontSize: 15,
     fontWeight: "600",
-    color: "#666",
+    color: "#ffffff",
   },
-  activeRoleText: {
-    color: "#fff",
+  secondaryButton: {
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#ef4444",
   },
 });
