@@ -163,16 +163,16 @@ export default function ServiceBookingScreen() {
     setIsSubmitting(true);
 
     // 🚀 Airtable Rate Limit Check Execution
-    // const isLimitReached = await checkDailyBookingLimit(cleanNumber);
+    const isLimitReached = await checkDailyBookingLimit(cleanNumber);
 
-    // if (isLimitReached) {
-    //   setIsSubmitting(false);
-    //   Alert.alert(
-    //     'Limit Reached',
-    //     'This phone number has reached the maximum allowance of 5 bookings for today. Please try again tomorrow.'
-    //   );
-    //   return;
-    // }
+    if (isLimitReached) {
+      setIsSubmitting(false);
+      Alert.alert(
+        'Limit Reached',
+        'This phone number has reached the maximum allowance of 5 bookings for today. Please try again tomorrow.'
+      );
+      return;
+    }
 
     try {
       router.push({

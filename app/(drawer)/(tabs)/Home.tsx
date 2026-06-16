@@ -12,7 +12,7 @@ import {
 import ServicesCard from '../../../components/home/ServicesCard';
 import ProfessionalCard from '../../../components/home/ProfessionalCard';
 import NumberBar from '../../../components/home/NumberBar';
-
+import { getCrashlytics } from '@react-native-firebase/crashlytics';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -20,10 +20,12 @@ import {
 import { router } from 'expo-router';
 import { useRef, useEffect } from 'react';
 import Header2 from '@/components/Header2';
+import { Button } from 'react-native';
 
+(globalThis as any).RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 export default function HomeScreen() {
   const scrollRef = useRef<ScrollView | null>(null);
-  
+
   // 1. Animated value to smoothly drive the bottom layout spacing
   const keyboardHeightAnimated = useRef(new Animated.Value(hp('2%'))).current;
 
@@ -50,7 +52,7 @@ export default function HomeScreen() {
         setTimeout(() => {
           scrollRef.current?.scrollTo({
             // Target coordinate shifts exactly above the keyboard wall minus your custom gap
-            y: hp('40%') + CUSTOM_GAP, 
+            y: hp('40%') + CUSTOM_GAP,
             animated: true,
           });
         }, 50);
@@ -170,7 +172,15 @@ export default function HomeScreen() {
                 subtitle=""
               />
             </View>
-
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Button
+                title="Test Crashlytics"
+                onPress={() => {
+                  // This forces a native crash instantly
+                 getCrashlytics().crash();
+                }}
+              />
+            </View>
             <View style={styles.numberBarContainer}>
               <NumberBar />
             </View>

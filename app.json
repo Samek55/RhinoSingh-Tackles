@@ -13,7 +13,7 @@
       "bundleIdentifier": "com.pracas.rocketsingh"
     },
     "android": {
-    "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#dcdcdc",
@@ -30,6 +30,7 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/analytics",
+      "@react-native-firebase/crashlytics",
       "expo-router",
       [
         "expo-splash-screen",
@@ -49,7 +50,14 @@
       "expo-font",
       "expo-web-browser",
       "@react-native-community/datetimepicker",
-      "expo-build-properties"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableNewArchitecture": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
