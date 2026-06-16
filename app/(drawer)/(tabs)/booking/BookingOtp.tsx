@@ -17,6 +17,7 @@ import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import base from '../../../../api/airtable';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
+import { sendSms } from '@/api/smsService';
 
 // ONESIGNAL SDK IMPORT
 import { OneSignal } from 'react-native-onesignal';
@@ -152,6 +153,7 @@ export default function BookingOtp() {
         const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
         console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
+        await sendSms('+9779808982141', `someone has booked for ${targetService} in ${targetArea}`);
         await notifyProfessionals(
           String(targetService).trim(),
           String(targetArea).trim()
