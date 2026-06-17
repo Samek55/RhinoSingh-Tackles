@@ -24,21 +24,22 @@ const sendNotification = async (payload: object) => {
 // Service booking for notifying careers → service providers who serve that specific area and service
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
-    // Trim any invisible whitespaces coming out of your input forms
     const cleanService = service.trim();
     const cleanArea = bookingArea.trim();
 
     await sendNotification({
       filters: [
         { field: 'tag', key: 'role', relation: '=', value: 'career' },
-        { field: 'tag', key: 'services', relation: '=', value: cleanService },
+        // Use "in_array" to look for a single string within a comma-separated tag list
+        { field: 'tag', key: 'services', relation: 'in_array', value: cleanService },
       ],
       headings: { en: '🚀 New Job Available!' },
       contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
     });
+    
     console.log(`Booking notification successfully targeted for "${cleanService}" in ${cleanArea}`);
   } catch (error: any) {
-    console.log('Booking notification error:', error?.response?.data || error.message);
+    console.error('Booking notification error:', error?.response?.data || error.message);
   }
 }
 

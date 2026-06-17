@@ -180,10 +180,15 @@ export default function CreateUser() {
             role: "admin",
           });
         } else if (selectedRole === "career") {
+          // Ensure we strip out any broken prefixes, trim white spaces, and filter empty fields
+          const pristineServices = localizedServiceNames
+            .map(s => String(s).trim())
+            .filter(Boolean);
+
           OneSignal.User.addTags({
             role: "career",
-            services: localizedServiceNames.join(","),
-            area: preferredAreaValues.join(","),
+            services: pristineServices.join(","), // Formats strictly to: "Pressure Washing,Roof and Gutter Cleaning"
+            area: preferredAreaValues.join(","),  // Kept intact so you don't lose area data!
           });
         }
       } catch (e) {
@@ -270,8 +275,8 @@ export default function CreateUser() {
             </View>
 
             {/* ACTIONS */}
-            <TouchableOpacity 
-              style={[styles.primaryButton, isLoading && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.primaryButton, isLoading && styles.disabledButton]}
               onPress={createUser}
               disabled={isLoading}
             >

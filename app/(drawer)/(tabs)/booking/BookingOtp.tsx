@@ -21,6 +21,7 @@ import { sendSms } from '@/api/smsService';
 
 // ONESIGNAL SDK IMPORT
 import { OneSignal } from 'react-native-onesignal';
+import { auth } from '@/src/firebase/firebaseConfig';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,6 +33,8 @@ const scaleFont = (size: number) => {
 export default function BookingOtp() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+
+  // 1. ADDED 'role' TO THE SEARCH PARAMS DESTRUCTURING
   const {
     name,
     number,
@@ -42,6 +45,7 @@ export default function BookingOtp() {
     selectedBudget,
     message,
     date,
+    role, // Captures 'career' or 'user' passed from the previous screen
   } = useLocalSearchParams();
 
   useFocusEffect(
@@ -72,7 +76,6 @@ export default function BookingOtp() {
     return new Date(date).toISOString().split('T')[0];
   };
 
-  // PLACEHOLDER: Handle resend via your own custom API if needed
   const handleResendCode = async () => {
     if (!number) return;
     Alert.alert('Resend', 'Resend functionality needs to be linked to your custom SMS gateway.');
@@ -96,16 +99,27 @@ export default function BookingOtp() {
       // ==========================================
       if (number) {
         try {
-          // Identify/Create the user in OneSignal using phone number as external ID
-          OneSignal.login(String(number));
+          if (auth.currentUser) {
+            console.log("An authenticated session already exists. Skipping consumer push registration.");
+          } else {
+            // 1. Clean the phone number (remove '+', spaces, dashes) to prevent OneSignal alias errors
+            const cleanNumber = String(number).replace(/[^\d]/g, '');
 
-          // Add targeted tags
-          OneSignal.User.addTags({
-            role: 'user',
-            phone: String(number),
-          });
+            console.log(`Logging into OneSignal with External ID: ${cleanNumber}`);
+            OneSignal.login(cleanNumber);
 
-          console.log("OneSignal user registered and tagged successfully.");
+            // 2. Use a micro-delay to let the login register before pushing tags
+            setTimeout(() => {
+              const assignedRole = role ? String(role) : 'user';
+
+              OneSignal.User.addTags({
+                role: assignedRole,
+                phone: cleanNumber,
+              });
+
+              console.log(`OneSignal tags pushed successfully: role=${assignedRole}, phone=${cleanNumber}`);
+            }, 800); // 800ms gives the SDK ample room to update the local state context
+          }
         } catch (oneSignalError) {
           console.log("OneSignal integration error:", oneSignalError);
         }
@@ -123,8 +137,8 @@ export default function BookingOtp() {
 
       const serviceIds = Array.isArray(selectedService)
         ? selectedService
-            .map((name: string) => serviceMap.find((s: any) => s.name === name)?.id)
-            .filter(Boolean)
+          .map((name: string) => serviceMap.find((s: any) => s.name === name)?.id)
+          .filter(Boolean)
         : [serviceMap.find((s: any) => s.name === selectedService)?.id].filter(Boolean);
 
       if (serviceIds.length === 0) {
@@ -153,7 +167,6 @@ export default function BookingOtp() {
         const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
         console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
-        await sendSms('+9779808982141', `someone has booked for ${targetService} in ${targetArea}`);
         await notifyProfessionals(
           String(targetService).trim(),
           String(targetArea).trim()
