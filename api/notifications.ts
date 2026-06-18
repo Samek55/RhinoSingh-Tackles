@@ -30,8 +30,7 @@ export async function notifyProfessionals(service: string, bookingArea: string) 
     await sendNotification({
       filters: [
         { field: 'tag', key: 'role', relation: '=', value: 'career' },
-        // Use "in_array" to look for a single string within a comma-separated tag list
-        { field: 'tag', key: 'services', relation: 'in_array', value: cleanService },
+        { field: 'tag', key: 'services', relation: '=', value: cleanService },
       ],
       headings: { en: '🚀 New Job Available!' },
       contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },

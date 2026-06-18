@@ -12,7 +12,6 @@ import {
 import ServicesCard from '../../../components/home/ServicesCard';
 import ProfessionalCard from '../../../components/home/ProfessionalCard';
 import NumberBar from '../../../components/home/NumberBar';
-import { getCrashlytics } from '@react-native-firebase/crashlytics';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -172,15 +171,7 @@ export default function HomeScreen() {
                 subtitle=""
               />
             </View>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <Button
-                title="Test Crashlytics"
-                onPress={() => {
-                  // This forces a native crash instantly
-                 getCrashlytics().crash();
-                }}
-              />
-            </View>
+
             <View style={styles.numberBarContainer}>
               <NumberBar />
             </View>

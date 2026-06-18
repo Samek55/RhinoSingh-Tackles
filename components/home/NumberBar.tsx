@@ -15,11 +15,8 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 
-// 1. MODULAR SDK IMPORTS
-import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-
-// Exported global placeholder for screen orchestration
-export let globalFirebaseConfirmation: any = null;
+// IMPORT CUSTOM 2FACTOR API COMPONENT
+import { sendOtp } from '../../api/otp/2factorOtp'; // Adjust this path to match your folder setup
 
 const NumberBar = ({ onFocus = () => { } }) => {
   const [phone, setPhone] = useState('');
@@ -28,12 +25,11 @@ const NumberBar = ({ onFocus = () => { } }) => {
   const fontSize = wp('4.5%');
 
   const handleContinue = async () => {
-    // 1. Force remove everything except digits just in case
     const structuralClean = phone.replace(/[^0-9]/g, '');
 
-    console.log("--- OTP TRIGGER DEBUG ---");
-    console.log("Raw state phone value:", phone);
-    console.log("Stripped clean digits:", structuralClean);
+    console.log("--- 2FACTOR OTP TRIGGER DEBUG ---");
+    console.log("Raw phone value:", phone);
+    console.log("Stripped digits:", structuralClean);
 
     if (structuralClean.length !== 10) {
       Alert.alert('Phone number must be 10 digits', `You entered ${structuralClean.length} digits.`);
@@ -44,34 +40,35 @@ const NumberBar = ({ onFocus = () => { } }) => {
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      const formattedPhone = '+977' + structuralClean;
-      console.log("Sending SMS to target:", formattedPhone);
+      const formattedPhone = '+91' + structuralClean; 
+      console.log("Sending 2Factor SMS to target:", formattedPhone);
 
-      const authInstance = getAuth();
+      // Trigger 2Factor integration instead of Firebase
+      const result = await sendOtp(formattedPhone);
 
-      // 2. Wrap execution directly
-      const confirmation = await signInWithPhoneNumber(authInstance, formattedPhone);
+      if (result.Status === 'Success') {
+        console.log("2Factor SMS initialized successfully! Session ID:", result.Details);
+        setOverlayVisible(false);
 
-      console.log("Firebase SMS successfully initialized!", confirmation);
-      globalFirebaseConfirmation = confirmation;
-
-      setOverlayVisible(false);
-
-      router.push({
-        pathname: '/helpbox/helpboxOTP',
-        params: { phone: structuralClean },
-      });
+        // Forward both the clean phone number and the 2Factor validation Session ID string
+        router.push({
+          pathname: '/helpbox/helpboxOTP',
+          params: { 
+            phone: structuralClean,
+            sessionId: result.Details // Pass this along to verify it on the next screen
+          },
+        });
+      } else {
+        throw new Error(result.Details);
+      }
 
     } catch (error: any) {
       setOverlayVisible(false);
+      console.error("CRITICAL 2FACTOR TRACE:", error);
 
-      // 3. FORCE print full system diagnostics to your terminal log 
-      console.error("CRITICAL FIREBASE TRACE:", JSON.stringify(error, null, 2));
-
-      // Fallback native window alert breakdown
       Alert.alert(
         'System Dispatch Error',
-        error.message || 'An unhandled exception blocked the Firebase pipeline.'
+        error.message || 'An unhandled exception blocked the 2Factor delivery pipeline.'
       );
     }
   };

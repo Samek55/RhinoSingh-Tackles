@@ -17,7 +17,6 @@ import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import base from '../../../../api/airtable';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
-import { sendSms } from '@/api/smsService';
 
 // ONESIGNAL SDK IMPORT
 import { OneSignal } from 'react-native-onesignal';
