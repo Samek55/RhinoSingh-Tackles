@@ -3,11 +3,8 @@ import {
   Text,
   Image,
   StyleSheet,
-  Platform,
-  ScrollView,
-  Keyboard,
-  Animated,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import ServicesCard from '../../../components/home/ServicesCard';
 import ProfessionalCard from '../../../components/home/ProfessionalCard';
@@ -17,170 +14,75 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
-import { useRef, useEffect } from 'react';
 import Header2 from '@/components/Header2';
-import { Button } from 'react-native';
 
 (globalThis as any).RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+
 export default function HomeScreen() {
-  const scrollRef = useRef<ScrollView | null>(null);
-
-  // 1. Animated value to smoothly drive the bottom layout spacing
-  const keyboardHeightAnimated = useRef(new Animated.Value(hp('2%'))).current;
-
-  // --- ADJUSTABLE CUSTOM GAP ---
-  // Lower values keep the input closer to the keyboard. 
-  // Higher values push it up higher. Try values like 0, 15, 30, or 50.
-  const CUSTOM_GAP = 20;
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
-        const targetKeyboardHeight = e.endCoordinates.height;
-        const animationDuration = e.duration || 250;
-
-        // Smoothly expand the bottom layout gap to match the incoming keyboard
-        Animated.timing(keyboardHeightAnimated, {
-          toValue: targetKeyboardHeight,
-          duration: animationDuration,
-          useNativeDriver: false, // Must be false since we are animating a layout height property
-        }).start();
-
-        // Use a minor delay to let the layout recalculate, then fire a silky smooth scroll
-        setTimeout(() => {
-          scrollRef.current?.scrollTo({
-            // Target coordinate shifts exactly above the keyboard wall minus your custom gap
-            y: hp('40%') + CUSTOM_GAP,
-            animated: true,
-          });
-        }, 50);
-      }
-    );
-
-    const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      (e) => {
-        const animationDuration = e.duration || 200;
-
-        // Smoothly collapse the spacer back down when keyboard dismisses
-        Animated.timing(keyboardHeightAnimated, {
-          toValue: hp('5%'),
-          duration: animationDuration,
-          useNativeDriver: false,
-        }).start();
-      }
-    );
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, [keyboardHeightAnimated]);
-
   return (
     <View style={styles.screen}>
       <Header2 />
 
-      <ScrollView
-        ref={scrollRef}
+      {/* This replacement component automatically manages inner views smoothly */}
+      <KeyboardAwareScrollView
         style={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        // This adds specific buffer space above the keyboard wall when focused
+        extraScrollHeight={130} 
+        // Prevents layout jumps when shifting between input elements
+        enableAutomaticScroll={true}
       >
+        <Image
+          source={require('../../../assets/home/home.jpeg')}
+          style={styles.banner}
+          resizeMode="cover"
+        />
+
         <View style={styles.bannerTxt}>
           <Text style={{ fontWeight: '800', fontSize: hp('2.8%'), color: '#ffffff' }}>RocketSingh</Text>
           <Text style={{ fontWeight: '800', fontSize: hp('2.3%'), color: '#fff' }}>SuperFast Service</Text>
         </View>
 
-        <View style={styles.container}>
-          <Image
-            source={require('../../../assets/home/home.jpeg')}
-            style={styles.banner}
-            resizeMode="cover"
-          />
+        <View style={styles.content}>
+          <Text style={styles.title}>RocketSingh | SuperFast Service</Text>
+          <Text style={styles.subtitle}>On Demand Home Service in Chennai</Text>
 
-          <View style={styles.content}>
-            <Text style={styles.title}>RocketSingh | SuperFast Service</Text>
+          <Text style={styles.sectionTitle}>Top Services</Text>
+          <View style={styles.row1}>
+            <ServicesCard
+              title="Painting"
+              image={require('../../../assets/services/homeImprovement/painting.jpg')}
+              onPress={() => router.push({ pathname: '/service/ServiceDetail', params: { id: '13' } })}
+            />
+            <ServicesCard
+              title="Plumbing"
+              image={require('../../../assets/services/HomeRepairANDMaintenance/plumbing.jpg')}
+              onPress={() => router.push({ pathname: '/service/ServiceDetail', params: { id: '6' } })}
+            />
+            <ServicesCard
+              title="Tiling"
+              image={require('../../../assets/services/homeImprovement/tiling-work.jpg')}
+              onPress={() => router.push({ pathname: '/service/ServiceDetail', params: { id: '16' } })}
+            />
+          </View>
 
-            <Text style={styles.subtitle}>
-              On Demand Home Service in Chennai
-            </Text>
+          <View style={styles.spacer} />
 
-            <Text style={styles.sectionTitle}>Top Services</Text>
+          <Text style={styles.sectionTitle}>Top Professionals</Text>
+          <View style={styles.row2}>
+            <ProfessionalCard image={require('../../../assets/topProfessionals/1_aravind.jpeg')} title="Aravind" subtitle="" />
+            <ProfessionalCard image={require('../../../assets/topProfessionals/2_anil.jpeg')} title="Anil" subtitle="" />
+            <ProfessionalCard image={require('../../../assets/topProfessionals/3_vallam.jpeg')} title="Vallam" subtitle="" />
+            <ProfessionalCard image={require('../../../assets/topProfessionals/4_subra.jpeg')} title="Subra" subtitle="" />
+          </View>
 
-            <View style={styles.row1}>
-              <ServicesCard
-                title="Painting"
-                image={require('../../../assets/services/homeImprovement/painting.jpg')}
-                onPress={() =>
-                  router.push({
-                    pathname: '/service/ServiceDetail',
-                    params: { id: '13' },
-                  })
-                }
-              />
-
-              <ServicesCard
-                title="Plumbing"
-                image={require('../../../assets/services/HomeRepairANDMaintenance/plumbing.jpg')}
-                onPress={() =>
-                  router.push({
-                    pathname: '/service/ServiceDetail',
-                    params: { id: '6' },
-                  })
-                }
-              />
-
-              <ServicesCard
-                title="Tiling"
-                image={require('../../../assets/services/homeImprovement/tiling-work.jpg')}
-                onPress={() =>
-                  router.push({
-                    pathname: '/service/ServiceDetail',
-                    params: { id: '16' },
-                  })
-                }
-              />
-            </View>
-
-            <View style={styles.spacer} />
-
-            <Text style={styles.sectionTitle}>Top Professionals</Text>
-
-            <View style={styles.row2}>
-              <ProfessionalCard
-                image={require('../../../assets/topProfessionals/1_aravind.jpeg')}
-                title="Aravind"
-                subtitle=""
-              />
-              <ProfessionalCard
-                image={require('../../../assets/topProfessionals/2_anil.jpeg')}
-                title="Anil"
-                subtitle=""
-              />
-              <ProfessionalCard
-                image={require('../../../assets/topProfessionals/3_vallam.jpeg')}
-                title="Vallam"
-                subtitle=""
-              />
-              <ProfessionalCard
-                image={require('../../../assets/topProfessionals/4_subra.jpeg')}
-                title="Subra"
-                subtitle=""
-              />
-            </View>
-
-            <View style={styles.numberBarContainer}>
-              <NumberBar />
-            </View>
-
-            {/* 2. Changed to Animated.View to gracefully slide layout spaces open and shut */}
-            <Animated.View style={{ height: keyboardHeightAnimated }} />
+          <View style={styles.numberBarContainer}>
+            <NumberBar />
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }
@@ -197,10 +99,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     backgroundColor: '#fff',
-  },
-  container: {
-    flexGrow: 1,
-    backgroundColor: '#fff',
+    // Keeps a perfect fallback margin so components don't clip the bottom floor
+    paddingBottom: hp('6%'), 
   },
   banner: {
     width: '100%',
@@ -252,7 +152,8 @@ const styles = StyleSheet.create({
     height: 15,
   },
   numberBarContainer: {
-    marginBottom: hp('1%'),
+    marginTop: hp('2%'),
+    marginBottom: hp('2%'),
     paddingHorizontal: wp('8%'),
     alignSelf: 'stretch',
   },

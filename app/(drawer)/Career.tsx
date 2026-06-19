@@ -333,7 +333,7 @@ export default function CareerScreen() {
             onSelectOption={setSelectedExpertise}
             onOpen={() => setActiveInput('expertise')}
             onClose={() => setActiveInput(null)}
-            maxSelections={5}
+            maxSelections={3}
           />
 
           {/* Years of Experience */}
