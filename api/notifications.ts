@@ -22,23 +22,41 @@ const sendNotification = async (payload: object) => {
 };
 
 // Service booking for notifying careers → service providers who serve that specific area and service
-export async function notifyProfessionals(service: string, bookingArea: string) {
+export async function notifyProfessionals(
+  service: string,
+  bookingArea: string
+) {
   try {
     const cleanService = service.trim();
     const cleanArea = bookingArea.trim();
 
-    await sendNotification({
-      filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'career' },
-        { field: 'tag', key: 'services', relation: '=', value: cleanService },
-      ],
-      headings: { en: '🚀 New Job Available!' },
-      contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
-    });
-    
-    console.log(`Booking notification successfully targeted for "${cleanService}" in ${cleanArea}`);
+    const response = await fetch(
+      `${process.env.EXPO_PUBLIC_API_URL}/api/workforce/notify-workforce`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: null, // optional if backend doesn't need it
+          role: "career",
+          service: cleanService,
+          area: cleanArea,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("Backend response:", data);
+    console.log(
+      `Notification sent for "${cleanService}" in ${cleanArea}`
+    );
   } catch (error: any) {
-    console.error('Booking notification error:', error?.response?.data || error.message);
+    console.error(
+      "Booking notification error:",
+      error?.message || error
+    );
   }
 }
 

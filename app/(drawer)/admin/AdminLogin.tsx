@@ -26,7 +26,7 @@ import {
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { auth } from "../../../src/firebase/firebaseConfig"; // adjust path
+import { auth } from "../../../src/firebase/firebaseConfig"; 
 
 const { width, height } = Dimensions.get('window');
 
@@ -65,13 +65,13 @@ export default function AdminLogin() {
                     console.warn('Failed to save profile setup flag:', storageError);
                 }
 
+                // 🔥 Clean session link without writing role or phone tags
                 try {
                     const { OneSignal } = require('react-native-onesignal');
                     OneSignal.login(user.uid);
-                    OneSignal.User.addTag('role', 'career');
-                    OneSignal.User.addTag('phone', phoneNumber);
+                    // 🧠 Removed OneSignal.User.addTag updates from this sector entirely
                 } catch (e) {
-                    console.warn('OneSignal tagging failed:', e);
+                    console.warn('OneSignal registration linkage failed:', e);
                 }
 
                 Alert.alert(
@@ -93,24 +93,6 @@ export default function AdminLogin() {
             alert("Invalid phone or PIN");
         }
     };
-
-    // const handleLogout = async () => {
-    //     try {
-    //         await signOut(auth);
-    //         try {
-    //             const { OneSignal } = require('react-native-onesignal');
-    //             OneSignal.logout();
-    //         } catch (e) {
-    //             console.warn('OneSignal clean-up failure:', e);
-    //         }
-    //         setphoneNumber('');
-    //         setPassword('');
-    //         Alert.alert("Success", "Logged out cleanly.");
-    //         router.push('/Home');
-    //     } catch (error: any) {
-    //         alert("Logout error: " + error.message);
-    //     }
-    // };
 
     return (
         <View style={{ flex: 1 }} >
@@ -188,7 +170,7 @@ export default function AdminLogin() {
                             <Text style={{ fontWeight: '900', color: 'black' }}
                                 onPress={() => router.push('/Career')}
                             >
-                                Join Now
+                                 Join Now
                             </Text>
                         </Text>
 
@@ -198,13 +180,8 @@ export default function AdminLogin() {
                             </TouchableOpacity>
 
                             <TouchableOpacity onPress={() => router.push('/AdminCreate')}>
-
                                 <Text style={styles.btnTextBelow}>Create Account</Text>
                             </TouchableOpacity>
-
-                            {/* <TouchableOpacity onPress={handleLogout}>
-                                <Text style={[styles.btnTextBelow, { color: 'red', fontWeight: 'bold' }]}>Logout</Text>
-                            </TouchableOpacity> */}
                         </View>
 
                     </View>

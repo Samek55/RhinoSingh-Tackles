@@ -83,7 +83,7 @@ export default function RootLayout() {
         OneSignal.Notifications.requestPermission(true);
 
         // Fallback default push tag
-        OneSignal.User.addTag('role', 'user');
+        OneSignal.User.addTag('role', '');
       } else {
         console.error('OneSignal App ID missing from environment variables.');
       }

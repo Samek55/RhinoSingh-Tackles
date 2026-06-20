@@ -176,14 +176,13 @@ export default function CreateUser() {
           });
         } else if (selectedRole === "admin") {
           OneSignal.User.addTags({
-            phone: cleanPhone,
+
             role: "admin",
           });
         } else if (selectedRole === "career") {
           OneSignal.User.addTags({
             role: "career",
-            services: localizedServiceNames.join(","),
-            area: preferredAreaValues.join(","),
+            phone: cleanPhone,
           });
         }
       } catch (e) {
@@ -270,8 +269,8 @@ export default function CreateUser() {
             </View>
 
             {/* ACTIONS */}
-            <TouchableOpacity 
-              style={[styles.primaryButton, isLoading && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.primaryButton, isLoading && styles.disabledButton]}
               onPress={createUser}
               disabled={isLoading}
             >

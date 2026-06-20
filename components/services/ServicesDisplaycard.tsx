@@ -3,6 +3,7 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
+  View,
 } from 'react-native';
 import React from 'react';
 import {
@@ -35,8 +36,10 @@ const ServicesDisplaycard = ({
   return (
     <TouchableOpacity onPress={onPress} style={[styles.cardContainer, style]}>
       <Image source={image} style={styles.image} resizeMode="cover" />
-      <Text style={[styles.title, textStyle]}>{name}</Text>
-      <Text style={[styles.words, textStyle]}>{words}</Text>
+      <View style={styles.textContainer}>
+        <Text style={[styles.title, textStyle]}>{name}</Text>
+        <Text style={[styles.words, textStyle]}>{words}</Text>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -47,7 +50,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    minHeight: hp(23), 
+    minHeight: hp(23),
     height: hp(24),
     shadowColor: '#7cbc7a',
     shadowOpacity: 0.2,
@@ -61,12 +64,15 @@ const styles = StyleSheet.create({
     height: hp(14),
   },
 
+  textContainer:{
+  },
+
   title: {
     fontSize: wp(3.7),
     fontWeight: '600',
     marginTop: hp(1.2),
     color: '#000',
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
   },
 
   words: {
