@@ -18,8 +18,10 @@ import {
 import { auth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header5 from "@/components/Header5Admin";
+import { getDatabase, ref, set } from "firebase/database";
 
 type Role = "admin" | "career" | "user";
+const db = getDatabase();
 
 const AIRTABLE_API_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_CAREER;
 const SERVICES_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_SERVICES;
@@ -163,6 +165,19 @@ export default function CreateUser() {
       );
 
       const user = userCredential.user;
+
+      if (!user?.uid) {
+        throw new Error("Auth failed - no UID generated");
+      }
+
+      await set(ref(db, `users/${user.uid}`), {
+        uid: user.uid,
+        phone: cleanPhone,
+        role: selectedRole,
+        services: localizedServiceNames,   // from Airtable mapping
+        area: preferredAreaValues,
+        createdAt: Date.now(),
+      });
 
       // 🔥 Conditional OneSignal Registration
       try {

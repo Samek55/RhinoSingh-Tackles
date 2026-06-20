@@ -31,22 +31,26 @@ export async function notifyProfessionals(
     const cleanArea = bookingArea.trim();
 
     const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL}/api/workforce/notify-workforce`,
+      `${process.env.EXPO_PUBLIC_API_URL}/api/notifications/notify-careers`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          phone: null, // optional if backend doesn't need it
           role: "career",
           service: cleanService,
           area: cleanArea,
         }),
       }
     );
+    // 1. Get the raw text first to see the error
+    const rawText = await response.text();
+    console.log("RAW SERVER RESPONSE:", rawText);
 
-    const data = await response.json();
+    // 2. Try parsing it safely
+    const data = JSON.parse(rawText);
+    console.log("Parsed Data:", data);
 
     console.log("Backend response:", data);
     console.log(
