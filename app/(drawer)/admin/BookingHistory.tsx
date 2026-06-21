@@ -18,7 +18,7 @@ import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
 import BookingCard from '../../../components/admin/BookingCard';
 import Header4 from '@/components/Header4Admin';
 import { router, useFocusEffect } from 'expo-router';
-import { fetchBookingsFromAirtable } from '../../../api/helper/fetchBookingDataAirtable';
+import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 
 import {
     widthPercentageToDP as wp,
@@ -29,7 +29,6 @@ import { signOut } from "firebase/auth";
 import { auth } from '@/src/firebase/firebaseConfig';
 
 export default function BookingHistory() {
-
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
@@ -37,19 +36,17 @@ export default function BookingHistory() {
     const [searchQuery, setSearchQuery] = useState('');
 
     const lastDataRef = useRef<string>('');
-    const intervalRef = useRef<any>(null);
 
-    // FETCH BOOKINGS
+    // FETCH BOOKINGS (Kept clean and simple)
     const loadBookings = useCallback(async () => {
         try {
-            const data = await fetchBookingsFromAirtable();
+            const data = await fetchBookingsFromSupabase();
             const serialized = JSON.stringify(data);
 
             if (serialized === lastDataRef.current) return;
 
             lastDataRef.current = serialized;
             setBookings(data || []);
-
         } catch (error) {
             console.error('Failed to load bookings:', error);
         } finally {
@@ -57,16 +54,17 @@ export default function BookingHistory() {
         }
     }, []);
 
+    // FIXED: Safely setup polling intervals without recreating loops
     useFocusEffect(
         useCallback(() => {
             loadBookings();
 
-            intervalRef.current = setInterval(() => {
+            const intervalId = setInterval(() => {
                 loadBookings();
             }, 15000);
 
             return () => {
-                clearInterval(intervalRef.current);
+                clearInterval(intervalId);
             };
         }, [loadBookings])
     );
@@ -79,53 +77,26 @@ export default function BookingHistory() {
         const selectedBooking = bookings.find(b => b.id === id);
         const currentStatus = selectedBooking?.status?.toLowerCase()?.trim() || '';
 
-        if (
-            currentStatus.includes('completed') ||
-            currentStatus.includes('pending') ||
-            currentStatus.includes('cancel')
-        ) {
-            router.push({
-                pathname: '/admin/BookingDetails_2',
-                params: { id },
-            });
-        } else {
-            router.push({
-                pathname: '/admin/BookingDetails_1',
-                params: { id },
-            });
-        }
-    }, [bookings]);
+        const isHistorical = ['completed', 'pending', 'cancel'].some(status =>
+            currentStatus.includes(status)
+        );
 
-    // SORT BOOKINGS
-    const sortedBookings = useMemo(() => {
-        return [...bookings].sort((a, b) => {
-      
-
-            const aId = Number(a.bookingId) || 0;
-            const bId = Number(b.bookingId) || 0;
-            return bId - aId;
+        router.push({
+            pathname: isHistorical ? '/admin/BookingDetails_2' : '/admin/BookingDetails_1',
+            params: { id },
         });
     }, [bookings]);
 
-    // FILTER & SEARCH BOOKINGS (FIXED)
-    // -----------------------------
-    // FILTER & SEARCH BOOKINGS (FIXED DATA KEYS)
-    // -----------------------------
+    // FILTER & SEARCH BOOKINGS 
     const filteredData = useMemo(() => {
-        let data = sortedBookings;
+        let data = [...bookings]; // Create a copy to protect original state tracking
 
         // 1. Apply Status Filter
         if (filter !== 'All') {
             data = data.filter(item => {
                 const status = (item.status || '').toLowerCase().trim();
-
-                if (filter === 'Cancelled') {
-                    return status.includes('cancel');
-                }
-                if (filter === 'New / Open') {
-                    return status.includes('new') || status.includes('open');
-                }
-
+                if (filter === 'Cancelled') return status.includes('cancel');
+                if (filter === 'New / Open') return status.includes('new') || status.includes('open');
                 return status.includes(filter.toLowerCase());
             });
         }
@@ -134,10 +105,9 @@ export default function BookingHistory() {
         if (searchQuery.trim() !== '') {
             const query = searchQuery.toLowerCase().trim();
             data = data.filter(item => {
-                // ✅ MATCHED TO YOUR ACTUAL TYPE DEFINITIONS
                 const bookingId = String(item.bookingId || '').toLowerCase();
-                const customerName = String(item.fullName || '').toLowerCase(); // Fixed from item.customerName
-                const phoneNumber = String(item.phone || '').toLowerCase();     // Fixed from item.phoneNumber
+                const customerName = String(item.fullName || '').toLowerCase();
+                const phoneNumber = String(item.phone || '').toLowerCase();
 
                 return (
                     bookingId.includes(query) ||
@@ -147,18 +117,24 @@ export default function BookingHistory() {
             });
         }
 
+        // 3. Client-side Sort validation fallback (using accurate ISO timestamps)
+        data.sort((a, b) => {
+            const timeA = a.rawBookingDate ? new Date(a.rawBookingDate).getTime() : 0;
+            const timeB = b.rawBookingDate ? new Date(b.rawBookingDate).getTime() : 0;
+            return timeB - timeA; // Newest date strings bubble to index 0
+        });
+
         return data;
-    }, [filter, searchQuery, sortedBookings]);
-    const renderItem = useCallback(({ item }: any) => {
-        return (
-            <BookingCard
-                item={item}
-                isOpen={openId === item.id}
-                onToggle={() => toggleCard(item.id)}
-                onPress={() => handlePress(item.id)}
-            />
-        );
-    }, [openId, toggleCard, handlePress]);
+    }, [filter, searchQuery, bookings]);
+    
+    const renderItem = useCallback(({ item }: any) => (
+        <BookingCard
+            item={item}
+            isOpen={openId === item.id}
+            onToggle={() => toggleCard(item.id)}
+            onPress={() => handlePress(item.id)}
+        />
+    ), [openId, toggleCard, handlePress]);
 
     const handleLogout = async () => {
         try {
@@ -174,7 +150,7 @@ export default function BookingHistory() {
                 { text: "OK", onPress: () => router.replace('/admin/AdminLogin') }
             ]);
         } catch (error: any) {
-            alert("Logout error: " + error.message);
+            Alert.alert("Logout Error", error.message);
         }
     };
 
@@ -187,7 +163,6 @@ export default function BookingHistory() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
             >
-                {/* HEADER (No longer absolute layout to prevent tap overlapping) */}
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
                         <Image source={leftArrowIcon} style={styles.backBtn} />
@@ -195,7 +170,6 @@ export default function BookingHistory() {
                     <Text style={styles.title}>Booking History</Text>
                 </View>
 
-                {/* SEARCH */}
                 <View style={styles.inputContainer}>
                     <Image source={SearchIcon} style={{ height: 20, width: 20 }} />
                     <TextInput
@@ -209,15 +183,11 @@ export default function BookingHistory() {
                     />
                 </View>
 
-                {/* FILTERS */}
                 <View style={styles.mainBtns}>
                     {['All', 'New / Open', 'Completed', 'Pending', 'Cancelled'].map((f) => (
                         <TouchableOpacity
                             key={f}
-                            style={[
-                                styles.btn,
-                                filter === f && styles.activeBtn
-                            ]}
+                            style={[styles.btn, filter === f && styles.activeBtn]}
                             onPress={() => setFilter(f)}
                         >
                             <Text style={styles.btnText}>{f}</Text>
@@ -225,7 +195,6 @@ export default function BookingHistory() {
                     ))}
                 </View>
 
-                {/* LIST */}
                 <FlatList
                     data={filteredData}
                     renderItem={renderItem}
@@ -238,84 +207,23 @@ export default function BookingHistory() {
                     windowSize={7}
                     removeClippedSubviews={true}
                     updateCellsBatchingPeriod={50}
-
                     keyboardDismissMode="on-drag"
                 />
-
             </KeyboardAvoidingView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: wp('4%'),
-        marginTop: hp('1.5%'),
-        height: hp('5%'),
-    },
-    title: {
-        fontSize: hp('2.3%'),
-        fontWeight: '600',
-        color: 'green',
-        marginLeft: wp('2%')
-    },
-    backButton: {
-        padding: 4,
-    },
-    backBtn: {
-        width: hp('3.5%'),
-        height: hp('3.5%'),
-        tintColor: 'green'
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        paddingHorizontal: hp('2%'),
-        borderWidth: 1.5,
-        width: '90%',
-        marginBottom: '5%',
-        borderRadius: 200,
-        borderColor: 'rgba(0, 0, 0,0.3)',
-        height: hp('5%'),
-        marginTop: hp('2%'), // Reduced from 8% now that layout elements flow safely
-        alignItems: 'center',
-        alignSelf: 'center',
-    },
-    textInput: {
-        flex: 1,
-        fontSize: hp(1.8),
-        fontWeight: '500',
-        color: '#000',
-        paddingLeft: 8,
-        letterSpacing: 0.3,
-    },
-    mainBtns: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-        paddingHorizontal: wp('4%'),
-        paddingBottom: hp('3%'),
-    },
-    btn: {
-        backgroundColor: '#d7edd7',
-        paddingHorizontal: wp('4%'),
-        paddingVertical: hp('0.8%'),
-        borderRadius: 20,
-        alignItems: 'center',
-        marginRight: wp('2%'),
-        marginBottom: hp('1.5%'),
-    },
-    activeBtn: {
-        backgroundColor: '#b3dbb3',
-    },
-    btnText: {
-        fontSize: wp('3.4%'),
-        fontWeight: '500',
-        color: 'rgba(0,0,0,0.7)',
-    }
+    container: { flex: 1, backgroundColor: '#fff' },
+    headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: wp('4%'), marginTop: hp('1.5%'), height: hp('5%') },
+    title: { fontSize: hp('2.3%'), fontWeight: '600', color: 'green', marginLeft: wp('2%') },
+    backButton: { padding: 4 },
+    backBtn: { width: hp('3.5%'), height: hp('3.5%'), tintColor: 'green' },
+    inputContainer: { flexDirection: 'row', paddingHorizontal: hp('2%'), borderWidth: 1.5, width: '90%', marginBottom: '5%', borderRadius: 200, borderColor: 'rgba(0, 0, 0,0.3)', height: hp('5%'), marginTop: hp('2%'), alignItems: 'center', alignSelf: 'center' },
+    textInput: { flex: 1, fontSize: hp(1.8), fontWeight: '500', color: '#000', paddingLeft: 8, letterSpacing: 0.3 },
+    mainBtns: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', paddingHorizontal: wp('4%'), paddingBottom: hp('3%') },
+    btn: { backgroundColor: '#d7edd7', paddingHorizontal: wp('4%'), paddingVertical: hp('0.8%'), borderRadius: 20, alignItems: 'center', marginRight: wp('2%'), marginBottom: hp('1.5%') },
+    activeBtn: { backgroundColor: '#b3dbb3' },
+    btnText: { fontSize: wp('3.4%'), fontWeight: '500', color: 'rgba(0,0,0,0.7)' }
 });

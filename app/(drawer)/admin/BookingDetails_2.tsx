@@ -9,58 +9,63 @@ import {
     Platform,
     StyleSheet,
     ActivityIndicator,
+    Alert,
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import dropdownIcon from '../../../assets/icons/contact/DropDown.png';
 import LocationPin from '../../../assets/icons/contact/location-pin.png';
 import phoneIcon from '../../../assets/icons/admin/phone.png';
-import { fetchBookingsFromAirtable } from '../../../api/helper/fetchBookingDataAirtable';
 
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
-import { updateBookingStatus } from '../../../api/helper/updateBookingStatus';
 import Header5 from '@/components/Header5Admin';
+import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
+import { updateBookingStatusSB } from '@/api/supabase/updateBookingStatusSB';
 
 type StatusType = 'Completed' | 'Pending' | 'Cancelled';
 
 export default function BookingDetails() {
-    const scrollRef = useRef<any>(null);
+    const scrollRef = useRef<ScrollView>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false); // Added submitting indicator
     const [openDropdown, setOpenDropdown] = useState(false);
     const [workStatus, setWorkStatus] = useState<StatusType>('Pending');
 
     const STATUS_OPTIONS: StatusType[] = ['Completed', 'Pending', 'Cancelled'];
 
-    // This fires ONLY ONCE when the component mounts
+    // Single unified fetch logic entirely mapped to Supabase
     useEffect(() => {
-        const loadBooking = async () => {
+        const load = async () => {
+            if (!id) return;
             setLoading(true);
             try {
-                const data = await fetchBookingsFromAirtable();
+                const data = await fetchBookingsFromSupabase();
                 const found = data.find((item: any) => item.id === id);
 
                 if (found) {
                     setBooking(found);
+                    // ✅ FIX 1: Set dropdown initial value directly to what is currently saved in Supabase
                     if (found.status) {
-                        setWorkStatus(found.status);
+                        setWorkStatus(found.status as StatusType);
                     }
+                } else {
+                    setBooking(null);
                 }
             } catch (error) {
-                console.error('Error loading booking data:', error);
+                console.error("Error fetching booking details from Supabase:", error);
             } finally {
                 setLoading(false);
             }
         };
 
-        loadBooking();
+        load();
     }, [id]);
 
     const handleStatusChange = (newStatus: StatusType) => {
@@ -70,25 +75,55 @@ export default function BookingDetails() {
 
     const handleSubmit = async () => {
         try {
-            if (!booking?.id) return;
+            // 1. Print the entire raw object keys to see what Supabase actually sent us
+            console.log("👉 ACTUAL OBJECT KEYS AVAILABLE:", Object.keys(booking));
+            console.log("👉 VALUES:", JSON.stringify(booking, null, 2));
 
-            await updateBookingStatus(booking.id, workStatus);
+            // 2. We need to find the value that matches the 'bookingid' primary key in your DB table
+            // Let's print common suspects:
+            console.log("Values lookup -> booking.bookingid:", booking?.bookingid, " | booking.id:", booking?.id, " | booking.bookingId:", booking?.bookingId);
 
-            router.replace({
-                pathname: '/admin/BookingHistory',
-                params: {
-                    refresh: Date.now(),
-                },
-            });
+            // Change this variable to match whichever key holds your TRUE database key string/number
+            const trueDatabaseId = booking?.bookingid || booking?.bookingId;
+
+            if (!trueDatabaseId) {
+                alert("Could not extract a valid bookingid from the object. Check console.");
+                return;
+            }
+
+            console.log(`🔄 Sending true identifier to Supabase: ${trueDatabaseId}`);
+            const response = await updateBookingStatusSB(trueDatabaseId, workStatus);
+
+            if (!response || response.length === 0) {
+                alert(`⚠️ Database still returned 0 rows for identifier: "${trueDatabaseId}".`);
+                return;
+            }
+
+            setBooking((prev: any) => ({ ...prev, status: workStatus }));
+            alert("Status updated successfully!");
+            router.replace('/admin/BookingHistory');
+
         } catch (error) {
             console.error('Failed to update status:', error);
-            alert('Failed to update status');
         }
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#f6f7fb' }}>
             <Header5 />
+
+            {/* FIXED TOP NAVIGATION HEADER */}
+            <View style={styles.topNavigationHeader}>
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                >
+                    <Image source={leftArrowIcon} style={styles.backIcon} />
+                    <Text style={styles.title}>
+                        {booking?.bookingId ? `Booking ID: ${booking.bookingId}` : 'Booking Details'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
 
             <KeyboardAvoidingView
                 style={styles.container}
@@ -99,21 +134,6 @@ export default function BookingDetails() {
                     ref={scrollRef}
                     contentContainerStyle={styles.scrollContent}
                 >
-                    {/* HEADER */}
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
-
-                    >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Image source={leftArrowIcon} style={styles.backIcon} />
-                            <Text style={styles.title}>
-                                {booking?.bookingId ? `Booking ID: ${booking.bookingId}` : 'Booking Details'}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-
-                    {/* BIG CARD / LOADING HANDLING */}
                     {loading ? (
                         <View style={styles.loadingContainer}>
                             <ActivityIndicator size="large" color="green" />
@@ -222,8 +242,16 @@ export default function BookingDetails() {
 
                             {/* ButtonContainer */}
                             <View style={styles.ButtonContainer}>
-                                <TouchableOpacity style={styles.AcceptButton} onPress={handleSubmit}>
-                                    <Text style={styles.AcceptText}>Submit</Text>
+                                <TouchableOpacity
+                                    style={[styles.AcceptButton, submitting && { backgroundColor: '#ccc' }]}
+                                    onPress={handleSubmit}
+                                    disabled={submitting}
+                                >
+                                    {submitting ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <Text style={styles.AcceptText}>Submit</Text>
+                                    )}
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -238,27 +266,24 @@ export default function BookingDetails() {
     );
 }
 
+// ... styles remain unchanged
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f6f7fb',
     },
-    scrollContent: {
-        flexGrow: 1,
+    topNavigationHeader: {
+        width: wp('100%'),
+        backgroundColor: '#f6f7fb',
+        paddingHorizontal: wp('4%'),
+        paddingVertical: hp('1.5%'),
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingBottom: hp('5%'),
-        paddingTop: hp('8%'),
     },
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
-        marginTop: hp('1%'),
-        marginLeft: wp('3%'),
-        position: 'absolute',
-        top: hp('-1%'),
-        left: hp('-1%'),
-        zIndex: 999,
     },
     backIcon: {
         width: hp('3.5%'),
@@ -270,6 +295,12 @@ const styles = StyleSheet.create({
         fontSize: hp('2.3%'),
         fontWeight: '600',
         color: 'green',
+    },
+    scrollContent: {
+        flexGrow: 1,
+        alignItems: 'center',
+        paddingBottom: hp('5%'),
+        paddingTop: hp('2%'), // Reduced since header is pulled out
     },
     card: {
         width: wp('90%'),

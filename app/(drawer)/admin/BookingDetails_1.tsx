@@ -9,21 +9,19 @@ import {
     Platform,
     StyleSheet,
     Modal,
-    Alert,
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import LocationPin from '../../../assets/icons/contact/location-pin.png';
-import { fetchBookingsFromAirtable } from '../../../api/helper/fetchBookingDataAirtable';
 
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
 import { notifyUsers } from '@/api/notifications';
 import Header5 from '@/components/Header5Admin';
+import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 
 export default function BookingDetails() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,15 +31,18 @@ export default function BookingDetails() {
     const [visible, setVisible] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
+    // Single unified fetch logic entirely mapped to Supabase
     useEffect(() => {
         const load = async () => {
+            if (!id) return;
             setLoading(true);
             try {
-                const data = await fetchBookingsFromAirtable();
+                const data = await fetchBookingsFromSupabase();
                 const found = data.find((item: any) => item.id === id);
+
                 setBooking(found || null);
             } catch (error) {
-                console.error("Error fetching booking details:", error);
+                console.error("Error fetching booking details from Supabase:", error);
             } finally {
                 setLoading(false);
             }
@@ -65,49 +66,20 @@ export default function BookingDetails() {
 
     const goPrev = () => setSelectedIndex(i => (i - 1 + photos.length) % photos.length);
     const goNext = () => setSelectedIndex(i => (i + 1) % photos.length);
-    useEffect(() => {
-        const load = async () => {
-            setLoading(true);
-            try {
-                const data = await fetchBookingsFromAirtable();
-                const found = data.find((item: any) => item.id === id);
 
-                // 👇 ADD THIS LINE TO SEE ALL AVAILABLE KEYS
-                console.log("👉 CURRENT BOOKING OBJECT DATA:", found);
-
-                setBooking(found || null);
-            } catch (error) {
-                console.error("Error fetching booking details:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        load();
-    }, [id]);
-
-    // Handle Offer Acceptance
     const handleAcceptOffer = async () => {
         if (!booking) return;
 
         try {
-            // Extract the phone string directly from your Airtable booking object log data
             const customerPhone = booking?.phone || "";
+            console.log("Passing customer phone to notification:", customerPhone);
 
-            console.log("Passing customer phone directly to notification:", customerPhone);
-
-            // Trigger the push notification
+            // Trigger push notifications
             await notifyUsers(booking?.service, booking?.area, customerPhone);
-
-            // Navigate forward
-            router.push({
-                pathname: '/admin/BookingDetails_2',
-                params: { id: booking?.id?.toString() },
-            });
         } catch (error) {
-            console.error("Failed to process order acceptance:", error);
-
-            // Navigate anyway so the UI doesn't freeze up for the admin
+            console.error("Failed to process order acceptance notifications:", error);
+        } finally {
+            // Safe forward route routing 
             router.push({
                 pathname: '/admin/BookingDetails_2',
                 params: { id: booking?.id?.toString() },
@@ -116,7 +88,7 @@ export default function BookingDetails() {
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#f6f7fb' }}>
             <Header5 />
 
             <KeyboardAvoidingView
@@ -124,22 +96,20 @@ export default function BookingDetails() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
-
-                    {/* HEADER */}
+                {/* SAFE HEADER BAR CONTAINER */}
+                <View style={styles.topNavigationHeader}>
                     <TouchableOpacity
                         style={styles.backButton}
                         onPress={() => router.back()}
                     >
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Image source={leftArrowIcon} style={styles.backIcon} />
-                            <Text style={styles.title}>
-                                {booking?.bookingId ? `Booking ID: ${booking.bookingId}` : 'Booking Details'}
-                            </Text>
-                        </View>
+                        <Image source={leftArrowIcon} style={styles.backIcon} />
+                        <Text style={styles.title}>
+                            {booking?.bookingId ? `Booking ID: ${booking.bookingId}` : 'Booking Details'}
+                        </Text>
                     </TouchableOpacity>
+                </View>
 
-                    {/* BIG CARD */}
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                     {loading ? (
                         <Text style={styles.loadingText}>Loading details...</Text>
                     ) : booking ? (
@@ -209,7 +179,7 @@ export default function BookingDetails() {
                                     ))}
                                 </View>
 
-                                {/* Fullscreen Popup with navigation */}
+                                {/* Fullscreen Carousel Modal Popup */}
                                 <Modal
                                     visible={visible}
                                     transparent
@@ -217,7 +187,6 @@ export default function BookingDetails() {
                                     onRequestClose={() => setVisible(false)}
                                 >
                                     <View style={styles.modalContainer}>
-                                        {/* Close on background tap */}
                                         <TouchableOpacity
                                             style={StyleSheet.absoluteFill}
                                             activeOpacity={1}
@@ -230,12 +199,10 @@ export default function BookingDetails() {
                                             resizeMode="contain"
                                         />
 
-                                        {/* Counter */}
                                         <Text style={styles.photoCounter}>
                                             {selectedIndex + 1} / {photos.length}
                                         </Text>
 
-                                        {/* Prev / Next arrows */}
                                         <TouchableOpacity style={styles.arrowLeft} onPress={goPrev}>
                                             <Text style={styles.arrowText}>‹</Text>
                                         </TouchableOpacity>
@@ -246,7 +213,7 @@ export default function BookingDetails() {
                                 </Modal>
                             </View>
 
-                            {/* ButtonContainer */}
+                            {/* Actions layout containers */}
                             <View style={styles.ButtonContainer}>
                                 <TouchableOpacity
                                     style={styles.AcceptButton}
@@ -254,9 +221,9 @@ export default function BookingDetails() {
                                 >
                                     <Text style={styles.AcceptText}>Accept This Offer</Text>
                                 </TouchableOpacity>
-                                 <TouchableOpacity
+                                <TouchableOpacity
                                     style={styles.RejectButton}
-                                    onPress={()=> router.push('/admin/BookingHistory')}
+                                    onPress={() => router.push('/admin/BookingHistory')}
                                 >
                                     <Text style={styles.AcceptText}>Cancel</Text>
                                 </TouchableOpacity>
@@ -276,22 +243,15 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f6f7fb',
     },
-    scrollContent: {
-        flexGrow: 1,
-        alignItems: 'center',
-        paddingBottom: hp('5%'),
-        paddingTop: hp('8%'),
+    topNavigationHeader: {
+        width: '100%',
+        paddingHorizontal: wp('5%'),
+        paddingVertical: hp('1.5%'),
+        backgroundColor: '#f6f7fb',
     },
     backButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
-        marginTop: hp('1%'),
-        marginLeft: wp('3%'),
-        position: 'absolute',
-        top: hp('-1%'),
-        left: hp('-1%'),
-        zIndex: 999,
     },
     backIcon: {
         width: hp('3.5%'),
@@ -304,6 +264,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: 'green',
     },
+    scrollContent: {
+        flexGrow: 1,
+        alignItems: 'center',
+        paddingBottom: hp('5%'),
+    },
     card: {
         width: wp('90%'),
         backgroundColor: '#fff',
@@ -315,6 +280,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
+        marginTop: hp('1%'),
     },
     heading: {
         fontSize: hp('2.8%'),
@@ -395,7 +361,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         letterSpacing: 0.5,
     },
-        RejectButton: {
+    RejectButton: {
         paddingVertical: hp('1.5%'),
         borderRadius: 8,
         justifyContent: 'center',
@@ -405,9 +371,8 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(0, 0, 0,0.1)',
         elevation: 3,
         width: '100%',
-        marginTop:hp('2%')
+        marginTop: hp('2%'),
     },
-
     photos: {
         flexDirection: 'row',
         flexWrap: 'wrap',
