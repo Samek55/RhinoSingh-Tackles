@@ -163,18 +163,18 @@ export default function BookingOtp() {
 
       await createBookingSupabase(booking);
 
-      // try {
-      //   const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
-      //   const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
-      //   console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
+      try {
+        const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
+        const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
+        console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
-      //   await notifyProfessionals(
-      //     String(targetService).trim(),
-      //     String(targetArea).trim()
-      //   );
-      // } catch (e) {
-      //   console.log("Notification background delivery failed contextually", e);
-      // }
+        await notifyProfessionals(
+          String(targetService).trim(),
+          String(targetArea).trim()
+        );
+      } catch (e) {
+        console.log("Notification background delivery failed contextually", e);
+      }
 
       router.push('/booking/BookingVerify');
 

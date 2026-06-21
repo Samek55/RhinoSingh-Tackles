@@ -19,13 +19,10 @@ import { auth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header5 from "@/components/Header5Admin";
 import { getDatabase, ref, set } from "firebase/database";
+import { supabase } from "@/src/lib/supabase";
 
 type Role = "admin" | "career" | "user";
 const db = getDatabase();
-
-const AIRTABLE_API_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_CAREER;
-const SERVICES_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_SERVICES;
-const AIRTABLE_TOKEN = process.env.EXPO_PUBLIC_AIRTABLE_TOKEN;
 
 let servicesCache: Record<string, string> | null = null;
 let servicesPromise: Promise<Record<string, string>> | null = null;
@@ -36,18 +33,19 @@ const fetchServicesMap = async () => {
     if (servicesPromise) return servicesPromise;
 
     servicesPromise = (async () => {
-      const res = await fetch(SERVICES_URL!, {
-        headers: {
-          Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-        },
-      });
+      const { data, error } = await supabase
+        .from("services")
+        .select("id, name");
 
-      const data = await res.json();
+      if (error) {
+        console.error("Supabase services fetch error:", error);
+        throw error;
+      }
+
       const map: Record<string, string> = {};
-
-      data.records?.forEach((item: any) => {
+      data?.forEach((item: any) => {
         const id = item.id;
-        const name = item.fields?.["Name"];
+        const name = item.name;
         if (id && name) {
           map[id] = name;
         }
@@ -59,7 +57,7 @@ const fetchServicesMap = async () => {
 
     return await servicesPromise;
   } catch (error) {
-    console.log("Services fetch error:", error);
+    console.log("Services map fetch error:", error);
     return {};
   }
 };
@@ -72,38 +70,19 @@ export default function CreateUser() {
   // 🔐 FORCED TO "career" DEFAULT BUT LOGICS REMAIN INTACT
   const [selectedRole] = useState<Role>("career");
 
-  const fetchCareerData = async (cleanPhone: string) => {
-    try {
-      if (!AIRTABLE_API_URL || !AIRTABLE_TOKEN) {
-        throw new Error("Airtable environment variables are missing.");
-      }
+  const fetchCareerData = async (phone: string) => {
+    const { data, error } = await supabase
+      .from("workforce")
+      .select("*")
+      .eq("phone", phone)
+      .maybeSingle();
 
-      const formula = encodeURIComponent(`{Phone} = '${cleanPhone}'`);
-      const url = `${AIRTABLE_API_URL}?filterByFormula=${formula}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${AIRTABLE_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error(`Airtable Server Error (${response.status}):`, errText);
-        throw new Error(`Airtable error status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.records && data.records.length > 0) {
-        return data.records[0].fields;
-      }
-      return null;
-    } catch (error) {
-      console.error("Airtable fetch error:", error);
+    if (error) {
+      console.log("Supabase career fetch error:", error);
       throw new Error("Failed to verify user status in the Career database.");
     }
+
+    return data;
   };
 
   const createUser = async () => {
@@ -126,7 +105,7 @@ export default function CreateUser() {
       let localizedServiceNames: string[] = [];
       let preferredAreaValues: string[] = [];
 
-      // 🔍 STRICT CHECK: Only check Airtable if role is exactly "career"
+      // 🔍 STRICT CHECK: Only check Supabase if role is exactly "career"
       if (selectedRole === "career") {
         const careerRecord = await fetchCareerData(cleanPhone);
 
@@ -138,16 +117,17 @@ export default function CreateUser() {
 
         const servicesMap = await fetchServicesMap();
 
-        const expertiseIds: string[] = Array.isArray(careerRecord["Area of Expertise"])
-          ? careerRecord["Area of Expertise"]
-          : careerRecord["Area of Expertise"]
-            ? [careerRecord["Area of Expertise"]]
+        // Adapting field cases to typical PostgreSQL/Supabase snake_case conventions
+        const expertiseIds: string[] = Array.isArray(careerRecord["area_of_expertise"])
+          ? careerRecord["area_of_expertise"]
+          : careerRecord["area_of_expertise"]
+            ? [careerRecord["area_of_expertise"]]
             : [];
 
-        preferredAreaValues = Array.isArray(careerRecord["Preferred Working Area"])
-          ? careerRecord["Preferred Working Area"]
-          : careerRecord["Preferred Working Area"]
-            ? [careerRecord["Preferred Working Area"]]
+        preferredAreaValues = Array.isArray(careerRecord["preferred_working_area"])
+          ? careerRecord["preferred_working_area"]
+          : careerRecord["preferred_working_area"]
+            ? [careerRecord["preferred_working_area"]]
             : [];
 
         localizedServiceNames = expertiseIds
@@ -174,7 +154,7 @@ export default function CreateUser() {
         uid: user.uid,
         phone: cleanPhone,
         role: selectedRole,
-        services: localizedServiceNames,   // from Airtable mapping
+        services: localizedServiceNames,   // mapped via services table
         area: preferredAreaValues,
         createdAt: Date.now(),
       });
@@ -191,7 +171,6 @@ export default function CreateUser() {
           });
         } else if (selectedRole === "admin") {
           OneSignal.User.addTags({
-
             role: "admin",
           });
         } else if (selectedRole === "career") {

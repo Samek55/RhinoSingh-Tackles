@@ -191,23 +191,25 @@ export default function CareerScreen() {
           }))
         ),
       ]);
+      const cleanNumber = number.replace(/\s/g, '');
+      const cleanEmergencyNumber = emergencyNumber.replace(/\s/g, '');
 
       const career = {
         full_name: name,
-        phone: number,
+        phone: cleanNumber,
         email: email,
         position_applied_for: selectedPosition,
         preferred_working_area: selectedArea,
         area_of_expertise: selectedExpertise,
         years_of_experience: experience ? Number(experience) : null,
         insurance_policy_number: policyNumber || null,
-        emergency_contact_number: emergencyNumber || null,
+        emergency_contact_number: cleanEmergencyNumber,
         cover_letter: coverMessage || null,
         message: message || null,
         resume_cv: cvImages.map((url) => ({ url })),
         id_proof: idProofImages.map((url) => ({ url })),
       };
-
+      
       await createCareerSupabase(career);
       setOverlayStatus('success');
 
