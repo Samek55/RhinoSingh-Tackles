@@ -26,6 +26,7 @@ import { createCareer } from '@/api/PostApiCareer';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { createCareerSupabase } from '@/api/supabase/createCareerSupabase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -192,22 +193,22 @@ export default function CareerScreen() {
       ]);
 
       const career = {
-        "Full Name": name,
-        "Phone": number,
-        "Email": email,
-        "Position Applied For": selectedPosition,
-        "Area of Expertise": selectedExpertise,
-        "Years of Experience": experience,
-        "Preferred Working Area": selectedArea,
-        "Insurance Policy Number": policyNumber,
-        "Emergency Contact Number": emergencyNumber,
-        "Cover Letter": coverMessage,
-        "Message": message,
-        "Resume/CV": cvImages.map(url => ({ url })),
-        "ID Proof": idProofImages.map(url => ({ url })),
+        full_name: name,
+        phone: number,
+        email: email,
+        position_applied_for: selectedPosition,
+        preferred_working_area: selectedArea,
+        area_of_expertise: selectedExpertise,
+        years_of_experience: experience ? Number(experience) : null,
+        insurance_policy_number: policyNumber || null,
+        emergency_contact_number: emergencyNumber || null,
+        cover_letter: coverMessage || null,
+        message: message || null,
+        resume_cv: cvImages.map((url) => ({ url })),
+        id_proof: idProofImages.map((url) => ({ url })),
       };
 
-      await createCareer(career);
+      await createCareerSupabase(career);
       setOverlayStatus('success');
 
     } catch (error) {
@@ -327,7 +328,7 @@ export default function CareerScreen() {
           <Text style={styles.label}>Area of Expertise<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={services}
-            placeholder="Select the area of expertise (max 5)"
+            placeholder="Select the area of expertise"
             placeholderColor="#4B4B4B"
             value={selectedExpertise}
             onSelectOption={setSelectedExpertise}

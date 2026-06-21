@@ -21,6 +21,7 @@ import Header2 from '@/components/Header2';
 // ONESIGNAL SDK IMPORT
 import { OneSignal } from 'react-native-onesignal';
 import { auth } from '@/src/firebase/firebaseConfig';
+import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -147,32 +148,33 @@ export default function BookingOtp() {
       }
 
       const booking = {
-        "Full name": name,
-        "Phone": number,
-        "Select Services": serviceIds,
-        "Area": selectedArea,
-        "Priority": selectedPriority,
-        "Select Shift": selectedShift,
-        "Work Description": message,
-        "Budget": selectedBudget,
-        "Starting Date": formatDate(date),
-        "Status": "New / Open"
+        full_name: name,
+        phone: number,
+        city: selectedArea,
+        area: [selectedArea],
+        select_services: [selectedService],
+        priority: selectedPriority,
+        select_shift: selectedShift,
+        work_description: message,
+        budget: selectedBudget,
+        service_booking_datetime: formatDate(date),
+        status: "New / Open"
       };
 
-      await createBooking(booking);
+      await createBookingSupabase(booking);
 
-      try {
-        const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
-        const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
-        console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
+      // try {
+      //   const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
+      //   const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
+      //   console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
-        await notifyProfessionals(
-          String(targetService).trim(),
-          String(targetArea).trim()
-        );
-      } catch (e) {
-        console.log("Notification background delivery failed contextually", e);
-      }
+      //   await notifyProfessionals(
+      //     String(targetService).trim(),
+      //     String(targetArea).trim()
+      //   );
+      // } catch (e) {
+      //   console.log("Notification background delivery failed contextually", e);
+      // }
 
       router.push('/booking/BookingVerify');
 
