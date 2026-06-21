@@ -28,6 +28,7 @@ import { notifyAdmins } from '@/api/notifications';
 import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { createPartnershipSupabase } from '@/api/supabase/createPartnershipSupabase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -190,24 +191,24 @@ export default function PartnershipScreen() {
       ]);
 
       const partnership = {
-        "Full Name": name,
-        "Name of Organisation": organizationName,
-        "Phone Number": number,
-        "eMail": email,
-        "City": selectedArea,
-        "Number of Employees": Number(employees),
-        "Business Type": selectedBusinessType,
-        "Services Offered": selectedServicesOffered,
-        "Partnership Interests": selectedPartnership,
-        "How did you hear about us?": selectedHowHeard,
-        "Message": message,
-        "Company Photos": companyImages.map(url => ({ url })),
-        "Company Registration Certificates": crcImages.map(url => ({ url })),
+        full_name: name,
+        name_of_organisation: organizationName,
+        phone_number: number.replace(/\s/g, ''),
+        email: email,
+        city: selectedArea,
+        number_of_employees: Number(employees),
+        business_type: selectedBusinessType,
+        services_offered: selectedServicesOffered,
+        partnership_interests: selectedPartnership,
+        how_did_you_hear_about_us: selectedHowHeard,
+        message: message,
+        company_photos: companyImages.map((url) => ({ url })),
+        company_registration_certificates: crcImages.map((url) => ({ url })),
       };
 
-      await createPartnership(partnership);
+      await createPartnershipSupabase(partnership);
       // Notify all admins about the new partnership application (fire-and-forget)
-      notifyAdmins(name.trim()).catch(() => {});
+      notifyAdmins(name.trim()).catch(() => { });
       setOverlayStatus('success');
 
     } catch (error) {

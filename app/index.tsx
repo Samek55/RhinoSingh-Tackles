@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import 'react-native-url-polyfill/auto';
 
 type Route = '/Home' | '/onboarding1';
 
