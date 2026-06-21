@@ -23,16 +23,22 @@ import {
 import FileUploadBox from '../../components/bookings/FileUploadBox';
 import ClearFormIcon from '../../assets/icons/booking/clear.png'
 import DropdownAdd from '../../components/bookings/DropdownAdd';
-import { createPartnership } from '@/api/PostApiPartnership';
 import { notifyAdmins } from '@/api/notifications';
 import Header3 from '@/components/Header3drawer';
-import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createPartnershipSupabase } from '@/api/supabase/createPartnershipSupabase';
+import {uploadImageToSupabasePartnership } from '@/src/utils/uploadImageToSBPartnership';
 
 const { width, height } = Dimensions.get('window');
 
-const Button = ({ children, style, textStyle, onPress }: any) => {
+interface ButtonProps {
+  children: React.ReactNode;
+  style?: any;
+  textStyle?: any;
+  onPress: () => void;
+}
+
+const Button = ({ children, style, textStyle, onPress }: ButtonProps) => {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -46,6 +52,11 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
   );
 };
 
+export type FileItem = {
+  uri: string;
+  fileName?: string;
+};
+
 export default function PartnershipScreen() {
   const scrollRef = useRef<any>(null);
 
@@ -55,15 +66,12 @@ export default function PartnershipScreen() {
   const [organizationName, setOrganizationName] = useState('');
   const [message, setMessage] = useState('');
   const [employees, setEmployees] = useState('');
-  type FileItem = {
-    uri: string;
-    fileName?: string;
-  };
-  // photoss
+
+  // Photos state
   const [selectCompanyPhotos, setSelectCompanyPhotos] = useState<FileItem[]>([]);
   const [selectCRCphotos, setSelectCRCphotos] = useState<FileItem[]>([]);
 
-  // dropdown states (separated properly)
+  // Dropdown states
   const [selectedArea, setSelectedArea] = useState('');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [selectedPartnership, setSelectedPartnership] = useState('');
@@ -72,8 +80,6 @@ export default function PartnershipScreen() {
 
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
-
-  // Shared active focus state system mapping layout changes
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
   const clearAllFields = () => {
@@ -98,15 +104,8 @@ export default function PartnershipScreen() {
       'Clear Form',
       'Are you sure you want to clear all fields?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Yes, Clear',
-          style: 'destructive',
-          onPress: clearAllFields,
-        },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Yes, Clear', style: 'destructive', onPress: clearAllFields },
       ]
     );
   };
@@ -114,103 +113,51 @@ export default function PartnershipScreen() {
   const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
 
-    if (!name.trim()) {
-      return Alert.alert('Validation Error', 'Full Name is required');
-    }
-
-    if (!cleanNumber || cleanNumber.length !== 10) {
-      return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number');
-    }
-
-    if (!email.trim()) {
-      return Alert.alert('Validation Error', 'Email is required');
-    }
+    if (!name.trim()) return Alert.alert('Validation Error', 'Full Name is required');
+    if (!cleanNumber || cleanNumber.length !== 10) return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number');
+    if (!email.trim()) return Alert.alert('Validation Error', 'Email is required');
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      return Alert.alert('Validation Error', 'Enter a valid email address');
-    }
-
-    if (!organizationName.trim()) {
-      return Alert.alert('Validation Error', 'Organization name is required');
-    }
-
-    if (!employees.trim()) {
-      return Alert.alert('Validation Error', 'Number of employees is required');
-    }
-
-    if (!selectedArea.trim()) {
-      return Alert.alert('Validation Error', 'Please select area');
-    }
-
-    if (!selectedBusinessType.trim()) {
-      return Alert.alert('Validation Error', 'Please select business type');
-    }
-
-    if (!selectedPartnership.trim()) {
-      return Alert.alert('Validation Error', 'Please select partnership type');
-    }
-
-    if (!selectedHowHeard.trim()) {
-      return Alert.alert('Validation Error', 'Please select how you heard about us');
-    }
-
-    if (selectedServicesOffered.length === 0) {
-      return Alert.alert('Validation Error', 'Please select at least one service');
-    }
-
-    if (selectCompanyPhotos.length === 0) {
-      return Alert.alert('Validation Error', 'Please upload company photos');
-    }
-
-    if (selectCRCphotos.length === 0) {
-      return Alert.alert('Validation Error', 'Please upload CRC photos');
-    }
-
-    if (!message.trim()) {
-      return Alert.alert('Validation Error', 'Message cannot be empty');
-    }
+    if (!emailRegex.test(email.trim())) return Alert.alert('Validation Error', 'Enter a valid email address');
+    if (!organizationName.trim()) return Alert.alert('Validation Error', 'Organization name is required');
+    if (!employees.trim()) return Alert.alert('Validation Error', 'Number of employees is required');
+    if (!selectedArea.trim()) return Alert.alert('Validation Error', 'Please select area');
+    if (!selectedBusinessType.trim()) return Alert.alert('Validation Error', 'Please select business type');
+    if (!selectedPartnership.trim()) return Alert.alert('Validation Error', 'Please select partnership type');
+    if (!selectedHowHeard.trim()) return Alert.alert('Validation Error', 'Please select how you heard about us');
+    if (selectedServicesOffered.length === 0) return Alert.alert('Validation Error', 'Please select at least one service');
+    if (selectCompanyPhotos.length === 0) return Alert.alert('Validation Error', 'Please upload company photos');
+    if (selectCRCphotos.length === 0) return Alert.alert('Validation Error', 'Please upload CRC photos');
+    if (!message.trim()) return Alert.alert('Validation Error', 'Message cannot be empty');
 
     setOverlayStatus('loading');
     setOverlayVisible(true);
 
     try {
       const [companyImages, crcImages] = await Promise.all([
-        uploadMultipleToCloudinary(
-          selectCompanyPhotos.map(item => ({
-            uri: item.uri,
-            fileName: item.fileName,
-          }))
-        ),
-        uploadMultipleToCloudinary(
-          selectCRCphotos.map(item => ({
-            uri: item.uri,
-            fileName: item.fileName,
-          }))
-        ),
+        Promise.all(selectCompanyPhotos.map((item) => uploadImageToSupabasePartnership(item, "company"))),
+        Promise.all(selectCRCphotos.map((item) => uploadImageToSupabasePartnership(item, "crc"))),
       ]);
 
       const partnership = {
         full_name: name,
         name_of_organisation: organizationName,
-        phone_number: number.replace(/\s/g, ''),
-        email: email,
+        phone_number: cleanNumber,
+        email: email.trim(),
         city: selectedArea,
         number_of_employees: Number(employees),
         business_type: selectedBusinessType,
         services_offered: selectedServicesOffered,
         partnership_interests: selectedPartnership,
         how_did_you_hear_about_us: selectedHowHeard,
-        message: message,
+        message: message.trim(),
         company_photos: companyImages.map((url) => ({ url })),
         company_registration_certificates: crcImages.map((url) => ({ url })),
       };
 
       await createPartnershipSupabase(partnership);
-      // Notify all admins about the new partnership application (fire-and-forget)
       notifyAdmins(name.trim()).catch(() => { });
       setOverlayStatus('success');
-
     } catch (error) {
       setOverlayVisible(false);
       Alert.alert('Error', 'Submission failed. Please try again.');
@@ -232,8 +179,6 @@ export default function PartnershipScreen() {
         showsVerticalScrollIndicator={false}
         extraScrollHeight={80}
         keyboardShouldPersistTaps="handled"
-        enableResetScrollToCoords={false}
-        resetScrollToCoords={undefined}
         enableAutomaticScroll={Platform.OS === 'ios'}
         keyboardDismissMode="on-drag"
       >
@@ -251,10 +196,7 @@ export default function PartnershipScreen() {
             onChangeText={setName}
             onFocus={() => setActiveInput('name')}
             onBlur={() => setActiveInput(null)}
-            style={[
-              styles.input,
-              activeInput === 'name' && styles.inputActive
-            ]}
+            style={[styles.input, activeInput === 'name' && styles.inputActive]}
             placeholderTextColor={'#4B4B4B'}
           />
 
@@ -266,21 +208,14 @@ export default function PartnershipScreen() {
             onChangeText={setOrganizationName}
             onFocus={() => setActiveInput('organization')}
             onBlur={() => setActiveInput(null)}
-            style={[
-              styles.input,
-              activeInput === 'organization' && styles.inputActive
-            ]}
+            style={[styles.input, activeInput === 'organization' && styles.inputActive]}
             placeholderTextColor={'#4B4B4B'}
           />
 
           {/* Phone Number */}
           <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
           <View style={styles.phoneContainer}>
-            <Image
-              source={countryLogo}
-              style={styles.icon}
-              resizeMode="contain"
-            />
+            <Image source={countryLogo} style={styles.icon} resizeMode="contain" />
             <TextInput
               placeholder="Enter your Phone Number"
               value={number}
@@ -294,20 +229,12 @@ export default function PartnershipScreen() {
                 if (cleaned.length > 3 && cleaned.length <= 6) {
                   formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
                 } else if (cleaned.length > 6) {
-                  formatted =
-                    cleaned.slice(0, 3) +
-                    ' ' +
-                    cleaned.slice(3, 6) +
-                    ' ' +
-                    cleaned.slice(6);
+                  formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3, 6) + ' ' + cleaned.slice(6);
                 }
                 setNumber(formatted);
               }}
               keyboardType="number-pad"
-              style={[
-                styles.phoneInput,
-                activeInput === 'phone' && styles.inputActive
-              ]}
+              style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}
               placeholderTextColor={'#4B4B4B'}
             />
           </View>
@@ -320,19 +247,13 @@ export default function PartnershipScreen() {
             onChangeText={setEmail}
             onFocus={() => setActiveInput('email')}
             onBlur={() => setActiveInput(null)}
-            style={[
-              styles.input,
-              activeInput === 'email' && styles.inputActive
-            ]}
+            style={[styles.input, activeInput === 'email' && styles.inputActive]}
             placeholderTextColor={'#4B4B4B'}
           />
 
           {/* Company Photos */}
           <Text style={styles.label}>Company Photos<Text style={{ color: 'red' }}>*</Text></Text>
-          <FileUploadBox
-            value={selectCompanyPhotos}
-            onChange={setSelectCompanyPhotos}
-          />
+          <FileUploadBox value={selectCompanyPhotos} onChange={setSelectCompanyPhotos} />
 
           {/* Area Dropdown */}
           <Text style={styles.label}>Area<Text style={{ color: 'red' }}>*</Text></Text>
@@ -355,14 +276,8 @@ export default function PartnershipScreen() {
             value={employees}
             onFocus={() => setActiveInput('employees')}
             onBlur={() => setActiveInput(null)}
-            onChangeText={(text) => {
-              const onlyNumbers = text.replace(/[^0-9]/g, '');
-              setEmployees(onlyNumbers);
-            }}
-            style={[
-              styles.input,
-              activeInput === 'employees' && styles.inputActive
-            ]}
+            onChangeText={(text) => setEmployees(text.replace(/[^0-9]/g, ''))}
+            style={[styles.input, activeInput === 'employees' && styles.inputActive]}
           />
 
           {/* Business Type Dropdown */}
@@ -377,7 +292,7 @@ export default function PartnershipScreen() {
             onClose={() => setActiveInput(null)}
           />
 
-          {/* Services Offered Dropdown Add (MultiSelect) */}
+          {/* Services Offered Dropdown Add */}
           <Text style={styles.label}>Services Offered<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={services}
@@ -403,10 +318,7 @@ export default function PartnershipScreen() {
 
           {/* Company Registration Certificates */}
           <Text style={styles.label}>Company Registration Certificates<Text style={{ color: 'red' }}>*</Text></Text>
-          <FileUploadBox
-            value={selectCRCphotos}
-            onChange={setSelectCRCphotos}
-          />
+          <FileUploadBox value={selectCRCphotos} onChange={setSelectCRCphotos} />
 
           {/* How did you hear about us Dropdown */}
           <Text style={styles.label}>How did you hear about us?<Text style={{ color: 'red' }}>*</Text></Text>
@@ -425,12 +337,15 @@ export default function PartnershipScreen() {
           <TextArea
             value={message}
             onChangeText={setMessage}
-            placeholder=""
+            placeholder="Enter your message here"
             placeholderTextColor="#4B4B4B"
             maxHeight={160}
             onFocus={() => setActiveInput('message')}
             onBlur={() => setActiveInput(null)}
-            style={activeInput === 'message' && styles.inputActive}
+            style={[
+              styles.textAreaBase, 
+              activeInput === 'message' ? styles.inputActive : styles.inputInactive
+            ]}
           />
 
           {/* Form Actions */}
@@ -460,7 +375,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   formContainer: {
-    paddingHorizontal: width * 0.06, // Optimized padding grid alignment
+    paddingHorizontal: width * 0.06,
     paddingTop: height * 0.02,
     backgroundColor: 'white',
   },
@@ -481,20 +396,33 @@ const styles = StyleSheet.create({
     marginVertical: 20
   },
   input: {
-    borderWidth: 1.5, // Standard premium design blueprint thickness
+    borderWidth: 1.5,
     borderRadius: 12,
     paddingHorizontal: width * 0.035,
-    height: height * 0.055, // Responsive sizing standard
+    height: height * 0.055,
     marginBottom: height * 0.02,
     fontSize: width * 0.035,
     fontWeight: '500',
-    borderColor: '#E2E8F0', // Replaced raw dark black outline with elegant slate gray
+    borderColor: '#E2E8F0',
     color: '#1A1A1A',
     backgroundColor: '#fff',
   },
+  textAreaBase: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: width * 0.035,
+    paddingVertical: 10,
+    fontSize: width * 0.035,
+    fontWeight: '500',
+    color: '#1A1A1A',
+  },
+  inputInactive: {
+    borderColor: '#E2E8F0',
+    backgroundColor: '#fff',
+  },
   inputActive: {
-    borderColor: 'hsl(142, 71%, 45%)',      // Dynamic premium highlight glow color
-    backgroundColor: '#F4F7FF',  // Soft backdrop selection tint color
+    borderColor: 'hsl(142, 71%, 45%)',
+    backgroundColor: '#F4F7FF',
   },
   phoneContainer: {
     position: 'relative',

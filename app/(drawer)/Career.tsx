@@ -27,6 +27,7 @@ import Header3 from '@/components/Header3drawer';
 import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createCareerSupabase } from '@/api/supabase/createCareerSupabase';
+import { uploadImageToSupabaseCareer } from '@/src/utils/uploadImageToSBCareer';
 
 const { width, height } = Dimensions.get('window');
 
@@ -178,17 +179,15 @@ export default function CareerScreen() {
 
     try {
       const [idProofImages, cvImages] = await Promise.all([
-        uploadMultipleToCloudinary(
-          selectedID.map(item => ({
-            uri: item.uri,
-            fileName: item.fileName,
-          }))
+        Promise.all(
+          selectedID.map((item) =>
+            uploadImageToSupabaseCareer(item, "id-proof")
+          )
         ),
-        uploadMultipleToCloudinary(
-          selectedCV.map(item => ({
-            uri: item.uri,
-            fileName: item.fileName,
-          }))
+        Promise.all(
+          selectedCV.map((item) =>
+            uploadImageToSupabaseCareer(item, "cv")
+          )
         ),
       ]);
       const cleanNumber = number.replace(/\s/g, '');
@@ -209,7 +208,7 @@ export default function CareerScreen() {
         resume_cv: cvImages.map((url) => ({ url })),
         id_proof: idProofImages.map((url) => ({ url })),
       };
-      
+
       await createCareerSupabase(career);
       setOverlayStatus('success');
 

@@ -22,3 +22,8 @@ declare module '*.svg' {
   const value: any;
   export default value;
 }
+
+type UploadFile = {
+  uri: string;
+  fileName?: string;
+};
