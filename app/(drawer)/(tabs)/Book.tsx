@@ -390,8 +390,8 @@ export default function ServiceBookingScreen() {
 
 // ... styles remain unchanged ...
 const styles = StyleSheet.create({
-  container: { backgroundColor: 'teal', flexGrow: 1 },
-  formContainer: { paddingHorizontal: width * 0.05, paddingTop: height * 0.02, backgroundColor: 'teal' },
+  container: { backgroundColor: '#064E3B', flexGrow: 1 },
+  formContainer: { paddingHorizontal: width * 0.05, paddingTop: height * 0.02, backgroundColor: '#064E3B' },
   title: { fontSize: width * 0.06, fontWeight: '700', color: 'white', paddingLeft: 8, marginBottom: 10 },
   inputGroup: { marginTop: height * 0.015, padding: 20, borderRadius: 20, backgroundColor: '#fff', elevation: 10, marginBottom: height * 0.05 },
   input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: width * 0.035, height: height * 0.055, marginBottom: height * 0.02, fontSize: width * 0.035, fontWeight: '500', borderColor: '#E2E8F0', color: '#1A1A1A', backgroundColor: '#fff' },

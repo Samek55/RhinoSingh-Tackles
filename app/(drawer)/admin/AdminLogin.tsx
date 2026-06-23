@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -12,10 +12,9 @@ import {
     StyleSheet,
     Alert,
 } from 'react-native';
-import PhoneIcon from '../../../assets/icons/admin/phone.png';
+import PhoneIcon from '../../../assets/header/right.png';
 import EyeOffIcon from '../../../assets/icons/admin/eyeOff.png';
 import EyeOnIcon from '../../../assets/icons/admin/eyeOn.png';
-import KeyIcon from '../../../assets/icons/admin/key.png';
 
 import CustomCheckbox from '../../../components/admin/CustomCheckbox';
 
@@ -25,8 +24,8 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { auth } from "../../../src/firebase/firebaseConfig"; 
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../../src/firebase/firebaseConfig";
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,24 +35,46 @@ const scaleFont = (size: number) => {
 };
 
 export default function AdminLogin() {
-
     const [passwordVisible, setPasswordVisible] = useState(false);
-    const [phoneNumber, setphoneNumber] = useState<any>('');
-    const [password, setPassword] = useState<any>('');
+    const [phoneNumber, setphoneNumber] = useState<string>('');
+    
+    // Using the 6-box input to construct our 6-digit PIN password
+    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    const inputs = useRef<Array<TextInput | null>>([]);
+
+    const handleChange = (text: string, index: number) => {
+        if (!/^\d*$/.test(text)) return; // only numbers
+
+        const newOtp = [...otp];
+        newOtp[index] = text.slice(-1);
+        setOtp(newOtp);
+
+        if (text && index < 5) {
+            inputs.current[index + 1]?.focus();
+        }
+    };
+
+    const handleBackspace = (text: string, index: number) => {
+        if (!text && index > 0) {
+            inputs.current[index - 1]?.focus();
+        }
+    };
 
     const togglePasswordVisibility = () => {
         setPasswordVisible(!passwordVisible);
     };
 
     const handleSubmit = async () => {
+        const pinPassword = otp.join(""); // Gather the 6-digit PIN here
+
         try {
-            if (!phoneNumber || !password) {
-                alert("Please enter phone and PIN");
+            if (!phoneNumber || pinPassword.length < 6) {
+                Alert.alert("Error", "Please enter phone and a valid 6-digit PIN");
                 return;
             }
 
             const email = `${phoneNumber}@rocketsingh.app`;
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth, email, pinPassword);
             const user = userCredential.user;
 
             if (user) {
@@ -69,7 +90,6 @@ export default function AdminLogin() {
                 try {
                     const { OneSignal } = require('react-native-onesignal');
                     OneSignal.login(user.uid);
-                    // 🧠 Removed OneSignal.User.addTag updates from this sector entirely
                 } catch (e) {
                     console.warn('OneSignal registration linkage failed:', e);
                 }
@@ -90,7 +110,7 @@ export default function AdminLogin() {
 
         } catch (error: any) {
             console.log("Login error:", error.message);
-            alert("Invalid phone or PIN");
+            Alert.alert("Error", "Invalid phone or PIN");
         }
     };
 
@@ -105,13 +125,16 @@ export default function AdminLogin() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled">
-                    <Text style={styles.title}>Hello! Pro</Text>
-                    <Text style={styles.subtitle}>Welcome to RocketSingh</Text>
+                    
+                    <Text style={styles.title}>RocketSingh</Text>
+                    <Text style={styles.subtitle}>Admin Login</Text>
+                    
                     <View style={styles.formContainer}>
-                        <Text style={styles.welcomeText}>Login</Text>
+                        <Text style={styles.welcomeText}>Sign in</Text>
 
+                        {/* Phone Number Input */}
                         <View style={styles.inputContainer}>
-                            <Image source={PhoneIcon} style={{ width: 30, height: 30, tintColor: '#000' }} />
+                            <Image source={PhoneIcon} style={{ width: 30, height: 30}} />
                             <TextInput
                                 placeholder="Phone Number"
                                 placeholderTextColor={'rgba(67, 67, 67,0.4)'}
@@ -127,28 +150,42 @@ export default function AdminLogin() {
                             />
                         </View>
 
-                        <View style={styles.inputContainer}>
-                            <Image source={KeyIcon} style={{ width: 30, height: 30, tintColor: '#000' }} />
-                            <TextInput
-                                placeholder="PIN"
-                                placeholderTextColor={'rgba(67, 67, 67,0.4)'}
-                                secureTextEntry={!passwordVisible}
-                                style={styles.textInput}
-                                value={password}
-                                onChangeText={(value) => {
-                                    let cleaned = value.replace(/[^0-9]/g, '');
-                                    cleaned = cleaned.slice(0, 6);
-                                    setPassword(cleaned);
-                                }}
-                                keyboardType="number-pad"
-                            />
-                            <TouchableOpacity onPress={togglePasswordVisibility}>
-                                {passwordVisible ? (
-                                    <Image source={EyeOnIcon} style={{ width: 23, height: 27, tintColor: 'hsl(0, 0%, 30%)' }} />
-                                ) : (
-                                    <Image source={EyeOffIcon} style={{ width: 22, height: 22, tintColor: 'hsl(0, 0%, 30%)' }} />
-                                )}
-                            </TouchableOpacity>
+                        {/* Structured PIN & OTP Container */}
+                        <View style={styles.otpSectionWrapper}>
+                            {/* Top Section: Label & Eye Icon Switch */}
+                            <View style={styles.otpHeaderRow}>
+                                <Text style={styles.pinLabelText}>PIN</Text>
+                                <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
+                                    {passwordVisible ? (
+                                        <Image source={EyeOnIcon} style={{ width: 23, height: 27, tintColor: 'hsl(0, 0%, 30%)' }} />
+                                    ) : (
+                                        <Image source={EyeOffIcon} style={{ width: 22, height: 22, tintColor: 'hsl(0, 0%, 30%)' }} />
+                                    )}
+                                </TouchableOpacity>
+                            </View>
+
+                            {/* Middle Section: OTP Inputs */}
+                            <View style={styles.otpBoxesContainer}>
+                                {otp.map((value, index) => (
+                                    <TextInput
+                                        key={index}
+                                        ref={(ref) => {
+                                            inputs.current[index] = ref;
+                                        }}
+                                        value={value}
+                                        onChangeText={(text) => handleChange(text, index)}
+                                        onKeyPress={({ nativeEvent }) => {
+                                            if (nativeEvent.key === "Backspace") {
+                                                handleBackspace(value, index);
+                                            }
+                                        }}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        secureTextEntry={!passwordVisible}
+                                        style={styles.box}
+                                    />
+                                ))}
+                            </View>
                         </View>
 
                         <View style={styles.btnContainerFlex}>
@@ -166,15 +203,15 @@ export default function AdminLogin() {
 
                         <View style={styles.loginDivider} />
 
-                        <Text style={styles.btnTextBelow}>Become a member :
+                        <Text style={styles.btnTextBelow}>Become a member :{' '}
                             <Text style={{ fontWeight: '900', color: 'black' }}
                                 onPress={() => router.push('/Career')}
                             >
-                                 Join Now
+                                Join Now
                             </Text>
                         </Text>
 
-                        <View style={{ marginTop: 2, width: '100%', alignItems: 'center', }}>
+                        <View style={{ marginTop: 15, width: '100%', alignItems: 'center', gap: 10 }}>
                             <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
                                 <Text style={styles.btnTextBelow}>Change PIN</Text>
                             </TouchableOpacity>
@@ -189,7 +226,7 @@ export default function AdminLogin() {
             </KeyboardAvoidingView>
         </View>
     );
-};
+}
 
 const styles = StyleSheet.create({
     container: {
@@ -200,15 +237,6 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         alignItems: 'center',
         paddingBottom: 0
-    },
-    header: {
-        marginTop: hp('2%'),
-        paddingHorizontal: wp('4%'),
-    },
-    divider: {
-        borderBottomWidth: 1,
-        borderColor: '#CAD2DF',
-        marginTop: 16,
     },
     title: {
         fontSize: scaleFont(22),
@@ -230,7 +258,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%',
-        paddingHorizontal: hp('1%')
+        paddingHorizontal: hp('1%'),
+        marginTop: 15
     },
     btnText: {
         color: '#333',
@@ -251,16 +280,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#ebffef',
         paddingBottom: hp('30%'),
         marginTop: hp('5%'),
-        borderTopLeftRadius: 25,
-        borderTopRightRadius: 25,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
         borderColor: 'rgba(0, 0, 0,0.1)',
         borderWidth: 1
-    },
-    image: {
-        width: wp('40%'),
-        height: hp('20%'),
-        resizeMode: 'contain',
-        borderRadius: 200
     },
     welcomeText: {
         fontSize: scaleFont(22),
@@ -273,7 +296,6 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         paddingHorizontal: 16,
         borderWidth: 1,
         width: '100%',
@@ -291,8 +313,45 @@ const styles = StyleSheet.create({
         paddingHorizontal: hp('2%'),
         letterSpacing: 0.5
     },
+    otpSectionWrapper: {
+        width: '100%',
+        marginBottom: 10,
+    },
+    otpHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingHorizontal: hp('1%'),
+        marginBottom: 8,
+    },
+    pinLabelText: {
+        fontSize: scaleFont(14),
+        fontWeight: '600',
+        color: '#333',
+    },
+    otpBoxesContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: '100%',
+    },
+    box: {
+        width: 40,
+        height: 50,
+        borderWidth: 1,
+        borderColor: "rgba(0, 0, 0,0.1)",
+        textAlign: "center",
+        fontSize: 18,
+        borderRadius: 8,
+        backgroundColor: '#fff'
+    },
+    eyeButton: {
+        padding: 5,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
     loginButton: {
-        marginTop: height * 0.07,
+        marginTop: height * 0.04,
         height: height * 0.06,
         width: '95%',
         borderRadius: 50,
@@ -306,18 +365,10 @@ const styles = StyleSheet.create({
         color: '#fff',
     },
     loginDivider: {
-        borderWidth: 1,
+        borderWidth: 0.5,
         width: '100%',
-        borderColor: 'hsl(0, 0%, 33%)',
+        borderColor: 'rgba(0,0,0,0.2)',
         marginBottom: hp('2%'),
-        marginTop: hp('7%')
+        marginTop: hp('4%')
     },
-    areaLabel: {
-        fontSize: hp('1.9%'),
-        fontWeight: '600',
-        width: '100%',
-        marginBottom: hp('1%'),
-        color: 'hsl(0, 0%, 30%)',
-        paddingHorizontal: hp('1%'),
-    }
 });

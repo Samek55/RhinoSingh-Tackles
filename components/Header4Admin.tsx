@@ -16,9 +16,9 @@ export default function Header4() {
             style={styles.leftIcon}
           />
           <Text style={{
-            fontSize: 18,
+            fontSize: 22,
             fontWeight: 'bold',
-            color: '#064E3B',
+            color: '#fff',
           }}>Rocket Singh</Text>
         </View>
 
@@ -34,7 +34,7 @@ export default function Header4() {
               navigation.dispatch(DrawerActions.openDrawer())
             }
           >
-            <Ionicons name="menu" size={23} color='#fff' />
+            <Ionicons name="menu" size={30} color='#fff' />
           </TouchableOpacity>
         </View>
       </View>
@@ -45,8 +45,8 @@ export default function Header4() {
 const styles = StyleSheet.create({
   header: {
     height: 95,
-    paddingTop: 50,
-    backgroundColor: "hsl(0, 0%, 95%)",
+    paddingTop: 45,
+    backgroundColor: "#064E3B",
   },
   subHeader: {
     flexDirection: 'row',
@@ -66,20 +66,17 @@ const styles = StyleSheet.create({
   },
   button: {
     alignSelf: 'center',
-    borderRadius: 100,
-    padding: 3.6,
-    backgroundColor: '#008000',
-    overflow: 'hidden',
   },
+
   leftIcon: {
-    width: 33,
-    height: 33,
+    width: 39,
+    height: 39,
     resizeMode: 'contain',
   },
   rightIcon: {
 
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     resizeMode: 'contain'
   },
 });
