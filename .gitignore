@@ -59,3 +59,5 @@ ios/*.xcuserstate
 
 expo-env.d.ts
 # @end expo-cli
+
+credentials.json
