@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RocketSingh",
-    "slug": "RocketSingh",
+    "slug": "rocketsingh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -66,11 +66,11 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "owner": "ujjwal321",
+    "owner": "sriyog",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "11bdd822-faeb-4c83-aecf-9af239f5bbaf"
+        "projectId": "c942c8da-5a0a-41d9-805d-7f8d65868fbe"
       }
     }
   }
