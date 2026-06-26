@@ -37,8 +37,9 @@ const ServicesDisplaycard = ({
     <TouchableOpacity onPress={onPress} style={[styles.cardContainer, style]}>
       <Image source={image} style={styles.image} resizeMode="cover" />
       <View style={styles.textContainer}>
-        <Text style={[styles.title, textStyle]}>{name}</Text>
-        <Text style={[styles.words, textStyle]}>{words}</Text>
+        {/* Enforced single line restrictions with clean tail truncation */}
+        <Text style={[styles.title, textStyle]} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+        <Text style={[styles.words, textStyle]} numberOfLines={1} ellipsizeMode="tail">{words}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -46,31 +47,32 @@ const ServicesDisplaycard = ({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginBottom: hp(1.5),
     borderRadius: 13,
     overflow: 'hidden',
     backgroundColor: '#fff',
-    minHeight: hp(23),
-    height: hp(24),
-    shadowColor: '#7cbc7a',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 0 },
+    width: '100%', 
+    paddingBottom: hp(1.5), 
+    
+    shadowColor: '#295C59',
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
 
   image: {
     width: '100%',
-    height: hp(14),
+    height: hp(13), 
   },
 
-  textContainer:{
+  textContainer: {
+    width: '100%',
   },
 
   title: {
-    fontSize: wp(3.7),
+    fontSize: wp(3.6),
     fontWeight: '600',
-    marginTop: hp(1.2),
+    marginTop: hp(1),
     color: '#000',
     paddingHorizontal: 10,
   },
@@ -79,10 +81,9 @@ const styles = StyleSheet.create({
     fontSize: wp(3),
     fontWeight: '500',
     color: 'grey',
-    paddingHorizontal: 11,
-    marginTop: hp(0.5),
-
-    flexShrink: 1, // prevents overflow
+    paddingHorizontal: 10,
+    marginTop: hp(0.4),
+    flexShrink: 1, 
   },
 });
 

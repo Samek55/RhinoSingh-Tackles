@@ -7,15 +7,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width: SW } = Dimensions.get('window');
-
 import ServicesCards from '../../../components/services/ServicesCards';
 import ServicesDisplaycard from '../../../components/services/ServicesDisplaycard';
-
 import { servicesData2 } from '../../../src/data/ServiceData';
 
 const topServices = servicesData2.filter(item => item.id === 1 || item.id === 4);
@@ -33,7 +29,7 @@ type RowItem =
   | { type: 'pair'; items: ServiceItem[]; key: string }
   | { type: 'featured'; item: ServiceItem; key: string };
 
-const PAIRS_BEFORE_FEATURED = 4;
+const PAIRS_BEFORE_FEATURED = 3;
 
 function buildRows(services: ServiceItem[]): RowItem[] {
   const rows: RowItem[] = [];
@@ -44,7 +40,7 @@ function buildRows(services: ServiceItem[]): RowItem[] {
     if (pairCount === PAIRS_BEFORE_FEATURED && i < services.length) {
       rows.push({ type: 'featured', item: services[i], key: `featured-${services[i].id}` });
       i++;
-      pairCount = 0;
+      pairCount = 0; 
     } else {
       const pair: ServiceItem[] = [services[i]];
       if (i + 1 < services.length) pair.push(services[i + 1]);
@@ -82,7 +78,7 @@ export default function ServiceScreen() {
               colors={['transparent', 'rgba(18,46,44,0.90)']}
               style={styles.featuredGradient}
             >
-              <Text style={styles.featuredLabel}>HomeSewa</Text>
+              <Text style={styles.featuredLabel}>RocketSingh</Text>
               <Text style={styles.featuredName}>{item.item.name}</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -115,41 +111,42 @@ export default function ServiceScreen() {
 
   const ListHeader = useCallback(() => (
     <View style={styles.headerContainer}>
-
       <ImageBackground
         source={require('../../../assets/services/bannerServices.jpg')}
         resizeMode="cover"
         style={styles.headerBackground}
-        imageStyle={{ transform: [{ scale: 1.08 }] }}
       >
         <LinearGradient
           colors={['rgba(0,0,0,0.08)', 'rgba(18,46,44,0.97)']}
           style={styles.headerGradient}
         >
           <Text style={styles.headerTitle}>SuperFast Services</Text>
-          <Text style={styles.headerSubtitle}>Express Home Service</Text>
+          <Text style={styles.headerSubtitle}>On Demand Home Service in Chennai</Text>
         </LinearGradient>
       </ImageBackground>
 
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle1}>Top Services</Text>
 
-        {topServices.map((item) => (
-          <ServicesCards
-            key={item.id}
-            name={item.name}
-            description={item.description}
-            image={item.image}
-            question={item.question}
-            answer={item.answer}
-            onPress={() =>
-              router.push({
-                pathname: '/service/ServiceDetail',
-                params: { id: item.id.toString() },
-              })
-            }
-          />
-        ))}
+        {/* Added wrapper with isolated layout gaps to prevent header layout corruption */}
+        <View style={styles.topServicesWrapper}>
+          {topServices.map((item) => (
+            <ServicesCards
+              key={item.id}
+              name={item.name}
+              description={item.description}
+              image={item.image}
+              question={item.question}
+              answer={item.answer}
+              onPress={() =>
+                router.push({
+                  pathname: '/service/ServiceDetail',
+                  params: { id: item.id.toString() },
+                })
+              }
+            />
+          ))}
+        </View>
 
         <Text style={styles.sectionTitle2}>Trending Services</Text>
       </View>
@@ -157,7 +154,7 @@ export default function ServiceScreen() {
   ), []);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#FFF' }}>
       <Header2 />
       <FlatList
         data={rows}
@@ -167,10 +164,12 @@ export default function ServiceScreen() {
         initialNumToRender={6}
         maxToRenderPerBatch={10}
         windowSize={5}
-        updateCellsBatchingPeriod={50}
         removeClippedSubviews
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        
+        // FIX: Replaces global container style gap injection with explicit line rendering item-separators
+        ItemSeparatorComponent={() => <View style={styles.rowSeparator} />}
       />
     </View>
   );
@@ -178,92 +177,75 @@ export default function ServiceScreen() {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    flex: 1,
+    width: '100%',
   },
-
   headerBackground: {
     width: wp('100%'),
-    height: hp('30%'),
-    justifyContent: 'space-between',
+    height: hp('28%'), 
     overflow: 'hidden',
-    resizeMode:'contain'
   },
-
   headerGradient: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '75%',
+    bottom: 0, left: 0, right: 0,
+    height: '80%',
     justifyContent: 'flex-end',
-    paddingHorizontal: wp('5%'),
-    paddingBottom: hp('2%'),
+    paddingHorizontal: wp('4%'),
+    paddingBottom: hp('2.5%'),
     gap: 4,
   },
-
   headerTitle: {
-    fontSize: wp('7%'),
+    fontSize: wp('6.8%'),
     fontWeight: '800',
     color: '#fff',
-    lineHeight: hp('5%'),
   },
-
   headerSubtitle: {
     fontSize: wp('3.8%'),
     fontWeight: '500',
     color: 'rgba(255,255,255,0.85)',
   },
-
   sectionContainer: {
     paddingHorizontal: wp('4%'),
     paddingTop: hp('2.5%'),
   },
-
   sectionTitle1: {
-    fontSize: wp('4.5%'),
+    fontSize: wp('4.6%'),
     fontWeight: '800',
     color: '#064E3B',
-    marginBottom: hp('3.2%'),
-    marginTop: hp(-1),
+    marginBottom: hp('3%'),
   },
-
+  topServicesWrapper: {
+  },
   sectionTitle2: {
-    fontSize: wp('4.5%'),
+    fontSize: wp('4.6%'),
     fontWeight: '800',
     color: '#064E3B',
-    marginBottom: hp('2%'),
-    marginTop: hp('2%'),
+    marginBottom: hp('3%'), 
   },
-
-  topServiceCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    height: SW * 0.45,
-    marginBottom: hp('2%'),
-    elevation: 4,
-    shadowColor: '#295C59',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+  
+  /* FIXED GRID & GAP RESTRUCTURING */
+  listContent: {
+    paddingBottom: hp('4%'),
   },
-
+  rowSeparator: {
+    height: hp('2.5%'), 
+  },
   pairRow: {
     flexDirection: 'row',
     paddingHorizontal: wp('4%'),
     justifyContent: 'space-between',
   },
-
   serviceItemContainer: {
-    width: wp('44%'),
-    marginBottom: hp('3%'),
+    width: wp('43.5%'), 
   },
-
   featuredContainer: {
+    // CHANGED: Added dynamic vertical margin to create clear spacing on top and bottom 
+    marginVertical: hp('1.5%'),
+    // Maintained the horizontal layout margin from the side of the screen
     marginHorizontal: wp('4%'),
-    marginBottom: hp('2%'),
+    
     borderRadius: 16,
     overflow: 'hidden',
-    height: SW * 0.45,
+    height: hp('22%'), 
     elevation: 4,
     shadowColor: '#295C59',
     shadowOffset: { width: 0, height: 3 },
@@ -280,23 +262,21 @@ const styles = StyleSheet.create({
     top: 0, bottom: 0, left: 0, right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 14,
-    gap: 2,
+    padding: 16,
   },
   featuredLabel: {
-    fontSize: SW * 0.03,
+    fontSize: wp('3%'),
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.75)',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   featuredName: {
-    fontSize: SW * 0.05,
+    fontSize: wp('5.2%'),
     fontWeight: '800',
     color: '#fff',
     textAlign: 'center',
-  },
-
-  listContent: {
-    paddingBottom: hp('4%'),
+    marginTop: 4,
   },
 });
