@@ -3,158 +3,220 @@ import {
   Text,
   Image,
   StyleSheet,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-
+import { LinearGradient } from 'expo-linear-gradient';
 import ServicesCard from '../../../components/home/ServicesCard';
-import ProfessionalCard from '../../../components/home/ProfessionalCard';
 import NumberBar from '../../../components/home/NumberBar';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
+import { useRef, useMemo } from 'react';
+import { servicesData2 } from '../../../src/data/ServiceData';
 import Header2 from '@/components/Header2';
 
-(globalThis as any).RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+// FIX: Spelled 'Carpentry' properly to match your data file keys
+const HOME_SERVICE_NAMES = [
+  'Deep Cleaning',
+  'Pressure Washing',
+  'Roof & Futter Cleaning', // Double-check if your database says "Futter" or "Gutter"!
+  'Handyman',
+  'Carpentry', 
+  'Plumbing',
+  'Electrical Repairs',
+  'Flooring Fixes',
+  'Washing Machine Repair'
+];
 
 export default function HomeScreen() {
+  const scrollRef = useRef<ScrollView | null>(null);
+
+  const shuffledServices = useMemo(() => {
+    // Filters items accurately now that strings match case-sensitively
+    const pool = servicesData2.filter((service) => 
+      HOME_SERVICE_NAMES.map(n => n.toLowerCase()).includes(service.name.toLowerCase())
+    );
+    return [...pool].sort(() => Math.random() - 0.5);
+  }, []);
+
   return (
     <View style={styles.screen}>
       <Header2 />
-
-      {/* This replacement component automatically manages inner views smoothly */}
-      <KeyboardAwareScrollView
-        style={styles.scroll}
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid={true}
-        // This adds specific buffer space above the keyboard wall when focused
-        extraScrollHeight={130} 
-        // Prevents layout jumps when shifting between input elements
-        enableAutomaticScroll={true}
       >
-        <Image
-          source={require('../../../assets/home/home.jpeg')}
-          style={styles.banner}
-          resizeMode="cover"
-        />
 
-        <View style={styles.bannerTxt}>
-          <Text style={{ fontWeight: '800', fontSize: hp('2.8%'), color: '#ffffff' }}>RocketSingh</Text>
-          <Text style={{ fontWeight: '800', fontSize: hp('2.3%'), color: '#fff' }}>SuperFast Service</Text>
+        {/* ── HERO ─────────────────────────────────────── */}
+        <View style={styles.hero}>
+          <Image
+            source={require('../../../assets/home/home2.jpeg')}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.08)', 'rgba(18,46,44,0.97)']}
+            style={styles.heroOverlay}
+          >
+            <Text style={styles.heroTitle}>RocketSingh{'\n'}Superfast Services</Text>
+            <Text style={styles.heroSub}>
+              Your trusted home partner, at warp speed.
+            </Text>
+
+            <View style={styles.heroNumberBar}>
+              <NumberBar
+                onFocus={() =>
+                  scrollRef.current?.scrollTo({ y: 420, animated: true })
+                }
+              />
+            </View>
+          </LinearGradient>
         </View>
 
-        <View style={styles.content}>
-          <Text style={styles.title}>RocketSingh | SuperFast Service</Text>
-          <Text style={styles.subtitle}>On Demand Home Service in Chennai</Text>
+        {/* ── TOP SERVICES ──────────────────────────────── */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.featuredCard}
+            activeOpacity={0.88}
+            onPress={() =>
+              router.push({ pathname: '/service/ServiceDetail', params: { id: '1' } })
+            }
+          >
+            <Image
+              source={require('../../../assets/services/cleaningANDexteriorMaintenance/deep-cleaning.jpg')}
+              style={styles.featuredImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(41,92,89,0.92)']}
+              style={styles.featuredGradient}
+            >
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredBadgeText}>Most Popular</Text>
+              </View>
+              <Text style={styles.featuredTitle}>Deep Cleaning</Text>
+              <Text style={styles.featuredSub}>Professional home cleaning service</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-          <Text style={styles.sectionTitle}>Top Services</Text>
-          <View style={styles.row1}>
-            <ServicesCard
-              title="Painting"
-              image={require('../../../assets/services/homeImprovement/painting.jpg')}
-              onPress={() => router.push({ pathname: '/service/ServiceDetail', params: { id: '13' } })}
-            />
-            <ServicesCard
-              title="Plumbing"
-              image={require('../../../assets/services/HomeRepairANDMaintenance/plumbing.jpg')}
-              onPress={() => router.push({ pathname: '/service/ServiceDetail', params: { id: '6' } })}
-            />
-            <ServicesCard
-              title="Tiling"
-              image={require('../../../assets/services/homeImprovement/tiling-work.jpg')}
-              onPress={() => router.push({ pathname: '/service/ServiceDetail', params: { id: '16' } })}
-            />
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>Top Services</Text>
+            <TouchableOpacity onPress={() => router.push('/Service')}>
+              <Text style={styles.seeAll}>See All</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.spacer} />
-
-          <Text style={styles.sectionTitle}>Top Professionals</Text>
-          <View style={styles.row2}>
-            <ProfessionalCard image={require('../../../assets/topProfessionals/1_aravind.jpeg')} title="Aravind" subtitle="" />
-            <ProfessionalCard image={require('../../../assets/topProfessionals/2_anil.jpeg')} title="Anil" subtitle="" />
-            <ProfessionalCard image={require('../../../assets/topProfessionals/3_vallam.jpeg')} title="Vallam" subtitle="" />
-            <ProfessionalCard image={require('../../../assets/topProfessionals/4_subra.jpeg')} title="Subra" subtitle="" />
-          </View>
-
-          <View style={styles.numberBarContainer}>
-            <NumberBar />
-          </View>
+          {/* 9 SHUFFLED CARDS */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            // Use standard contentContainerStyle for row flex behaviors
+            contentContainerStyle={styles.servicesScrollContent}
+          >
+            {shuffledServices.map((service) => (
+              <ServicesCard
+                key={service.id}
+                title={service.name}
+                image={service.image}
+                onPress={() =>
+                  router.push({ pathname: '/service/ServiceDetail', params: { id: String(service.id) } })
+                }
+              />
+            ))}
+          </ScrollView>
         </View>
-      </KeyboardAwareScrollView>
+
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scroll: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    backgroundColor: '#fff',
-    // Keeps a perfect fallback margin so components don't clip the bottom floor
-    paddingBottom: hp('6%'), 
-  },
-  banner: {
-    width: '100%',
-    height: hp('25%'),
-  },
-  bannerTxt: {
+  screen: { flex: 1, backgroundColor: '#F5F9F8' },
+  scrollContent: { flexGrow: 1, paddingBottom: hp('3%') },
+
+  /* HERO */
+  hero: { width: '100%', height: hp('33%'), position: 'relative' },
+  heroImage: { width: '100%', height: '100%' },
+  heroOverlay: {
     position: 'absolute',
-    top: 100,
-    right: 20,
-    zIndex: 9,
+    bottom: 0, left: 0, right: 0,
+    height: '80%',
+    justifyContent: 'flex-end',
+    paddingHorizontal: wp('5%'),
+    paddingBottom: hp('2%'),
+    gap: 5,
   },
-  content: {
-    paddingHorizontal: wp('4%'),
-    paddingTop: 15,
+  heroTitle: {
+    fontSize: wp('6.5%'),
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: wp('8%'),
+    letterSpacing: 0.2,
   },
-  title: {
-    fontSize: wp('5%'),
-    color: '#064E3B',
-    fontWeight: '900',
-    marginBottom: hp('0.5%'),
-    marginTop: hp('1.5%'),
-  },
-  subtitle: {
-    fontSize: wp('3.5%'),
-    color: '#111827',
+  heroSub: {
+    fontSize: wp('3.1%'),
+    color: 'rgba(255,255,255,0.75)',
     fontWeight: '400',
+    marginBottom: hp('0.8%'),
+  },
+  heroNumberBar: { marginTop: 2 },
+
+  /* CATEGORIES */
+  section: { marginTop: hp('1.2%'), paddingHorizontal: wp('4%') },
+  sectionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: hp('1%'),
+  },
+  sectionTitle: { fontSize: wp('4.4%'), fontWeight: '800', color: '#1C2B2A' },
+  seeAll: { fontSize: wp('3.2%'), fontWeight: '600', color: '#295C59' },
+  
+  /* FEATURED CARD */
+  featuredCard: {
+    width: '100%',
+    height: hp('24%'),
+    borderRadius: 18,
+    overflow: 'hidden',
     marginBottom: hp('1.5%'),
+    elevation: 4,
+    shadowColor: '#295C59',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
-  sectionTitle: {
-    fontSize: wp('4.2%'),
-    color: '#064E3B',
-    fontWeight: '900',
-    marginBottom: hp('0.5%'),
-    marginTop: hp('1%'),
+  featuredImage: { width: '100%', height: '100%' },
+  featuredGradient: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    height: '65%',
+    justifyContent: 'flex-end',
+    padding: 14,
+    gap: 2,
   },
-  row1: {
+  featuredBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#295C59',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginBottom: 4,
+  },
+  featuredBadgeText: { fontSize: wp('2.6%'), color: '#fff', fontWeight: '700' },
+  featuredTitle: { fontSize: wp('4.8%'), fontWeight: '800', color: '#fff' },
+  featuredSub: { fontSize: wp('3%'), color: 'rgba(255,255,255,0.80)', fontWeight: '400' },
+
+  /* HORIZONTAL SCROLL ALIGNMENT */
+  servicesScrollContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: hp('0.5%'),
-  },
-  row2: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: hp('0.5%'),
-  },
-  spacer: {
-    height: 15,
-  },
-  numberBarContainer: {
-    marginTop: hp('2%'),
-    marginBottom: hp('2%'),
-    paddingHorizontal: wp('8%'),
-    alignSelf: 'stretch',
+    alignItems: 'center', // Aligns items uniformly on their vertical cross axis
+    paddingVertical: hp('1.5%'),
+    paddingRight: wp('5%'), // Guarantees structural layout trailing space when scrolling to the end
+    gap: wp('3.5%'),
   },
 });

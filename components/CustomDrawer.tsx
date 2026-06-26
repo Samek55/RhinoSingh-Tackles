@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
@@ -15,6 +17,16 @@ import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { auth } from '@/src/firebase/firebaseConfig';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { User } from 'firebase/auth';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Responsive utility to keep scaling intact without text overflowing
+const scaleFont = (size: number) => {
+  const scale = SCREEN_WIDTH / 375; // baseline screen width
+  const newSize = size * scale;
+  return Platform.OS === 'ios' ? Math.round(newSize) : Math.round(newSize) - 1;
+};
 
 export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
@@ -24,13 +36,11 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
   const isActive = (route: string) => pathname === route;
 
-  // Unified routing wrapper that explicitly slides the drawer shut first
   const navigateTo = (route: any) => {
     _props.navigation.closeDrawer();
     router.push(route);
   };
 
-  // 1. Single unified listener for auth changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -47,10 +57,9 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
     return unsubscribe;
   }, []);
 
-  // 2. Handle the Logout Action
   const handleLogout = async () => {
     try {
-      _props.navigation.closeDrawer(); // Close drawer layout container instantly
+      _props.navigation.closeDrawer();
       await signOut(auth);
 
       try {
@@ -84,7 +93,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             source={require('../assets/images/icon.png')}
             style={styles.avatar}
           />
-          <Text style={styles.name}>RocketSingh</Text>
+          <Text style={styles.name} numberOfLines={1}>RocketSingh</Text>
 
           {fbUser && (
             <View style={styles.firebaseAuthContainer}>
@@ -227,19 +236,43 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
   );
 }
 
-/* MENU ITEM */
-function MenuItem({ icon, label, onPress, active }: any) {
+/* MENU ITEM SUB-COMPONENT */
+type MenuItemProps = {
+  icon: any;
+  label: string;
+  onPress: () => void;
+  active: boolean;
+  isLogout?: boolean;
+};
+
+function MenuItem({ icon, label, onPress, active, isLogout }: MenuItemProps) {
+  // Gracefully handles standard text colors vs logout specific styling
+  const getIconColor = () => {
+    if (active) return '#16A34A';
+    if (isLogout) return '#DC2626';
+    return '#333';
+  };
+
   return (
     <TouchableOpacity
-      style={[styles.item, active && styles.itemActive]}
+      style={[
+        styles.item, 
+        active && styles.itemActive,
+        isLogout && styles.itemLogout
+      ]}
       onPress={onPress}
+      activeOpacity={0.7}
     >
       <Ionicons
         name={icon}
-        size={20}
-        color={active ? '#16A34A' : '#333'}
+        size={scaleFont(18)}
+        color={getIconColor()}
       />
-      <Text style={[styles.label, active && styles.labelActive]}>
+      <Text style={[
+        styles.label, 
+        active && styles.labelActive,
+        isLogout && styles.labelLogout
+      ]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -248,17 +281,103 @@ function MenuItem({ icon, label, onPress, active }: any) {
 
 /* STYLES */
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, backgroundColor: 'transparent' },
-  card: { flex: 1, backgroundColor: '#fff', borderRadius: 30, margin: 10, overflow: 'hidden', elevation: 10 },
-  profileBox: { backgroundColor: '#064E3B', paddingVertical: 35, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
-  avatar: { width: 60, height: 60, borderRadius: 30, marginBottom: 10 },
-  name: { fontSize: 20, fontWeight: '700', color: '#fff', textAlign: 'center', marginBottom: 10 },
-  menu: { paddingHorizontal: 15, paddingVertical: 10 },
-  item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 12, marginBottom: 5 },
-  itemActive: { backgroundColor: '#DCFCE7' },
-  label: { marginLeft: 15, fontSize: 14, fontWeight: '500', color: '#333' },
-  labelActive: { color: '#16A34A', fontWeight: '700' },
-  divider: { borderTopWidth: 1, borderColor: '#eee', marginVertical: 10 },
-  firebaseAuthContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFBEB', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: '#FEF3C7', maxWidth: '100%', alignSelf: 'center' },
-  firebaseAuthText: { fontSize: 11, color: '#D97706', fontWeight: '600', textAlign: 'center' },
+  wrapper: { 
+    flex: 1, 
+    backgroundColor: 'transparent' 
+  },
+  card: { 
+    flex: 1, 
+    backgroundColor: '#fff', 
+    borderRadius: wp('6%'), // Fluid rounding
+    margin: wp('2.5%'), 
+    overflow: 'hidden', 
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      }
+    })
+  },
+  profileBox: { 
+    backgroundColor: '#064E3B', 
+    paddingVertical: hp('3.5%'), // Scales perfectly relative to screen height
+    paddingHorizontal: wp('5%'), 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginBottom: hp('1.5%') 
+  },
+  avatar: { 
+    width: Math.min(hp('7.5%'), 70), // Caps asset scales so it looks clean on tablets
+    height: Math.min(hp('7.5%'), 70), 
+    borderRadius: Math.min(hp('7.5%'), 70) / 2, 
+    marginBottom: 10 
+  },
+  name: { 
+    fontSize: scaleFont(18), 
+    fontWeight: '700', 
+    color: '#fff', 
+    textAlign: 'center', 
+    marginBottom: 8 
+  },
+  menu: { 
+    paddingHorizontal: wp('4%'), 
+    paddingBottom: hp('3%') // Ensures enough bottom space on screens without virtual home indicators
+  },
+  item: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingVertical: hp('1.4%'), // Dynamic item height matching touch targets
+    paddingHorizontal: wp('3%'), 
+    borderRadius: 12, 
+    marginBottom: 4 
+  },
+  itemActive: { 
+    backgroundColor: '#DCFCE7' 
+  },
+  itemLogout: {
+    backgroundColor: '#FEF2F2', // Soft red backplane for explicit logout actions
+  },
+  label: { 
+    marginLeft: wp('4%'), 
+    fontSize: scaleFont(13.5), 
+    fontWeight: '500', 
+    color: '#333' 
+  },
+  labelActive: { 
+    color: '#16A34A', 
+    fontWeight: '700' 
+  },
+  labelLogout: {
+    color: '#DC2626',
+    fontWeight: '600'
+  },
+  divider: { 
+    borderTopWidth: 1, 
+    borderColor: '#f3f4f6', 
+    marginVertical: hp('1.2%') 
+  },
+  firebaseAuthContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    backgroundColor: '#FFFBEB', 
+    paddingVertical: 5, 
+    paddingHorizontal: 10, 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: '#FEF3C7', 
+    maxWidth: '95%', 
+    alignSelf: 'center' 
+  },
+  firebaseAuthText: { 
+    fontSize: scaleFont(10.5), 
+    color: '#D97706', 
+    fontWeight: '600', 
+    textAlign: 'center' 
+  },
 });
