@@ -14,7 +14,7 @@
     },
     "android": {
       "googleServicesFile": "./google-services.json",
-      "softwareKeyboardLayoutMode": "resize",
+      "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {
         "backgroundColor": "#dcdcdc",
         "foregroundImage": "./assets/images/android-icon-foreground.png"

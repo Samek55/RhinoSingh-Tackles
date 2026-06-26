@@ -18,7 +18,7 @@ import Header2 from '@/components/Header2';
 
 export default function AboutScreen() {
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <Header2 />
 
       <ScrollView
@@ -37,13 +37,13 @@ export default function AboutScreen() {
             />
           </View>
 
-          {/* CONTENT */}
+          {/* CONTENT CONTAINER - Stretches edge to edge */}
           <View style={styles.content}>
 
             <Text style={styles.title}>Our Story</Text>
 
             <Text style={styles.subtitle}>
-              ROCKETSINGH is an on-demand hyperlocal service platform delivering fast, reliable, and professional home services across India, powered by skilled and trained professionals available 24 hours a day, 365 days a year.
+              ROCKSETSINGH is an on-demand hyperlocal service platform delivering fast, reliable, and professional home services across India, powered by skilled and trained professionals available 24 hours a day, 365 days a year.
             </Text>
 
             <Text style={styles.lineheighpara}>
@@ -55,7 +55,7 @@ export default function AboutScreen() {
             </Text>
 
             {/* TEAM */}
-            <View style={{ height: 18 }} />
+            <View style={{ height: 24 }} />
 
             <Text style={styles.title}>Our Team</Text>
 
@@ -69,7 +69,7 @@ export default function AboutScreen() {
               <OurTeamCard
                 image={require('../../../assets/aboutUs/2_raju.jpeg')}
                 title="Raju"
-                suBTitle="CEP"
+                suBTitle="CEO"
               />
 
               <OurTeamCard
@@ -108,37 +108,45 @@ const styles = StyleSheet.create({
   },
 
   content: {
+    // Left and right padding define the exact boundaries of your text blocks
     paddingHorizontal: wp('5%'),
     paddingTop: hp('2.5%'),
+    alignItems: 'stretch', 
   },
 
   title: {
     fontSize: wp('5.2%'),
     color: '#064E3B',
     fontWeight: '900',
-    marginBottom: 4,
+    marginBottom: 6,
+    width: '100%',
   },
 
   subtitle: {
-    fontSize: wp('3.7%'),
+    width: '100%',
+    fontSize: wp('3.7%'), // ~14px on average devices
     color: 'hsl(0, 0%, 15%)',
     fontWeight: '400',
-    lineHeight: 19,
+    lineHeight: 22, // Increases spacing to allow text to breath naturally across lines
     marginTop: 10,
+    textAlign: 'justify', // Restores natural left alignment without awkward gaping
   },
 
   lineheighpara: {
+    width: '100%',
     fontSize: wp('3.7%'),
     color: 'hsl(0, 0%, 15%)',
     fontWeight: '400',
-    paddingTop: 8,
-    lineHeight: 19,
+    paddingTop: 12,
+    lineHeight: 22, // Keeps paragraph spacing uniform with the subtitle block
+    textAlign: 'justify',
   },
 
   row: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: hp('0.5%'),
-    marginBottom: '5%',
+    justifyContent: 'space-between', 
+    width: '100%',
+    marginVertical: hp('1.5%'),
+    marginBottom: '8%',
   },
 });

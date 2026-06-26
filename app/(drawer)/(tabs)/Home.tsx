@@ -64,7 +64,7 @@ export default function HomeScreen() {
           >
             <Text style={styles.heroTitle}>RocketSingh{'\n'}Superfast Services</Text>
             <Text style={styles.heroSub}>
-              Your trusted home partner, at warp speed.
+              Trusted Homeservice at Rocket Speed.
             </Text>
 
             <View style={styles.heroNumberBar}>

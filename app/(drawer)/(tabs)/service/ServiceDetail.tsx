@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
 
   description: {
     fontWeight: '500',
+    textAlign:'justify'
   },
 
   question: {
@@ -204,6 +205,7 @@ const styles = StyleSheet.create({
 
   answer: {
     fontWeight: '500',
+    textAlign:'justify'
   },
 
   otherServicesTitle: {

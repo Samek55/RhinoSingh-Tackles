@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
     paddingBottom: hp('4%'),
   },
   rowSeparator: {
-    height: hp('2.5%'), 
+    height: hp('4%'), 
   },
   pairRow: {
     flexDirection: 'row',

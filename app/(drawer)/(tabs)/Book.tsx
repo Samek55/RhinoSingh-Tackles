@@ -10,8 +10,9 @@ import {
   Dimensions,
   Image,
   Pressable,
-  ActivityIndicator, // Added for loading state during API check
+  ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Dropdown from '../../../components/bookings/Dropdown';
 import { area, services, shifts, budget, priority } from '../../../src/data/Data';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -23,26 +24,26 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
-import ClearFormIcon from '../../../assets/icons/booking/clear.png'
+import ClearFormIcon from '../../../assets/icons/booking/clear.png';
 
 const { width, height } = Dimensions.get('window');
 
 const Button = ({ children, style, textStyle, onPress, disabled }: any) => {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} disabled={disabled}>
-      <LinearGradient
-        colors={disabled ? ['#9ca3af', '#6b7280', '#4b5563'] : ['#047857', '#15803d', '#65a30d']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={[styles.button1, style]}
-      >
-        <Text style={[styles.text, textStyle]}>
-          {children}
-        </Text>
-      </LinearGradient>
+    <TouchableOpacity 
+      onPress={onPress} 
+      activeOpacity={0.85} 
+      disabled={disabled}
+      style={[
+        styles.submitBtn, 
+        style
+      ]}
+    >
+      <Text style={[styles.submitBtnText, textStyle]}>
+        {children}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -86,70 +87,9 @@ export default function ServiceBookingScreen() {
     );
   };
 
-  // 🛠️ Function to check daily limit from Airtable
-  const BASE_URL = process.env.EXPO_PUBLIC_AIRTABLE_API_URL_BOOKING;
-  const TOKEN = process.env.EXPO_PUBLIC_AIRTABLE_TOKEN;
-
-  /**
-   * Checks if a specific phone number has reached the maximum allowance 
-   * of 5 bookings for today's date.
-   */
-  /**
-   * Checks if a specific phone number has reached the maximum allowance 
-   * of 5 bookings for today's current calendar date.
-   */
-  const checkDailyBookingLimit = async (phoneNumber: string): Promise<boolean> => {
-    try {
-      if (!BASE_URL || !TOKEN) {
-        console.warn("Airtable environment configuration is missing.");
-        return false;
-      }
-
-      // 1. Get today's local date (ignoring UTC timezone offsets)
-      const localDate = new Date();
-      const year = localDate.getFullYear();
-      const month = String(localDate.getMonth() + 1).padStart(2, '0'); // Ensures 2 digits e.g. "06"
-      const day = String(localDate.getDate()).padStart(2, '0');        // Ensures 2 digits e.g. "13"
-
-      // Generates standard "2026-06-13" string structure accepted universally by dates
-      const todayStr = `${year}-${month}-${day}`;
-
-      // 2. Build the Airtable Formula 
-      // This looks at your exact {Phone} string and extracts the date part of {Service Booking Date & Time *} 
-      // to compare it to today's date stamp.
-      const formula = `AND({Phone} = '${phoneNumber}', DATETIME_FORMAT({Service Booking Date & Time *}, 'YYYY-MM-DD') = '${todayStr}')`;
-
-      // 3. Append the formula as a URL query parameter
-      const requestUrl = `${BASE_URL}?filterByFormula=${encodeURIComponent(formula)}`;
-
-      const response = await fetch(requestUrl, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log("Airtable Rate Limit Check Error:", data);
-        return false; // Fail open to keep app usable if network drops
-      }
-
-      // If Airtable returns 5 or more rows for today, block them!
-      return data.records.length >= 5;
-
-    } catch (error) {
-      console.log("Rate Limit Check Fetch Error:", error);
-      return false;
-    }
-  };
-
   const handleSubmit = async () => {
     const cleanNumber = number.replace(/\s/g, '');
 
-    // Standard Form Field Validations
     if (!name.trim()) { return Alert.alert('Validation Error', 'Full Name is required'); }
     if (!cleanNumber || cleanNumber.length !== 10) { return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number'); }
     if (!selectedService) { return Alert.alert('Validation Error', 'Please select a service'); }
@@ -158,21 +98,8 @@ export default function ServiceBookingScreen() {
     if (!selectedArea) { return Alert.alert('Validation Error', 'Please select your location'); }
     if (!selectedBudget.trim()) { return Alert.alert('Validation Error', 'Budget cannot be empty'); }
     if (!selectedPriority.trim()) { return Alert.alert('Validation Error', 'Please choose a Priority'); }
-    if (!message.trim()) { return Alert.alert('Validation Error', 'Message cannot be empty'); }
 
     setIsSubmitting(true);
-
-    // 🚀 Airtable Rate Limit Check Execution
-    // const isLimitReached = await checkDailyBookingLimit(cleanNumber);
-
-    // if (isLimitReached) {
-    //   setIsSubmitting(false);
-    //   Alert.alert(
-    //     'Limit Reached',
-    //     'This phone number has reached the maximum allowance of 5 bookings for today. Please try again tomorrow.'
-    //   );
-    //   return;
-    // }
 
     try {
       router.push({
@@ -198,7 +125,7 @@ export default function ServiceBookingScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'teal' }}>
+    <LinearGradient colors={['#064E3B', '#022C22']} style={styles.screen}>
       <Header2 />
       <KeyboardAwareScrollView
         ref={scrollRef}
@@ -212,11 +139,14 @@ export default function ServiceBookingScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Book a Service</Text>
+          <View style={styles.titleArea}>
+            <Text style={styles.title}>Book a Service</Text>
+            <Text style={styles.subtitle}>Fill out the parameters below to arrange your request</Text>
+          </View>
 
-          <View style={styles.inputGroup}>
+          <View style={styles.inputCard}>
             {/* Full Name */}
-            <Text style={styles.label}>Full Name<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Full Name<Text style={styles.required}> *</Text></Text>
             <TextInput
               placeholder="Enter your Full Name"
               value={name}
@@ -224,13 +154,13 @@ export default function ServiceBookingScreen() {
               onFocus={() => setActiveInput('name')}
               onBlur={() => setActiveInput(null)}
               style={[styles.input, activeInput === 'name' && styles.inputActive]}
-              placeholderTextColor={'#4B4B4B'}
+              placeholderTextColor={'#9CA3AF'}
             />
 
             {/* Phone Number */}
-            <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
             <View style={styles.phoneContainer}>
-              <Image source={countryLogo} style={styles.icon} resizeMode="contain" />
+              <Image source={countryLogo} style={styles.countryIcon} resizeMode="contain" />
               <TextInput
                 placeholder="Enter your Phone Number"
                 value={number}
@@ -250,25 +180,25 @@ export default function ServiceBookingScreen() {
                 }}
                 keyboardType="number-pad"
                 style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}
-                placeholderTextColor={'#4B4B4B'}
+                placeholderTextColor={'#9CA3AF'}
               />
             </View>
 
             {/* Select Service */}
-            <Text style={styles.label}>Select Service<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Select Service<Text style={styles.required}> *</Text></Text>
             <Dropdown
               value={selectedService}
               options={services}
               placeholder="Select Services"
-              placeholderColor="#4B4B4B"
+              placeholderColor="#9CA3AF"
               onSelectOption={setSelectedService}
               onOpen={() => setActiveInput('service')}
               onClose={() => setActiveInput(null)}
             />
 
             {/* Choose Date */}
-            <Text style={styles.label}>Choose Date<Text style={{ color: 'red' }}>*</Text></Text>
-            <View style={{ marginBottom: height * 0.025 }}>
+            <Text style={styles.label}>Choose Date<Text style={styles.required}> *</Text></Text>
+            <View style={{ marginBottom: height * 0.02 }}>
               <TouchableOpacity
                 onPress={() => {
                   setShow(true);
@@ -276,38 +206,36 @@ export default function ServiceBookingScreen() {
                 }}
                 style={[styles.datePicker, activeInput === 'date' && styles.inputActive]}
               >
-                <Text style={[styles.datePickerText, { color: date ? '#1A1A1A' : '#4B4B4B' }]}>
+                <Text style={[styles.datePickerText, { color: date ? '#111827' : '#9CA3AF' }]}>
                   {date ? date.toDateString() : 'Pick a Date'}
                 </Text>
                 <Image
                   source={CalenderIcon}
-                  style={[styles.calendarIcon, activeInput === 'date' && { tintColor: '#2F6BFF' }]}
+                  style={[styles.calendarIcon, { tintColor: activeInput === 'date' ? '#10B981' : '#6B7280' }]}
                 />
               </TouchableOpacity>
 
               {show && (
-                <View>
-                  <DateTimePicker
-                    value={date || new Date()}
-                    mode="date"
-                    display="default"
-                    minimumDate={new Date()}
-                    onChange={(event, selectedDate) => {
-                      setShow(Platform.OS === 'ios');
-                      if (Platform.OS === 'android') { setActiveInput(null); }
-                      if (event.type === 'set' && selectedDate) { setDate(selectedDate); }
-                    }}
-                  />
-                </View>
+                <DateTimePicker
+                  value={date || new Date()}
+                  mode="date"
+                  display="default"
+                  minimumDate={new Date()}
+                  onChange={(event, selectedDate) => {
+                    setShow(Platform.OS === 'ios');
+                    if (Platform.OS === 'android') { setActiveInput(null); }
+                    if (event.type === 'set' && selectedDate) { setDate(selectedDate); }
+                  }}
+                />
               )}
             </View>
 
             {/* Preferred Time */}
-            <Text style={styles.label}>Preferred Time<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Preferred Time<Text style={styles.required}> *</Text></Text>
             <Dropdown
               options={shifts}
               placeholder="Choose a Shift"
-              placeholderColor="#4B4B4B"
+              placeholderColor="#9CA3AF"
               onSelectOption={setSelectedShift}
               dropdownType="shift"
               onOpen={() => setActiveInput('shift')}
@@ -316,11 +244,11 @@ export default function ServiceBookingScreen() {
             />
 
             {/* Your Location */}
-            <Text style={styles.label}>Your Location<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Your Location<Text style={styles.required}> *</Text></Text>
             <Dropdown
               options={area}
-              placeholder="Select your location"
-              placeholderColor="#4B4B4B"
+              placeholder="Select your Location"
+              placeholderColor="#9CA3AF"
               onSelectOption={setSelectedArea}
               onOpen={() => setActiveInput('location')}
               onClose={() => setActiveInput(null)}
@@ -328,11 +256,11 @@ export default function ServiceBookingScreen() {
             />
 
             {/* Priority */}
-            <Text style={styles.label}>Priority<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Priority<Text style={styles.required}> *</Text></Text>
             <Dropdown
               options={priority}
               placeholder="Select Priority"
-              placeholderColor="#4B4B4B"
+              placeholderColor="#9CA3AF"
               onSelectOption={setSelectedPriority}
               value={selectedPriority}
               onOpen={() => setActiveInput('priority')}
@@ -340,25 +268,25 @@ export default function ServiceBookingScreen() {
             />
 
             {/* Select Budget */}
-            <Text style={styles.label}>Select Budget<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Select Budget<Text style={styles.required}> *</Text></Text>
             <Dropdown
               value={selectedBudget}
               options={budget}
               placeholder="Select Budget"
-              placeholderColor="#4B4B4B"
+              placeholderColor="#9CA3AF"
               onSelectOption={setSelectedBudget}
               onOpen={() => setActiveInput('budget')}
               onClose={() => setActiveInput(null)}
             />
 
             {/* Message */}
-            <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
+            <Text style={styles.label}>Message</Text>
             <TextArea
               value={message}
               onChangeText={setMessage}
-              placeholder=""
-              placeholderTextColor="#4B4B4B"
-              maxHeight={160}
+              placeholder="Provide specific notes or special context here..."
+              placeholderTextColor="#9CA3AF"
+              maxHeight={140}
               onFocus={() => setActiveInput('message')}
               onBlur={() => setActiveInput(null)}
               style={activeInput === 'message' ? styles.inputActive : undefined}
@@ -367,15 +295,14 @@ export default function ServiceBookingScreen() {
             {/* Submit Button */}
             <View style={styles.buttonPadding}>
               <Button
-                style={styles.button1}
-                textStyle={{ color: 'white', textAlign: 'center' }}
                 onPress={handleSubmit}
-                disabled={isSubmitting} // Disable during lookup to prevent spam taps
+                disabled={isSubmitting}
               >
                 {isSubmitting ? <ActivityIndicator color="#fff" size="small" /> : 'SUBMIT'}
               </Button>
             </View>
 
+            {/* Clear Form Option */}
             <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
               <Image source={ClearFormIcon} style={styles.clearIcon} />
               <Text style={styles.buttonClear}>Clear form</Text>
@@ -384,29 +311,160 @@ export default function ServiceBookingScreen() {
           </View>
         </View>
       </KeyboardAwareScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
-// ... styles remain unchanged ...
 const styles = StyleSheet.create({
-  container: { backgroundColor: '#064E3B', flexGrow: 1 },
-  formContainer: { paddingHorizontal: width * 0.05, paddingTop: height * 0.02, backgroundColor: '#064E3B' },
-  title: { fontSize: width * 0.06, fontWeight: '700', color: 'white', paddingLeft: 8, marginBottom: 10 },
-  inputGroup: { marginTop: height * 0.015, padding: 20, borderRadius: 20, backgroundColor: '#fff', elevation: 10, marginBottom: height * 0.05 },
-  input: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: width * 0.035, height: height * 0.055, marginBottom: height * 0.02, fontSize: width * 0.035, fontWeight: '500', borderColor: '#E2E8F0', color: '#1A1A1A', backgroundColor: '#fff' },
-  inputActive: { borderColor: 'hsl(142, 71%, 45%)', backgroundColor: '#F4F7FF' },
-  phoneContainer: { position: 'relative', justifyContent: 'center', marginBottom: height * 0.02 },
-  icon: { width: wp('7%'), height: hp('3%'), position: 'absolute', left: 10, zIndex: 2 },
-  phoneInput: { borderWidth: 1.5, borderRadius: 12, borderColor: '#E2E8F0', height: height * 0.055, paddingLeft: wp('12%'), paddingRight: 10, fontSize: width * 0.035, fontWeight: '500', color: '#1A1A1A', backgroundColor: '#fff' },
-  datePicker: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 12, paddingHorizontal: width * 0.035, height: height * 0.055, justifyContent: 'space-between', backgroundColor: '#fff' },
-  datePickerText: { fontSize: width * 0.035, fontWeight: '500', color: '#4a4a4a' },
-  label: { marginBottom: hp('0.6%'), paddingLeft: wp('1%'), fontSize: wp('3.5%'), fontWeight: '600', color: '#4A4A4A' },
-  calendarIcon: { height: hp('2.5%'), width: hp('2.5%'), resizeMode: 'contain' },
-  buttonPadding: { paddingBottom: 10, alignItems: 'center' },
-  button1: { width: width * 0.4, height: height * 0.06, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', borderRadius: 10, marginTop: 25 },
-  text: { color: '#fff', fontSize: width * 0.04, fontWeight: '600' },
-  buttonClearFlex: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, marginTop: 20, paddingRight: 10, justifyContent: 'center' },
-  buttonClear: { color: '#0a7de1', fontSize: width * 0.038, fontWeight: '500' },
-  clearIcon: { width: wp('6%'), height: hp('2.5%'), resizeMode: 'contain', marginRight: 2 },
+  screen: { 
+    flex: 1, 
+  },
+  container: { 
+    flexGrow: 1, 
+  },
+  formContainer: { 
+    paddingHorizontal: width * 0.05, 
+    paddingTop: height * 0.015,
+  },
+  titleArea: {
+    paddingBottom: hp('2.5%'),
+    paddingHorizontal: 4,
+  },
+  title: { 
+    fontSize: width * 0.07, 
+    fontWeight: '800', 
+    color: '#FFFFFF', 
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: width * 0.034,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '400',
+  },
+  inputCard: { 
+    paddingHorizontal: wp('5%'),
+    paddingVertical: hp('3%'), 
+    borderRadius: 24, 
+    backgroundColor: '#FFFFFF', 
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8, 
+    marginBottom: hp('6%'),
+  },
+  label: { 
+    marginBottom: hp('0.8%'), 
+    paddingLeft: 2, 
+    fontSize: wp('3.6%'), 
+    fontWeight: '600', 
+    color: '#374151', // Gray 700
+  },
+  required: { 
+    color: '#EF4444', // Warm red
+  },
+  input: { 
+    borderWidth: 1.5, 
+    borderRadius: 14, 
+    paddingHorizontal: width * 0.04, 
+    height: hp('6%'), 
+    marginBottom: height * 0.02, 
+    fontSize: wp('3.8%'), 
+    fontWeight: '500', 
+    borderColor: '#E5E7EB', // Gray 200
+    color: '#111827', 
+    backgroundColor: '#FFFFFF',
+  },
+  inputActive: { 
+    borderColor: '#10B981', // Matching active Emerald tone
+    backgroundColor: '#F0FDF4', // Emerald-tinted light fill
+  },
+  phoneContainer: { 
+    position: 'relative', 
+    justifyContent: 'center', 
+    marginBottom: height * 0.02,
+  },
+  countryIcon: { 
+    width: wp('7%'), 
+    height: hp('3%'), 
+    position: 'absolute', 
+    left: 14, 
+    zIndex: 2,
+  },
+  phoneInput: { 
+    borderWidth: 1.5, 
+    borderRadius: 14, 
+    borderColor: '#E5E7EB', 
+    height: hp('6%'), 
+    paddingLeft: wp('14%'), 
+    paddingRight: 14, 
+    fontSize: wp('3.8%'), 
+    fontWeight: '500', 
+    color: '#111827', 
+    backgroundColor: '#FFFFFF',
+  },
+  datePicker: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1.5, 
+    borderColor: '#E5E7EB', 
+    borderRadius: 14, 
+    paddingHorizontal: width * 0.04, 
+    height: hp('6%'), 
+    justifyContent: 'space-between', 
+    backgroundColor: '#FFFFFF',
+  },
+  datePickerText: { 
+    fontSize: wp('3.8%'), 
+    fontWeight: '500',
+  },
+  calendarIcon: { 
+    height: 20, 
+    width: 20, 
+    resizeMode: 'contain',
+  },
+  buttonPadding: { 
+    marginTop: hp('2%'), 
+    alignItems: 'center', 
+    width: '100%',
+  },
+  submitBtn: { 
+    width: '50%', 
+    height: hp('6.5%'), 
+    backgroundColor: '#064E3B', // Emerald accent primary
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderRadius: 16,
+    shadowColor: '#064E3B',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  submitBtnText: { 
+    color: '#FFFFFF', 
+    fontSize: wp('4.2%'), 
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  buttonClearFlex: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: hp('2%'), 
+    justifyContent: 'center',
+    padding: 8,
+  },
+  buttonClear: {  
+    fontSize: wp('3.6%'), 
+    fontWeight: '600', 
+    color: '#6B7280',
+  },
+  clearIcon: { 
+    width: 18, 
+    height: 18, 
+    tintColor: '#9CA3AF', 
+    resizeMode: 'contain', 
+    marginRight: 6,
+  },
 });

@@ -164,7 +164,7 @@ export default function AdminChangePassword() {
                         </View>
 
                         <View style={styles.mainBtn}>
-                            <TouchableOpacity style={styles.CancelButton} onPress={() => router.push('/Admin')}>
+                            <TouchableOpacity style={styles.CancelButton} onPress={() => router.push('/(drawer)/admin/UpdateProfile')}>
                                 <Text style={styles.CancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.loginButton} onPress={handleSubmit}>

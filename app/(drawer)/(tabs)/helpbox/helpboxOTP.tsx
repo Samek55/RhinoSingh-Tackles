@@ -20,6 +20,7 @@ import Header2 from '@/components/Header3drawer';
 // 1. MODULAR SDK IMPORTS
 import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
 import { globalFirebaseConfirmation } from '../../../../components/home/NumberBar'; 
+import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 
 const scaleFont = (size: number) => {
     const guidelineBaseWidth = 375;
@@ -95,10 +96,10 @@ export default function HelpboxOTP() {
             await globalFirebaseConfirmation.confirm(enteredOtp);
 
             const booking = {
-                "Phone": phone,
+                "phone": phone,
             };
 
-            await createHelpbox(booking);
+            await createHelpboxSB(booking);
             router.push('/helpbox/otpVerifiedHB');
 
         } catch (error: any) {

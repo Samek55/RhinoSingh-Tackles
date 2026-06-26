@@ -23,12 +23,12 @@ import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
 // 2. EXPORT THE MEMORY HOLDER VARIABLE FOR SCREEN ORCHESTRATION
 export let globalBookingFirebaseConfirmation: any = null;
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const Row = ({ label, value }: { label: string; value: string }) => (
   <View style={styles.row}>
     <Text style={styles.rowLabel}>{label}</Text>
-    <Text style={styles.rowValue}>{value}</Text>
+    <Text style={styles.rowValue}>{value || '—'}</Text>
   </View>
 );
 
@@ -56,7 +56,6 @@ export default function BookingDetails() {
     : '';
 
   const handleSubmit = async () => {
-    // Aggressively clean string to extract pure digits
     const cleanNumber = String(number || '').replace(/[^0-9]/g, '');
 
     if (cleanNumber.length !== 10) {
@@ -71,20 +70,17 @@ export default function BookingDetails() {
       const formattedPhone = '+977' + cleanNumber;
       console.log("Initializing Firebase SMS to:", formattedPhone);
 
-      // 3. EXECUTE THE MODULAR API CHALLENGE SIGN-IN
       const authInstance = getAuth();
       const confirmation = await signInWithPhoneNumber(authInstance, formattedPhone);
-      
-      // Save verification session
-      globalBookingFirebaseConfirmation = confirmation;
 
+      globalBookingFirebaseConfirmation = confirmation;
       setOverlayVisible(false);
 
       router.push({
         pathname: '/booking/BookingOtp',
         params: {
           name,
-          number: cleanNumber, // pass down clean string safely
+          number: cleanNumber,
           selectedService,
           selectedShift,
           selectedArea,
@@ -103,7 +99,7 @@ export default function BookingDetails() {
   };
 
   return (
-    <View style={styles.screen}>
+    <LinearGradient colors={['#064E3B', '#022C22']} style={styles.screen}>
       <Header2 />
       <SubmitOverlay
         visible={overlayVisible}
@@ -139,66 +135,154 @@ export default function BookingDetails() {
           <Row label="Priority" value={selectedPriority as string} />
           <View style={styles.divider} />
           <Row label="Budget" value={selectedBudget as string} />
+          
           {message ? (
             <>
               <View style={styles.divider} />
               <View style={styles.messageBlock}>
-                <Text style={styles.rowLabel}>Message</Text>
+                <Text style={styles.messageLabel}>Special Instructions</Text>
                 <Text style={styles.messageText}>{message}</Text>
               </View>
             </>
           ) : null}
         </View>
 
-        <TouchableOpacity onPress={handleSubmit} activeOpacity={0.85}>
-          <LinearGradient
-            colors={['#047857', '#15803d', '#65a30d']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.confirmBtn}
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity 
+            onPress={handleSubmit} 
+            style={styles.confirmBtn} 
+            activeOpacity={0.9}
           >
             <Text style={styles.confirmBtnText}>Confirm Booking</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => router.replace('/Book')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backBtnText}>Edit Booking</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.replace('/Book')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backBtnText}>Edit Details</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: 'teal' },
-  container: { paddingHorizontal: width * 0.05, paddingBottom: hp('6%') },
-  titleArea: { paddingTop: hp('3%'), paddingBottom: hp('2%'), paddingHorizontal: 4 },
-  title: { fontSize: width * 0.065, fontWeight: '700', color: '#fff', marginBottom: 5 },
-  subtitle: { fontSize: width * 0.033, color: 'rgba(255,255,255,0.78)', fontWeight: '400' },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingHorizontal: wp('5%'),
-    paddingVertical: 4,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    marginBottom: hp('3%'),
+  screen: { 
+    flex: 1, 
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: hp('1.8%') },
-  rowLabel: { fontSize: wp('3.5%'), color: '#999', fontWeight: '500', flex: 1 },
-  rowValue: { fontSize: wp('3.5%'), color: '#111', fontWeight: '600', flex: 1.6, textAlign: 'right' },
-  messageBlock: { paddingVertical: hp('1.8%'), gap: 6 },
-  messageText: { fontSize: wp('3.5%'), color: '#444', fontWeight: '500', lineHeight: 20 },
-  divider: { height: 1, backgroundColor: '#f2f2f2' },
-  confirmBtn: { height: hp('6.5%'), borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: hp('1.8%') },
-  confirmBtnText: { color: '#fff', fontSize: wp('4.2%'), fontWeight: '700', letterSpacing: 0.4 },
-  backBtn: { height: hp('6.5%'), borderRadius: 12, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)' },
-  backBtnText: { color: '#fff', fontSize: wp('4.2%'), fontWeight: '600' },
+  container: { 
+    paddingHorizontal: width * 0.05, 
+    paddingBottom: hp('6%'),
+  },
+  titleArea: { 
+    paddingTop: hp('2.5%'), 
+    paddingBottom: hp('3%'), 
+    paddingHorizontal: 4,
+  },
+  title: { 
+    fontSize: width * 0.07, 
+    fontWeight: '800', 
+    color: '#FFFFFF', 
+    marginBottom: 6,
+    letterSpacing: -0.5,
+  },
+  subtitle: { 
+    fontSize: width * 0.036, 
+    color: 'rgba(255, 255, 255, 0.7)', 
+    fontWeight: '400',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingHorizontal: wp('5%'),
+    paddingVertical: hp('1%'),
+    // Soft, premium shadow system
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+    marginBottom: hp('4%'),
+  },
+  row: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingVertical: hp('2%'),
+  },
+  rowLabel: { 
+    fontSize: wp('3.6%'), 
+    color: '#6B7280', // Tailwind Gray 500
+    fontWeight: '500', 
+    flex: 1,
+  },
+  rowValue: { 
+    fontSize: wp('3.8%'), 
+    color: '#111827', // Tailwind Gray 900
+    fontWeight: '600', 
+    flex: 1.8, 
+    textAlign: 'right',
+  },
+  divider: { 
+    height: 1, 
+    backgroundColor: '#F3F4F6', // Crisp subtle separation 
+  },
+  messageBlock: { 
+    paddingVertical: hp('2%'), 
+    gap: 6,
+  },
+  messageLabel: {
+    fontSize: wp('3.6%'), 
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  messageText: { 
+    fontSize: wp('3.6%'), 
+    color: '#374151', 
+    fontWeight: '400', 
+    lineHeight: 22,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  buttonGroup: {
+    gap: hp('1.5%'),
+  },
+  confirmBtn: { 
+    backgroundColor: 'green', // Clean Emerald Green accent
+    height: hp('6.5%'), 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  confirmBtnText: { 
+    color: '#FFFFFF', 
+    fontSize: wp('4.2%'), 
+    fontWeight: '700', 
+    letterSpacing: 0.2,
+  },
+  backBtn: { 
+    height: hp('6.5%'), 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    borderWidth: 1.5, 
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  backBtnText: { 
+    color: '#FFFFFF', 
+    fontSize: wp('4.2%'), 
+    fontWeight: '600',
+  },
 });

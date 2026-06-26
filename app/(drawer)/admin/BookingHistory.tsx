@@ -32,7 +32,7 @@ export default function BookingHistory() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
-    const [filter, setFilter] = useState('New / Open');
+    const [filter, setFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
     const lastDataRef = useRef<string>('');
@@ -164,9 +164,9 @@ export default function BookingHistory() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
             >
                 <View style={styles.headerRow}>
-                    <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
+                    {/* <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
                         <Image source={leftArrowIcon} style={styles.backBtn} />
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                     <Text style={styles.title}>Booking History</Text>
                 </View>
 
