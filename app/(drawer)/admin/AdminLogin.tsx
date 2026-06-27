@@ -37,20 +37,26 @@ const scaleFont = (size: number) => {
 export default function AdminLogin() {
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [phoneNumber, setphoneNumber] = useState<string>('');
-    
+
     // Using the 6-box input to construct our 6-digit PIN password
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const inputs = useRef<Array<TextInput | null>>([]);
 
     const handleChange = (text: string, index: number) => {
-        if (!/^\d*$/.test(text)) return; // only numbers
+        const cleanedText = text.replace(/[^0-9]/g, '');
 
         const newOtp = [...otp];
-        newOtp[index] = text.slice(-1);
+        newOtp[index] = cleanedText.slice(-1);
         setOtp(newOtp);
 
-        if (text && index < 5) {
+        // Moving FORWARD
+        if (cleanedText && index < 5) {
             inputs.current[index + 1]?.focus();
+        }
+
+        // Moving BACKWARD (Fixes Android APK sticking when deleting)
+        if (text === '' && index > 0) {
+            inputs.current[index - 1]?.focus();
         }
     };
 
@@ -125,16 +131,16 @@ export default function AdminLogin() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled">
-                    
+
                     <Text style={styles.title}>RocketSingh</Text>
                     <Text style={styles.subtitle}>Admin Login</Text>
-                    
+
                     <View style={styles.formContainer}>
                         <Text style={styles.welcomeText}>Sign in</Text>
 
                         {/* Phone Number Input */}
                         <View style={styles.inputContainer}>
-                            <Image source={PhoneIcon} style={{ width: 30, height: 30}} />
+                            <Image source={PhoneIcon} style={{ width: 30, height: 30 }} />
                             <TextInput
                                 placeholder="Phone Number"
                                 placeholderTextColor={'rgba(67, 67, 67,0.4)'}
@@ -147,6 +153,7 @@ export default function AdminLogin() {
                                     cleaned = cleaned.slice(0, 10);
                                     setphoneNumber(cleaned);
                                 }}
+                                maxLength={10}
                             />
                         </View>
 
@@ -172,7 +179,8 @@ export default function AdminLogin() {
                                         ref={(ref) => {
                                             inputs.current[index] = ref;
                                         }}
-                                        value={value}
+                                        // If hidden and value exists, show a bullet point instead of nothing
+                                        value={!passwordVisible && value ? '*' : value}
                                         onChangeText={(text) => handleChange(text, index)}
                                         onKeyPress={({ nativeEvent }) => {
                                             if (nativeEvent.key === "Backspace") {
@@ -181,7 +189,7 @@ export default function AdminLogin() {
                                         }}
                                         keyboardType="number-pad"
                                         maxLength={1}
-                                        secureTextEntry={!passwordVisible}
+                                        // secureTextEntry={!passwordVisible} <-- Remove this completely
                                         style={styles.box}
                                     />
                                 ))}

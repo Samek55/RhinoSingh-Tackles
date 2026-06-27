@@ -217,7 +217,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             <MenuItem
               icon={isActive('/admin/AdminLogin') ? "shield-checkmark" : "shield-checkmark-outline"}
               label="Admin"
-              active={isActive('/admin/AdminLogin')}
+              active={false}
               onPress={() => navigateTo('/Admin')}
             />
           )}

@@ -198,6 +198,7 @@ export default function PartnershipScreen() {
             onBlur={() => setActiveInput(null)}
             style={[styles.input, activeInput === 'name' && styles.inputActive]}
             placeholderTextColor={'#4B4B4B'}
+            maxLength={30}
           />
 
           {/* Name of Organization */}
@@ -210,6 +211,8 @@ export default function PartnershipScreen() {
             onBlur={() => setActiveInput(null)}
             style={[styles.input, activeInput === 'organization' && styles.inputActive]}
             placeholderTextColor={'#4B4B4B'}
+            maxLength={100}
+
           />
 
           {/* Phone Number */}
@@ -236,6 +239,7 @@ export default function PartnershipScreen() {
               keyboardType="number-pad"
               style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}
               placeholderTextColor={'#4B4B4B'}
+              maxLength={12}
             />
           </View>
 

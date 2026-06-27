@@ -4,7 +4,6 @@ export const createPartnershipSupabase = async (payload: any) => {
   const { data, error } = await supabase
     .from("partnership")
     .insert([payload])
-    .select();
 
   if (error) {
     console.log("Supabase error:", error.message);

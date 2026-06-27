@@ -155,6 +155,7 @@ export default function ServiceBookingScreen() {
               onBlur={() => setActiveInput(null)}
               style={[styles.input, activeInput === 'name' && styles.inputActive]}
               placeholderTextColor={'#9CA3AF'}
+              maxLength={30}
             />
 
             {/* Phone Number */}
@@ -181,6 +182,7 @@ export default function ServiceBookingScreen() {
                 keyboardType="number-pad"
                 style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}
                 placeholderTextColor={'#9CA3AF'}
+                maxLength={12}
               />
             </View>
 
@@ -211,7 +213,7 @@ export default function ServiceBookingScreen() {
                 </Text>
                 <Image
                   source={CalenderIcon}
-                  style={[styles.calendarIcon, { tintColor: activeInput === 'date' ? '#10B981' : '#6B7280' }]}
+                  style={[styles.calendarIcon, { tintColor: activeInput === 'date' ? '#10B981' : '#000' }]}
                 />
               </TouchableOpacity>
 

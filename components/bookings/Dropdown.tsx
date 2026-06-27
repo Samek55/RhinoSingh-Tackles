@@ -33,7 +33,7 @@ const Dropdown = ({
 
   const [isFocus, setIsFocus] = useState(false);
 
-  // ✅ FIX 1: memoize data
+  // Memoize data options mapped for the library layout
   const data = useMemo(() => {
     return options.map((item, index) => ({
       label: item,
@@ -42,6 +42,7 @@ const Dropdown = ({
     }));
   }, [options]);
 
+  // Determine which asset source to load
   const getDropIcon = useCallback(() => {
     if (dropdownType === 'shift') {
       return require('../../assets/icons/booking/clock.png');
@@ -49,7 +50,7 @@ const Dropdown = ({
     return DropIcon;
   }, [dropdownType]);
 
-  // ✅ FIX 2: memoized renderItem
+  // Memoized drop-menu list item rendering logic
   const renderItem = useCallback(
     (item: { label: string; value: string; index: number }) => {
       const backgroundColor = item.index % 2 === 0 ? '#fff' : '#f9f9f9';
@@ -70,18 +71,27 @@ const Dropdown = ({
     [value]
   );
 
-  const renderRightIcon = useCallback(() => (
-    <Image
-      source={getDropIcon()}
-      style={[
-        { width: hp('2.2%'), height: hp('2.2%') },
-        isFocus && dropdownType !== 'shift' && {
-          transform: [{ rotate: '180deg' }],
-          tintColor: '#2F6BFF'
-        }
-      ]}
-    />
-  ), [isFocus, dropdownType, getDropIcon]);
+  // Dynamic right-hand side icon configurations with explicit state-color tracking
+  const renderRightIcon = useCallback(() => {
+    const activeColor = dropdownType === 'shift' ? '#10B981' : '#2F6BFF';
+    const inactiveColor = '#4B4B4B'; 
+
+    return (
+      <Image
+        source={getDropIcon()}
+        style={[
+          {
+            width: hp('2.2%'),
+            height: hp('2.2%'),
+            tintColor: isFocus ? activeColor : inactiveColor
+          },
+          isFocus && {
+            ...(dropdownType !== 'shift' && { transform: [{ rotate: '180deg' }] }),
+          }
+        ]}
+      />
+    );
+  }, [isFocus, dropdownType, getDropIcon]);
 
   return (
     <View style={styles.container}>
@@ -91,6 +101,7 @@ const Dropdown = ({
       )}
 
       <LibDropdown
+      key={dropdownType}
         style={[
           styles.dropdownStyle,
           { borderColor: isFocus ? 'hsl(142, 71%, 45%)' : borderColor },
@@ -115,9 +126,15 @@ const Dropdown = ({
         placeholder={placeholder}
         value={value}
 
-        onFocus={() => setIsFocus(true)}
+        onFocus={() => {
+          setIsFocus(true);
+          if (onOpen) onOpen();
+        }}
 
-        onBlur={() => setIsFocus(false)}
+        onBlur={() => {
+          setIsFocus(false);
+          if (onClose) onClose();
+        }}
 
         onChange={(item) => {
           onSelectOption(item.value);
@@ -140,14 +157,14 @@ const styles = StyleSheet.create({
   dropdownStyle: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5, // Upped border width slightly to make active states snappy
+    borderWidth: 1.5,
     borderRadius: 12,
     paddingHorizontal: wp('3.5%'),
-    height: hp('5.5%'), // Slightly taller for better touch targets and prominence
+    height: hp('5.5%'),
     backgroundColor: '#fff',
   },
   dropdownActiveBackground: {
-    backgroundColor: '#F4F7FF', // Subtle background color change when open
+    backgroundColor: '#F4F7FF',
   },
   placeholder: {
     fontSize: wp('3.6%'),
@@ -156,15 +173,15 @@ const styles = StyleSheet.create({
   selectedText: {
     fontSize: wp('3.6%'),
     fontWeight: '500',
-    color: '#1A1A1A', // Darker text color for better readability
+    color: '#1A1A1A',
   },
   menuContainer: {
     borderRadius: 12,
     borderWidth: 2,
     borderColor: '#E2E8F0',
-    marginTop: 4, // Cleans up layout structure so popup menu doesn't crush the input box
+    marginTop: 4,
     elevation: 8,
-    shadowColor: 'hsl(142, 71%, 45%)', // Colored shadow theme accents
+    shadowColor: 'hsl(142, 71%, 45%)',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
@@ -179,10 +196,10 @@ const styles = StyleSheet.create({
     color: '#4A4A4A',
   },
   selectedRowBackground: {
-    backgroundColor: '#EBF1FF', // Distinct selection row tracking color
+    backgroundColor: '#EBF1FF',
   },
   selectedRowText: {
-    color: 'hsl(142, 71%, 35%)', // Gives selected items a brand-focused callout color
+    color: 'hsl(142, 71%, 35%)',
     fontWeight: '600',
   },
   requiredAbsolute: {

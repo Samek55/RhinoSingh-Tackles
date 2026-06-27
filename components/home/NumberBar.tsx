@@ -111,6 +111,7 @@ const NumberBar = ({ onFocus = () => { } }) => {
             placeholderTextColor="#94A3B8"
             style={[styles.input, { fontSize }]}
             keyboardType="numeric"
+            maxLength={1298}
           />
         </View>
       </View>

@@ -4,7 +4,6 @@ export const createHelpboxSB = async (payload: any) => {
   const { data, error } = await supabase
     .from("helpbox")
     .insert([payload])
-    .select();
 
   if (error) {
     console.log("Supabase error:", error.message);

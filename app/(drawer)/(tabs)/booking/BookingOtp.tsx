@@ -1,3 +1,4 @@
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,19 +10,18 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import React, { useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { createBooking } from '../../../../api/PostApiBooking';
-import { notifyProfessionals } from '../../../../api/notifications';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import base from '../../../../api/airtable';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header2';
 
-// ONESIGNAL SDK IMPORT
+// API & CONFIG IMPORTS
+import { notifyProfessionals } from '../../../../api/notifications';
 import { OneSignal } from 'react-native-onesignal';
-import { auth } from '@/src/firebase/firebaseConfig';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
+
+// IMPORT THE GLOBAL FIREBASE AUTH CONFIRMATION INSTANCE
+import { globalBookingFirebaseConfirmation } from './BookingDetail';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,8 +33,8 @@ const scaleFont = (size: number) => {
 export default function BookingOtp() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1. ADDED 'role' TO THE SEARCH PARAMS DESTRUCTURING
   const {
     name,
     number,
@@ -45,7 +45,7 @@ export default function BookingOtp() {
     selectedBudget,
     message,
     date,
-    role, // Captures 'career' or 'user' passed from the previous screen
+    role,
   } = useLocalSearchParams();
 
   useFocusEffect(
@@ -54,15 +54,18 @@ export default function BookingOtp() {
     }, []),
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleChange = (text: string, index: number) => {
+    const cleanedText = text.replace(/[^0-9]/g, '');
     const newOtp = [...otp];
-    newOtp[index] = text;
+    newOtp[index] = cleanedText.slice(-1);
     setOtp(newOtp);
 
-    if (text && index < otp.length - 1) {
+    if (cleanedText && index < otp.length - 1) {
       inputRefs.current[index + 1]?.focus();
+    }
+
+    if (text === '' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
     }
   };
 
@@ -94,65 +97,45 @@ export default function BookingOtp() {
     setIsSubmitting(true);
 
     try {
-      // ==========================================
-      // ONESIGNAL USER CREATION & TAGGING
-      // ==========================================
-      if (number) {
-        try {
-          if (auth.currentUser) {
-            console.log("An authenticated session already exists. Skipping consumer push registration.");
-          } else {
-            // 1. Clean the phone number (remove '+', spaces, dashes) to prevent OneSignal alias errors
-            const cleanNumber = String(number).replace(/[^\d]/g, '');
-
-            console.log(`Logging into OneSignal with External ID: ${cleanNumber}`);
-            OneSignal.login(cleanNumber);
-
-            // 2. Use a micro-delay to let the login register before pushing tags
-            setTimeout(() => {
-              const assignedRole = role ? String(role) : 'user';
-
-              OneSignal.User.addTags({
-                role: assignedRole,
-                phone: cleanNumber,
-              });
-
-              console.log(`OneSignal tags pushed successfully: role=${assignedRole}, phone=${cleanNumber}`);
-            }, 800); // 800ms gives the SDK ample room to update the local state context
-          }
-        } catch (oneSignalError) {
-          console.log("OneSignal integration error:", oneSignalError);
-        }
-      }
-
-      // ==========================================
-      // DATABASE POST PROCESSING (AIRTABLE)
-      // ==========================================
-      const serviceRecords = await base("Services").select().all();
-
-      const serviceMap = serviceRecords.map((rec: any) => ({
-        id: rec.id,
-        name: rec.fields.Name,
-      }));
-
-      const serviceIds = Array.isArray(selectedService)
-        ? selectedService
-          .map((name: string) => serviceMap.find((s: any) => s.name === name)?.id)
-          .filter(Boolean)
-        : [serviceMap.find((s: any) => s.name === selectedService)?.id].filter(Boolean);
-
-      if (serviceIds.length === 0) {
-        Alert.alert("Error", "No valid service selected");
+      // 1. Check if the orchestration object exists
+      if (!globalBookingFirebaseConfirmation) {
+        Alert.alert("Verification Error", "No active SMS session found. Please go back and try again.");
         setIsSubmitting(false);
         return;
       }
 
+      console.log("Verifying code with Firebase...");
+
+      // 2. Invoke verification explicitly on the instance object returned by signInWithPhoneNumber
+      await globalBookingFirebaseConfirmation.confirm(enteredOtp);
+
+      console.log("SMS OTP Verified successfully!");
+
+      // 3. Complete your OneSignal push registration safely below...
+      if (number) {
+        try {
+          const cleanNumber = String(number).replace(/[^\d]/g, '');
+          OneSignal.login(cleanNumber);
+
+          setTimeout(() => {
+            const assignedRole = role ? String(role) : 'user';
+            OneSignal.User.addTags({
+              role: assignedRole,
+              phone: cleanNumber,
+            });
+            console.log(`OneSignal tags pushed successfully: role=${assignedRole}`);
+          }, 800);
+        } catch (e) {
+          console.log("OneSignal integration tracking warning", e);
+        }
+      }
+
+
       const booking = {
         full_name: name,
         phone: number,
-        city: selectedArea,
         area: [selectedArea],
-        select_services: [selectedService],
+        select_services: [selectedService], // Wrap this too if services is an array column
         priority: selectedPriority,
         select_shift: selectedShift,
         work_description: message,
@@ -161,26 +144,32 @@ export default function BookingOtp() {
         status: "New / Open"
       };
 
+      // 5. Safe insertion via public/secret-key insert policy
       await createBookingSupabase(booking);
 
-      try {
-        const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
-        const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
-        console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
+      // 6. Alert downstream providers
+      // try {
+      //   const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
+      //   const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
+      //   console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
-        await notifyProfessionals(
-          String(targetService).trim(),
-          String(targetArea).trim()
-        );
-      } catch (e) {
-        console.log("Notification background delivery failed contextually", e);
-      }
+      //   await notifyProfessionals(
+      //     String(targetService).trim(),
+      //     String(targetArea).trim()
+      //   );
+      // } catch (e) {
+      //   console.log("Notification background delivery failed contextually", e);
+      // }
 
+      setOtp(['', '', '', '', '', '']);
       router.push('/booking/BookingVerify');
 
     } catch (error: any) {
-      console.log("BOOKING ERROR:", error);
-      Alert.alert('Submission Failed', error.message || 'An error occurred while processing your request.');
+      console.log("BOOKING CODE VERIFICATION FAULT:", error);
+      Alert.alert(
+        'Submission Failed',
+        error.message || 'Invalid verification code. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -247,6 +236,6 @@ const styles = StyleSheet.create({
   otpBox: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 3 },
   input: { width: width * 0.12, height: width * 0.12, marginHorizontal: 5, borderWidth: 1, borderColor: 'hsl(0, 0%, 79%)', borderRadius: 5, textAlign: 'center', fontSize: scaleFont(18), backgroundColor: '#fff', elevation: 3 },
   resendcode: { marginTop: 25, paddingHorizontal: 20, textAlign: 'center', lineHeight: 22, fontSize: hp('1.5%') },
-  submitButton: { backgroundColor: 'green', height: height * 0.05, width: '80%', justifyContent: 'center', alignItems: 'center', borderRadius: 100, marginTop: height * 0.08 },
-  submitButtonText: { fontSize: scaleFont(17), color: '#fff', fontWeight: '300' },
+  submitButton: { backgroundColor: 'green', height: height * 0.06, width: '80%', justifyContent: 'center', alignItems: 'center', borderRadius: 100, marginTop: height * 0.08 },
+  submitButtonText: { fontSize: scaleFont(19), color: '#fff', fontWeight: '300' },
 });

@@ -19,7 +19,7 @@ import Header2 from '@/components/Header3drawer';
 
 // 1. MODULAR SDK IMPORTS
 import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-import { globalFirebaseConfirmation } from '../../../../components/home/NumberBar'; 
+import { globalFirebaseConfirmation } from '../../../../components/home/NumberBar';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 
 const scaleFont = (size: number) => {
@@ -42,12 +42,21 @@ export default function HelpboxOTP() {
     );
 
     const handleChange = (text: string, index: number) => {
+        // Only allow numbers
+        const cleanedText = text.replace(/[^0-9]/g, '');
+
         const newOtp = [...otp];
-        newOtp[index] = text;
+        newOtp[index] = cleanedText.slice(-1);
         setOtp(newOtp);
 
-        if (text && index < otp.length - 1) {
+        // Moving FORWARD when typing a number
+        if (cleanedText && index < otp.length - 1) {
             inputRefs.current[index + 1]?.focus();
+        }
+
+        // Moving BACKWARD when hitting backspace/deleting
+        if (text === '' && index > 0) {
+            inputRefs.current[index - 1]?.focus();
         }
     };
 
@@ -61,11 +70,11 @@ export default function HelpboxOTP() {
         if (!phone) return;
         try {
             Alert.alert('Resending', 'Requesting a new verification code...');
-            
+
             // 2. FIX SYNC: Pass auth instance explicitly + pass boolean resend trigger
             const authInstance = getAuth();
-            await (signInWithPhoneNumber as any)(authInstance, phone, true); 
-            
+            await (signInWithPhoneNumber as any)(authInstance, phone, true);
+
             Alert.alert('Success', 'A new code has been successfully sent.');
         } catch (error: any) {
             Alert.alert('Resend Failed', error.message || 'Unable to re-send token code.');
@@ -85,7 +94,7 @@ export default function HelpboxOTP() {
 
         try {
             console.log(`Verifying phone: ${phone} with Firebase code: ${enteredOtp}`);
-            
+
             if (!globalFirebaseConfirmation) {
                 Alert.alert('Session Expired', 'Authentication context missing. Please go back and try again.');
                 setIsSubmitting(false);
@@ -135,9 +144,9 @@ export default function HelpboxOTP() {
                                 style={styles.input}
                                 keyboardType="numeric"
                                 maxLength={1}
-                                value={otp[index]}
+                                value={otp[index]} // Shows the actual typed number clearly
                                 onChangeText={text => handleChange(text, index)}
-                                onKeyPress={event => handleKeyPress(event, index)}
+                                onKeyPress={event => handleKeyPress(event, index)} // Kept as a backup helper for iOS
                             />
                         ))}
                     </View>
@@ -169,7 +178,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: '5%',
         paddingTop: height * 0.09,
         alignItems: 'center',
-        backgroundColor:'#fff'
+        backgroundColor: '#fff'
     },
     thankYouText: {
         marginTop: hp('3%'),
@@ -218,7 +227,7 @@ const styles = StyleSheet.create({
     },
     submitButton: {
         backgroundColor: 'green',
-        height: height * 0.05,
+        height: height * 0.06,
         width: '80%',
         justifyContent: 'center',
         alignItems: 'center',
@@ -226,7 +235,7 @@ const styles = StyleSheet.create({
         marginTop: height * 0.08,
     },
     submitButtonText: {
-        fontSize: scaleFont(17),
+        fontSize: scaleFont(19),
         color: '#fff',
         fontWeight: '300',
     },

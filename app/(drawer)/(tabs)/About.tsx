@@ -144,7 +144,8 @@ const styles = StyleSheet.create({
 
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between', 
+    justifyContent: 'center', 
+    gap: wp('3%'),
     width: '100%',
     marginVertical: hp('1.5%'),
     marginBottom: '8%',

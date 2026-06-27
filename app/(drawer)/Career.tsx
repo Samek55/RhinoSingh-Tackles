@@ -257,6 +257,7 @@ export default function CareerScreen() {
               activeInput === 'name' && styles.inputActive
             ]}
             placeholderTextColor={'#4B4B4B'}
+            maxLength={30}
           />
 
           {/* Phone Number */}
@@ -295,6 +296,8 @@ export default function CareerScreen() {
                 activeInput === 'phone' && styles.inputActive
               ]}
               placeholderTextColor={'#4B4B4B'}
+            maxLength={12}
+              
             />
           </View>
 
@@ -432,6 +435,7 @@ export default function CareerScreen() {
                 activeInput === 'emergencyPhone' && styles.inputActive
               ]}
               placeholderTextColor={'#4B4B4B'}
+            maxLength={12}
             />
           </View>
 
