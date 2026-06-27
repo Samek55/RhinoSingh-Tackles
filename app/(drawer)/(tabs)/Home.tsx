@@ -18,11 +18,10 @@ import { useRef, useMemo } from 'react';
 import { servicesData2 } from '../../../src/data/ServiceData';
 import Header2 from '@/components/Header2';
 
-// FIX: Spelled 'Carpentry' properly to match your data file keys
 const HOME_SERVICE_NAMES = [
   'Deep Cleaning',
   'Pressure Washing',
-  'Roof & Futter Cleaning', // Double-check if your database says "Futter" or "Gutter"!
+  'Roof & Gutter Cleaning', // Fixed typo string comparison here
   'Handyman',
   'Carpentry', 
   'Plumbing',
@@ -35,7 +34,6 @@ export default function HomeScreen() {
   const scrollRef = useRef<ScrollView | null>(null);
 
   const shuffledServices = useMemo(() => {
-    // Filters items accurately now that strings match case-sensitively
     const pool = servicesData2.filter((service) => 
       HOME_SERVICE_NAMES.map(n => n.toLowerCase()).includes(service.name.toLowerCase())
     );
@@ -59,7 +57,7 @@ export default function HomeScreen() {
             resizeMode="cover"
           />
           <LinearGradient
-            colors={['rgba(0,0,0,0.08)', 'rgba(18,46,44,0.97)']}
+            colors={['rgba(0,0,0,0.05)', 'rgba(18,46,44,0.98)']}
             style={styles.heroOverlay}
           >
             <Text style={styles.heroTitle}>RocketSingh{'\n'}Superfast Services</Text>
@@ -70,7 +68,7 @@ export default function HomeScreen() {
             <View style={styles.heroNumberBar}>
               <NumberBar
                 onFocus={() =>
-                  scrollRef.current?.scrollTo({ y: 420, animated: true })
+                  scrollRef.current?.scrollTo({ y: hp('45%'), animated: true })
                 }
               />
             </View>
@@ -79,6 +77,8 @@ export default function HomeScreen() {
 
         {/* ── TOP SERVICES ──────────────────────────────── */}
         <View style={styles.section}>
+          
+          {/* FEATURED BANNER */}
           <TouchableOpacity
             style={styles.featuredCard}
             activeOpacity={0.88}
@@ -92,7 +92,7 @@ export default function HomeScreen() {
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', 'rgba(41,92,89,0.92)']}
+              colors={['transparent', 'rgba(28,43,42,0.95)']}
               style={styles.featuredGradient}
             >
               <View style={styles.featuredBadge}>
@@ -103,18 +103,18 @@ export default function HomeScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
+          {/* SECTION HEADER CONTAINER */}
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Top Services</Text>
-            <TouchableOpacity onPress={() => router.push('/Service')}>
+            <TouchableOpacity onPress={() => router.push('/Service')} hitSlop={12}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
 
-          {/* 9 SHUFFLED CARDS */}
+          {/* HORIZONTAL CARDS */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            // Use standard contentContainerStyle for row flex behaviors
             contentContainerStyle={styles.servicesScrollContent}
           >
             {shuffledServices.map((service) => (
@@ -136,87 +136,135 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#F5F9F8' },
-  scrollContent: { flexGrow: 1, paddingBottom: hp('3%') },
+  screen: { 
+    flex: 1, 
+    backgroundColor: '#F6F9F8' 
+  },
+  scrollContent: { 
+    flexGrow: 1, 
+    paddingBottom: hp('5%') 
+  },
 
-  /* HERO */
-  hero: { width: '100%', height: hp('33%'), position: 'relative' },
-  heroImage: { width: '100%', height: '100%' },
+  /* HERO SECTION */
+  hero: { 
+    width: '100%', 
+    height: hp('36%'), 
+    position: 'relative' 
+  },
+  heroImage: { 
+    width: '100%', 
+    height: '100%' 
+  },
   heroOverlay: {
     position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: '80%',
+    bottom: 0, 
+    left: 0, 
+    right: 0,
+    height: '85%',
     justifyContent: 'flex-end',
-    paddingHorizontal: wp('5%'),
-    paddingBottom: hp('2%'),
-    gap: 5,
+    paddingHorizontal: wp('5.5%'),
+    paddingBottom: hp('3%'),
   },
   heroTitle: {
-    fontSize: wp('6.5%'),
+    fontSize: wp('7%'),
     fontWeight: '800',
-    color: '#fff',
-    lineHeight: wp('8%'),
-    letterSpacing: 0.2,
+    color: '#ffffff',
+    lineHeight: wp('8.8%'),
+    letterSpacing: -0.2,
   },
   heroSub: {
-    fontSize: wp('3.1%'),
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: wp('3.4%'),
+    color: 'rgba(255,255,255,0.82)',
     fontWeight: '400',
-    marginBottom: hp('0.8%'),
+    marginTop: hp('0.8%'),
+    marginBottom: hp('1.8%'),
   },
-  heroNumberBar: { marginTop: 2 },
+  heroNumberBar: { 
+    marginTop: hp('0.5%') 
+  },
 
-  /* CATEGORIES */
-  section: { marginTop: hp('1.2%'), paddingHorizontal: wp('4%') },
+  /* CATEGORIES & SECTIONS */
+  section: { 
+    marginTop: hp('2.5%'), 
+    paddingHorizontal: wp('4.5%') 
+  },
   sectionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: hp('1%'),
+    marginTop: hp('2.5%'),
+    marginBottom: hp('1.5%'),
   },
-  sectionTitle: { fontSize: wp('4.4%'), fontWeight: '800', color: '#1C2B2A' },
-  seeAll: { fontSize: wp('3.2%'), fontWeight: '600', color: '#295C59' },
+  sectionTitle: { 
+    fontSize: wp('4.6%'), 
+    fontWeight: '800', 
+    color: '#1C2B2A',
+    letterSpacing: -0.1,
+  },
+  seeAll: { 
+    fontSize: wp('3.4%'), 
+    fontWeight: '600', 
+    color: '#295C59',
+    paddingLeft: wp('2%')
+  },
   
   /* FEATURED CARD */
   featuredCard: {
     width: '100%',
-    height: hp('24%'),
-    borderRadius: 18,
+    height: hp('23%'),
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: hp('1.5%'),
-    elevation: 4,
-    shadowColor: '#295C59',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    marginTop: hp('1%'),
+    elevation: 3,
+    shadowColor: '#1C2B2A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
   },
-  featuredImage: { width: '100%', height: '100%' },
+  featuredImage: { 
+    width: '100%', 
+    height: '100%' 
+  },
   featuredGradient: {
     position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    height: '65%',
+    bottom: 0, 
+    left: 0, 
+    right: 0,
+    height: '70%',
     justifyContent: 'flex-end',
-    padding: 14,
-    gap: 2,
+    padding: wp('4.5%'),
   },
   featuredBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#295C59',
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    marginBottom: 4,
+    backgroundColor: '#E0F2F1',
+    borderRadius: 8,
+    paddingHorizontal: wp('2.5%'),
+    paddingVertical: hp('0.4%'),
+    marginBottom: hp('1%'),
   },
-  featuredBadgeText: { fontSize: wp('2.6%'), color: '#fff', fontWeight: '700' },
-  featuredTitle: { fontSize: wp('4.8%'), fontWeight: '800', color: '#fff' },
-  featuredSub: { fontSize: wp('3%'), color: 'rgba(255,255,255,0.80)', fontWeight: '400' },
+  featuredBadgeText: { 
+    fontSize: wp('2.8%'), 
+    color: '#295C59', 
+    fontWeight: '700' 
+  },
+  featuredTitle: { 
+    fontSize: wp('5%'), 
+    fontWeight: '800', 
+    color: '#ffffff' 
+  },
+  featuredSub: { 
+    fontSize: wp('3.2%'), 
+    color: 'rgba(255,255,255,0.85)', 
+    fontWeight: '400',
+    marginTop: hp('0.2%')
+  },
 
   /* HORIZONTAL SCROLL ALIGNMENT */
   servicesScrollContent: {
     flexDirection: 'row',
-    alignItems: 'center', // Aligns items uniformly on their vertical cross axis
-    paddingVertical: hp('1.5%'),
-    paddingRight: wp('5%'), // Guarantees structural layout trailing space when scrolling to the end
-    gap: wp('3.5%'),
+    alignItems: 'center', 
+    paddingVertical: hp('1%'),
+    paddingRight: wp('6%'), 
+    gap: wp('4%'),
   },
 });
