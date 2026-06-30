@@ -9,7 +9,6 @@ import {
     Platform,
     StyleSheet,
     ActivityIndicator,
-    Alert,
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
@@ -34,7 +33,7 @@ export default function BookingDetails() {
 
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false); // Added submitting indicator
+    const [submitting, setSubmitting] = useState(false); 
     const [openDropdown, setOpenDropdown] = useState(false);
     const [workStatus, setWorkStatus] = useState<StatusType>('Pending');
 
@@ -47,11 +46,11 @@ export default function BookingDetails() {
             setLoading(true);
             try {
                 const data = await fetchBookingsFromSupabase();
-                const found = data.find((item: any) => item.id === id);
+                const safeData = Array.isArray(data) ? data : [];
+                const found = safeData.find((item: any) => item && String(item.id) === String(id));
 
                 if (found) {
                     setBooking(found);
-                    // ✅ FIX 1: Set dropdown initial value directly to what is currently saved in Supabase
                     if (found.status) {
                         setWorkStatus(found.status as StatusType);
                     }
@@ -74,30 +73,21 @@ export default function BookingDetails() {
     };
 
     const handleSubmit = async () => {
+        if (submitting) return;
+        setSubmitting(true);
+        
         try {
-            // 1. Print the entire raw object keys to see what Supabase actually sent us
-            console.log("👉 ACTUAL OBJECT KEYS AVAILABLE:", Object.keys(booking));
-            console.log("👉 VALUES:", JSON.stringify(booking, null, 2));
-
-            // 2. We need to find the value that matches the 'bookingid' primary key in your DB table
-            // Let's print common suspects:
-            console.log("Values lookup -> booking.bookingid:", booking?.bookingid, " | booking.id:", booking?.id, " | booking.bookingId:", booking?.bookingId);
-
-            // Change this variable to match whichever key holds your TRUE database key string/number
-            const trueDatabaseId = booking?.bookingid || booking?.bookingId;
+            console.log("👉 ACTUAL OBJECT KEYS AVAILABLE:", Object.keys(booking || {}));
+            
+            const trueDatabaseId = booking?.bookingid || booking?.bookingId || booking?.id;
 
             if (!trueDatabaseId) {
-                alert("Could not extract a valid bookingid from the object. Check console.");
+                alert("Could not extract a valid identifier from the object. Check console.");
                 return;
             }
 
             console.log(`🔄 Sending true identifier to Supabase: ${trueDatabaseId}`);
             const response = await updateBookingStatusSB(trueDatabaseId, workStatus);
-
-            if (!response || response.length === 0) {
-                alert(`⚠️ Database still returned 0 rows for identifier: "${trueDatabaseId}".`);
-                return;
-            }
 
             setBooking((prev: any) => ({ ...prev, status: workStatus }));
             alert("Status updated successfully!");
@@ -105,6 +95,9 @@ export default function BookingDetails() {
 
         } catch (error) {
             console.error('Failed to update status:', error);
+            alert("An error occurred while updating booking status.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -141,25 +134,25 @@ export default function BookingDetails() {
                         </View>
                     ) : booking ? (
                         <View style={[styles.card, { marginBottom: hp('10%') }]}>
-                            <Text style={styles.heading}>{booking?.fullName}</Text>
+                            <Text style={styles.heading}>{booking?.fullName || 'N/A'}</Text>
 
                             <Text style={styles.labelMain}>
                                 <Image
                                     source={phoneIcon}
                                     style={{ width: 14, height: 11.5, tintColor: '#555' }}
                                 />{' '}
-                                +977 {booking?.phone}
+                                +977 {booking?.phone || ''}
                             </Text>
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Service(s)</Text>
-                                <Text style={styles.value}>{booking?.service}</Text>
+                                <Text style={styles.value}>{booking?.service || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.rowLocation}>
                                 <View>
                                     <Text style={styles.label}>Budget</Text>
-                                    <Text style={styles.value}>{booking?.budget}</Text>
+                                    <Text style={styles.value}>{booking?.budget || 'N/A'}</Text>
                                 </View>
                                 <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={styles.label}>Status</Text>
@@ -171,7 +164,7 @@ export default function BookingDetails() {
                                             booking?.status?.includes('Cancelled') && styles.cancelled,
                                         ]}
                                     >
-                                        {booking?.status}
+                                        {booking?.status || 'Pending'}
                                     </Text>
                                 </View>
                             </View>
@@ -180,7 +173,7 @@ export default function BookingDetails() {
                                 <View style={styles.rowLocationInside}>
                                     <Text style={styles.label}>Location</Text>
                                     <Text style={styles.value}>
-                                        {booking?.area}, {booking?.city}
+                                        {booking?.area || ''}{booking?.city ? `, ${booking.city}` : ''}
                                     </Text>
                                 </View>
                                 <View>
@@ -190,12 +183,12 @@ export default function BookingDetails() {
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Booking Date & Time</Text>
-                                <Text style={styles.value}>{booking?.bookingDate}</Text>
+                                <Text style={styles.value}>{booking?.bookingDate || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Service Date & Time</Text>
-                                <Text style={styles.value}>{booking?.startingDate}</Text>
+                                <Text style={styles.value}>{booking?.startingDate || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.row}>
@@ -205,8 +198,8 @@ export default function BookingDetails() {
 
                             <Text style={styles.statusLabel}>Work Status</Text>
 
-                            {/* STATUS DROPDOWN */}
-                            <View style={styles.dropdownWrapper}>
+                            {/* STATUS DROPDOWN CONTAINER WITH POSITIONING DEFENSES */}
+                            <View style={[styles.dropdownWrapper, { zIndex: openDropdown ? 9999 : 1 }]}>
                                 <TouchableOpacity
                                     style={styles.dropdownBtn}
                                     onPress={() => {
@@ -216,7 +209,7 @@ export default function BookingDetails() {
                                         }, 100);
                                     }}
                                 >
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Text style={styles.dropdownTextContainer}>{workStatus}</Text>
                                         <Image
                                             source={dropdownIcon}
@@ -266,8 +259,6 @@ export default function BookingDetails() {
     );
 }
 
-// ... styles remain unchanged
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -300,7 +291,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         alignItems: 'center',
         paddingBottom: hp('5%'),
-        paddingTop: hp('2%'), // Reduced since header is pulled out
+        paddingTop: hp('2%'),
     },
     card: {
         width: wp('90%'),
@@ -367,11 +358,11 @@ const styles = StyleSheet.create({
     dropdownWrapper: {
         width: '100%',
         marginTop: hp('1.5%'),
-        zIndex: 999,
+        position: 'relative',
     },
     dropdownBtn: {
         backgroundColor: '#fff',
-        paddingVertical: hp('1%'),
+        paddingVertical: hp('1.2%'),
         paddingHorizontal: wp('4%'),
         borderRadius: 8,
         borderWidth: 1,
@@ -388,37 +379,41 @@ const styles = StyleSheet.create({
         fontSize: hp('1.5%'),
     },
     dropdownMenu: {
+        position: 'absolute',
+        top: hp('5.5%'),
+        left: 0,
+        right: 0,
         backgroundColor: '#fff',
-        marginTop: hp('1%'),
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: '#e5e5e5',
-        elevation: 5,
+        elevation: 6,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
         shadowRadius: 4,
+        zIndex: 99999,
     },
     dropdownItem: {
         paddingVertical: hp('1.8%'),
         paddingHorizontal: wp('4%'),
         borderBottomWidth: 0.5,
         borderBottomColor: '#eee',
+        backgroundColor: '#fff',
     },
     statusLabel: {
         fontSize: hp('2.3%'),
-        marginTop: hp('5%'),
+        marginTop: hp('3%'),
         fontWeight: '700',
         color: '#111',
     },
     ButtonContainer: {
-        marginTop: hp('3%'),
-        marginBottom: hp('3%'),
+        marginTop: hp('4%'),
+        marginBottom: hp('1%'),
         flexDirection: 'column',
         alignItems: 'center',
         width: '100%',
-        paddingHorizontal: hp('2%'),
     },
     AcceptButton: {
         paddingVertical: hp('1.5%'),

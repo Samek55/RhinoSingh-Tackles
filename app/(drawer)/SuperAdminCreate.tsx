@@ -21,16 +21,15 @@ import Header5 from "@/components/Header5Admin";
 import { getDatabase, ref, set } from "firebase/database";
 import { heightPercentageToDP as hp } from "react-native-responsive-screen";
 
-type Role = "admin" | "career" | "user";
 const db = getDatabase();
 
-export default function CreateAdmin() {
+export default function CreateSuperAdmin() {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [pin, setPin] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    // 🔐 FORCED TO "admin" DEFAULT PER CLIENT REQUIREMENT
-    const [selectedRole] = useState<Role>("admin");
+    // 🔐 FORCED TO "superadmin" DEFAULT FOR HIGH-LEVEL ORCHESTRATION
+    const [selectedRole] = useState<string>("superadmin");
 
     const createUser = async () => {
         const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
@@ -64,7 +63,7 @@ export default function CreateAdmin() {
                 throw new Error("Auth failed - no UID generated");
             }
 
-            // Save direct to database without waiting for career lookups
+            // Save direct to database with explicit superadmin role configuration
             await set(ref(db, `users/${user.uid}`), {
                 uid: user.uid,
                 phone: cleanPhone,
@@ -74,7 +73,7 @@ export default function CreateAdmin() {
                 createdAt: Date.now(),
             });
 
-            // 🔥 Conditional OneSignal Registration with Admin Payload Mapping
+            // 🔥 Conditional OneSignal Registration with SuperAdmin Payload Mapping
             try {
                 const OneSignalModule = require("react-native-onesignal");
                 const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
@@ -84,7 +83,7 @@ export default function CreateAdmin() {
 
                     if (OneSignal.User?.addTags) {
                         OneSignal.User.addTags({
-                            role: "admin",
+                            role: "superadmin",
                             phone: cleanPhone,
                         });
                     }
@@ -137,9 +136,9 @@ export default function CreateAdmin() {
                     <View style={styles.card}>
                         {/* Header Typography Elements */}
                         <View style={styles.headerTextContainer}>
-                            <Text style={styles.titleText}>Create Admin Account</Text>
+                            <Text style={styles.titleText}>Create SuperAdmin Account</Text>
                             <Text style={styles.subtitleText}>
-                                Register a new admin portal credential instantly with a phone number and secure PIN.
+                                Register a new elevated superadmin root account instantly with a phone number and secure PIN.
                             </Text>
                         </View>
 
@@ -187,7 +186,7 @@ export default function CreateAdmin() {
                             {isLoading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={styles.primaryButtonText}>Create Admin Account</Text>
+                                <Text style={styles.primaryButtonText}>Create SuperAdmin Account</Text>
                             )}
                         </TouchableOpacity>
 
@@ -203,10 +202,9 @@ export default function CreateAdmin() {
                             Create Professional Account
                         </Text>
                         <Text
-                            onPress={() => router.push('/SuperAdminCreate')}
-
+                            onPress={() => router.push('/AdminCreate')}
                             style={{ fontWeight: '700', color: '#0b176f' }}>
-                            Create SuperAdmin Account
+                            Create Admin Account
                         </Text>
                     </View>
                 </View>

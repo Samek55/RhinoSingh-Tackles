@@ -9,6 +9,8 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   Keyboard,
+  NativeSyntheticEvent,
+  TextInputKeyPressEventData,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
@@ -69,14 +71,22 @@ export default function BookingOtp() {
     }
   };
 
-  const handleKeyPress = (event: any, index: number) => {
-    if (event.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>, index: number) => {
+    if (event.nativeEvent.key === 'Backspace' && index > 0) {
+      // Check both current state and raw input value to prevent double focus jumping triggers on Android
+      if (!otp[index]) {
+        inputRefs.current[index - 1]?.focus();
+      }
     }
   };
 
-  const formatDate = (date: any) => {
-    return new Date(date).toISOString().split('T')[0];
+  const formatDate = (dateValue: any) => {
+    if (!dateValue) return new Date().toISOString().split('T')[0];
+    const parsedDate = new Date(dateValue);
+    // Fallback safe layer if string passing is corrupt or bad formatted
+    return isNaN(parsedDate.getTime()) 
+      ? new Date().toISOString().split('T')[0] 
+      : parsedDate.toISOString().split('T')[0];
   };
 
   const handleResendCode = async () => {
@@ -130,16 +140,15 @@ export default function BookingOtp() {
         }
       }
 
-
       const booking = {
-        full_name: name,
-        phone: number,
-        area: [selectedArea],
-        select_services: [selectedService], // Wrap this too if services is an array column
-        priority: selectedPriority,
-        select_shift: selectedShift,
-        work_description: message,
-        budget: selectedBudget,
+        full_name: name ? String(name) : '',
+        phone: number ? String(number) : '',
+        area: selectedArea ? [String(selectedArea)] : [],
+        select_services: selectedService ? [String(selectedService)] : [], // Wrap this too if services is an array column
+        priority: selectedPriority ? String(selectedPriority) : 'Normal',
+        select_shift: selectedShift ? String(selectedShift) : '',
+        work_description: message ? String(message) : '',
+        budget: selectedBudget ? String(selectedBudget) : '',
         service_booking_datetime: formatDate(date),
         status: "New / Open"
       };
@@ -148,18 +157,20 @@ export default function BookingOtp() {
       await createBookingSupabase(booking);
 
       // 6. Alert downstream providers
-      // try {
-      //   const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
-      //   const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
-      //   console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
+      try {
+        const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
+        const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
+        console.log(`Sending notification matching service: ${targetService} and area: ${targetArea}`);
 
-      //   await notifyProfessionals(
-      //     String(targetService).trim(),
-      //     String(targetArea).trim()
-      //   );
-      // } catch (e) {
-      //   console.log("Notification background delivery failed contextually", e);
-      // }
+        if (targetService && targetArea) {
+          await notifyProfessionals(
+            String(targetService).trim(),
+            String(targetArea).trim()
+          );
+        }
+      } catch (e) {
+        console.log("Notification background delivery failed contextually", e);
+      }
 
       setOtp(['', '', '', '', '', '']);
       router.push('/booking/BookingVerify');

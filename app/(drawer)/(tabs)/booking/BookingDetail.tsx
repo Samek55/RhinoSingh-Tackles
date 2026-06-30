@@ -14,14 +14,13 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import { useState } from "react";
+import React, { useState } from "react";
 import SubmitOverlay from "@/components/bookings/SubmitOverlay";
 
-// 1. IMPORT MODULAR FIREBASE AUTH METHODS
-import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-
-// 2. EXPORT THE MEMORY HOLDER VARIABLE FOR SCREEN ORCHESTRATION
-export let globalBookingFirebaseConfirmation: any = null;
+// 🎛️ API & Supabase Integration Methods
+import { notifyProfessionals } from '../../../../api/notifications';
+import { OneSignal } from 'react-native-onesignal';
+import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 
 const { width } = Dimensions.get('window');
 
@@ -35,6 +34,7 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export default function BookingDetails() {
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+  
   const {
     name,
     number,
@@ -45,6 +45,7 @@ export default function BookingDetails() {
     selectedBudget,
     message,
     date,
+    role,
   } = useLocalSearchParams();
 
   const formattedDate = date
@@ -54,6 +55,15 @@ export default function BookingDetails() {
         year: 'numeric',
       })
     : '';
+
+  // Helper function to format timestamp records cleanly
+  const formatDate = (dateValue: any) => {
+    if (!dateValue) return new Date().toISOString().split('T')[0];
+    const parsedDate = new Date(dateValue);
+    return isNaN(parsedDate.getTime()) 
+      ? new Date().toISOString().split('T')[0] 
+      : parsedDate.toISOString().split('T')[0];
+  };
 
   const handleSubmit = async () => {
     const cleanNumber = String(number || '').replace(/[^0-9]/g, '');
@@ -67,34 +77,68 @@ export default function BookingDetails() {
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      const formattedPhone = '+977' + cleanNumber;
-      console.log("Initializing Firebase SMS to:", formattedPhone);
+      // 1. OneSignal User Identifier Syncing
+      if (cleanNumber) {
+        try {
+          OneSignal.login(cleanNumber);
+          setTimeout(() => {
+            const assignedRole = role ? String(role) : 'user';
+            OneSignal.User.addTags({
+              role: assignedRole,
+              phone: cleanNumber,
+            });
+            console.log(`OneSignal tags updated directly: role=${assignedRole}`);
+          }, 800);
+        } catch (e) {
+          console.warn("OneSignal profile tracking step skipped:", e);
+        }
+      }
 
-      const authInstance = getAuth();
-      const confirmation = await signInWithPhoneNumber(authInstance, formattedPhone);
+      // 2. Structuring Supabase Data Entry Mapping
+      const booking = {
+        full_name: name ? String(name) : '',
+        phone: cleanNumber,
+        area: selectedArea ? [String(selectedArea)] : [],
+        select_services: selectedService ? [String(selectedService)] : [],
+        priority: selectedPriority ? String(selectedPriority) : 'Normal',
+        select_shift: selectedShift ? String(selectedShift) : '',
+        work_description: message ? String(message) : '',
+        budget: selectedBudget ? String(selectedBudget) : '',
+        service_booking_datetime: formatDate(date),
+        status: "New / Open"
+      };
 
-      globalBookingFirebaseConfirmation = confirmation;
+      // 3. Complete Database Entry Creation Task
+      await createBookingSupabase(booking);
+      console.log("Supabase booking record inserted smoothly.");
+
+      // 4. Trigger Downstream Provider Alerts 
+      try {
+        const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
+        const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
+
+        if (targetService && targetArea) {
+          await notifyProfessionals(
+            String(targetService).trim(),
+            String(targetArea).trim()
+          );
+        }
+      } catch (e) {
+        console.warn("Background structural professional dispatch notification delayed:", e);
+      }
+
       setOverlayVisible(false);
 
-      router.push({
-        pathname: '/booking/BookingOtp',
-        params: {
-          name,
-          number: cleanNumber,
-          selectedService,
-          selectedShift,
-          selectedArea,
-          selectedPriority,
-          selectedBudget,
-          message,
-          date,
-        },
-      });
+      // 5. Clean parameterless screen change routing execution
+      router.push('/booking/BookingVerify');
 
     } catch (error: any) {
       setOverlayVisible(false);
-      console.log("FIREBASE BOOKING SMS ERROR:", error);
-      Alert.alert('SMS Dispatch Error', error.message || 'Something went wrong while sending the code.');
+      console.error("CRITICAL DIRECT BOOKING INTERACTION ERROR:", error);
+      Alert.alert(
+        'Submission Failed', 
+        error.message || 'An unhandled asset pipeline error blocked processing.'
+      );
     }
   };
 
@@ -199,7 +243,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingHorizontal: wp('5%'),
     paddingVertical: hp('1%'),
-    // Soft, premium shadow system
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
@@ -215,20 +258,20 @@ const styles = StyleSheet.create({
   },
   rowLabel: { 
     fontSize: wp('3.6%'), 
-    color: '#6B7280', // Tailwind Gray 500
+    color: '#6B7280', 
     fontWeight: '500', 
     flex: 1,
   },
   rowValue: { 
     fontSize: wp('3.8%'), 
-    color: '#111827', // Tailwind Gray 900
+    color: '#111827', 
     fontWeight: '600', 
     flex: 1.8, 
     textAlign: 'right',
   },
   divider: { 
     height: 1, 
-    backgroundColor: '#F3F4F6', // Crisp subtle separation 
+    backgroundColor: '#F3F4F6', 
   },
   messageBlock: { 
     paddingVertical: hp('2%'), 
@@ -254,7 +297,7 @@ const styles = StyleSheet.create({
     gap: hp('1.5%'),
   },
   confirmBtn: { 
-    backgroundColor: 'green', // Clean Emerald Green accent
+    backgroundColor: 'green', 
     height: hp('6.5%'), 
     borderRadius: 16, 
     justifyContent: 'center', 

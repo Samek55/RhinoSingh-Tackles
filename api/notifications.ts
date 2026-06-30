@@ -22,47 +22,67 @@ const sendNotification = async (payload: object) => {
 };
 
 // Service booking for notifying careers → service providers who serve that specific area and service
-export async function notifyProfessionals(
-  service: string,
-  bookingArea: string
-) {
+export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
     const cleanService = service.trim();
     const cleanArea = bookingArea.trim();
 
-    const response = await fetch(
-      `${process.env.EXPO_PUBLIC_API_URL}/api/notifications/notify-careers`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          role: "career",
-          service: cleanService,
-          area: cleanArea,
-        }),
-      }
-    );
-    // 1. Get the raw text first to see the error
-    const rawText = await response.text();
-    console.log("RAW SERVER RESPONSE:", rawText);
-
-    // 2. Try parsing it safely
-    const data = JSON.parse(rawText);
-    console.log("Parsed Data:", data);
-
-    console.log("Backend response:", data);
-    console.log(
-      `Notification sent for "${cleanService}" in ${cleanArea}`
-    );
+    await sendNotification({
+      filters: [
+        { field: 'tag', key: 'role', relation: '=', value: 'career' },
+      ],
+      headings: { en: '🚀 New Job Available!' },
+      contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
+    });
+    
+    console.log(`Booking notification successfully targeted for "${cleanService}" in ${cleanArea}`);
   } catch (error: any) {
-    console.error(
-      "Booking notification error:",
-      error?.message || error
-    );
+    console.error('Booking notification error:', error?.response?.data || error.message);
   }
 }
+
+// Service booking for notifying careers → service providers who serve that specific area and service
+// export async function notifyProfessionals(
+//   service: string,
+//   bookingArea: string
+// ) {
+//   try {
+//     const cleanService = service.trim();
+//     const cleanArea = bookingArea.trim();
+
+//     const response = await fetch(
+//       `${process.env.EXPO_PUBLIC_API_URL}/api/notifications/notify-careers`,
+//       {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           role: "career",
+//           service: cleanService,
+//           area: cleanArea,
+//         }),
+//       }
+//     );
+//     // 1. Get the raw text first to see the error
+//     const rawText = await response.text();
+//     console.log("RAW SERVER RESPONSE:", rawText);
+
+//     // 2. Try parsing it safely
+//     const data = JSON.parse(rawText);
+//     console.log("Parsed Data:", data);
+
+//     console.log("Backend response:", data);
+//     console.log(
+//       `Notification sent for "${cleanService}" in ${cleanArea}`
+//     );
+//   } catch (error: any) {
+//     console.error(
+//       "Booking notification error:",
+//       error?.message || error
+//     );
+//   }
+// }
 
 /**
  * Notifies the customer that their booking has been accepted.

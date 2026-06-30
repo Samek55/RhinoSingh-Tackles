@@ -24,8 +24,11 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../../src/firebase/firebaseConfig";
+
+// 🛢️ Realtime Database Core Hooks
+import { getDatabase, ref, get } from "firebase/database";
 
 const { width, height } = Dimensions.get('window');
 
@@ -49,20 +52,29 @@ export default function AdminLogin() {
         newOtp[index] = cleanedText.slice(-1);
         setOtp(newOtp);
 
-        // Moving FORWARD
+        // Moving FORWARD safely
         if (cleanedText && index < 5) {
-            inputs.current[index + 1]?.focus();
+            const nextInput = inputs.current[index + 1];
+            if (nextInput && typeof nextInput.focus === 'function') {
+                nextInput.focus();
+            }
         }
 
-        // Moving BACKWARD (Fixes Android APK sticking when deleting)
+        // Moving BACKWARD safely
         if (text === '' && index > 0) {
-            inputs.current[index - 1]?.focus();
+            const prevInput = inputs.current[index - 1];
+            if (prevInput && typeof prevInput.focus === 'function') {
+                prevInput.focus();
+            }
         }
     };
 
     const handleBackspace = (text: string, index: number) => {
         if (!text && index > 0) {
-            inputs.current[index - 1]?.focus();
+            const prevInput = inputs.current[index - 1];
+            if (prevInput && typeof prevInput.focus === 'function') {
+                prevInput.focus();
+            }
         }
     };
 
@@ -84,30 +96,58 @@ export default function AdminLogin() {
             const user = userCredential.user;
 
             if (user) {
-                // 🟩 SET FLAG TO TRUE SO BOOKING SCREEN ALLOWS ENTRY
-                try {
-                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    await AsyncStorage.setItem('userProfileSetupCompleted', 'true');
-                } catch (storageError) {
-                    console.warn('Failed to save profile setup flag:', storageError);
+                // 🔍 Fetch user record node from Firebase Realtime Database
+                const db = getDatabase();
+                const userSnapshot = await get(ref(db, `users/${user.uid}`));
+
+                if (!userSnapshot.exists()) {
+                    await signOut(auth);
+                    Alert.alert("Access Denied", "No matching user profiles found in the local cloud directories.");
+                    return;
                 }
 
-                // 🔥 Clean session link without writing role or phone tags
+                const userData = userSnapshot.val();
+                const userRole = userData?.role;
+
+                // 🟩 SET FLAG TO TRUE SAFELY WITH SOLID NATIVE GUARD
                 try {
-                    const { OneSignal } = require('react-native-onesignal');
-                    OneSignal.login(user.uid);
+                    const AsyncStorageModule = require('@react-native-async-storage/async-storage');
+                    const AsyncStorage = AsyncStorageModule.default || AsyncStorageModule;
+                    if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
+                        await AsyncStorage.setItem('userProfileSetupCompleted', 'true');
+                    }
+                } catch (storageError) {
+                    console.warn('Failed to save profile setup flag safely:', storageError);
+                }
+
+                // 🔥 Clean session link with safe Native module initialization check
+                try {
+                    const OneSignalModule = require('react-native-onesignal');
+                    const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
+                    if (OneSignal && typeof OneSignal.login === 'function') {
+                        OneSignal.login(user.uid);
+                    }
                 } catch (e) {
-                    console.warn('OneSignal registration linkage failed:', e);
+                    console.warn('OneSignal registration linkage bypassed safely:', e);
                 }
 
                 Alert.alert(
                     "Login Successful",
-                    "Welcome back!",
+                    `Welcome back! Access level: ${userRole || 'User'}`,
                     [
                         {
                             text: "OK",
                             onPress: () => {
-                                router.push('/admin/BookingHistory');
+                                // 🔀 DYNAMIC SECURITY ROLE ROUTING MATRIX
+                                if (userRole === "career") {
+                                    router.push('/admin/BookingHistory');
+                                } else if (userRole === "admin") {
+                                    router.push('/admin/HelpboxHistory');
+                                } else if (userRole === "superadmin") {
+                                    router.push('/admin/ProfessionalHistory');
+                                } else {
+                                    Alert.alert("Error", "Unauthorized account categorization mapping configuration.");
+                                }
                             }
                         }
                     ]
@@ -179,7 +219,6 @@ export default function AdminLogin() {
                                         ref={(ref) => {
                                             inputs.current[index] = ref;
                                         }}
-                                        // If hidden and value exists, show a bullet point instead of nothing
                                         value={!passwordVisible && value ? '*' : value}
                                         onChangeText={(text) => handleChange(text, index)}
                                         onKeyPress={({ nativeEvent }) => {
@@ -189,7 +228,6 @@ export default function AdminLogin() {
                                         }}
                                         keyboardType="number-pad"
                                         maxLength={1}
-                                        // secureTextEntry={!passwordVisible} <-- Remove this completely
                                         style={styles.box}
                                     />
                                 ))}
@@ -219,12 +257,8 @@ export default function AdminLogin() {
                             </Text>
                         </Text>
 
-                        <View style={{ marginTop: 15, width: '100%', alignItems: 'center', gap: 10 }}>
-                            <TouchableOpacity onPress={() => router.push('/AdminChangePassword')}>
-                                <Text style={styles.btnTextBelow}>Change PIN</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity onPress={() => router.push('/AdminCreate')}>
+                        <View style={{ marginTop: 5, width: '100%', alignItems: 'center', gap: 10 }}>
+                            <TouchableOpacity onPress={() => router.push('/ProfessionalCreate')}>
                                 <Text style={styles.btnTextBelow}>Create Account</Text>
                             </TouchableOpacity>
                         </View>
@@ -247,7 +281,7 @@ const styles = StyleSheet.create({
         paddingBottom: 0
     },
     title: {
-        fontSize: scaleFont(22),
+        fontSize: scaleFont(26),
         fontWeight: '900',
         marginTop: hp('10%'),
         width: '100%',
@@ -256,7 +290,7 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         width: '100%',
-        fontSize: hp('1.63%'),
+        fontSize: hp('2%'),
         paddingLeft: hp('3%'),
         fontWeight: '500',
         color: 'hsl(0, 0%, 20%)',
@@ -376,7 +410,7 @@ const styles = StyleSheet.create({
         borderWidth: 0.5,
         width: '100%',
         borderColor: 'rgba(0,0,0,0.2)',
-        marginBottom: hp('2%'),
+        marginBottom: hp('3%'),
         marginTop: hp('4%')
     },
 });

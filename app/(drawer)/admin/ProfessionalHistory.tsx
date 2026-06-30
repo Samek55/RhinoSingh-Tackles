@@ -12,7 +12,6 @@ import {
     Alert
 } from 'react-native';
 
-import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
 
 import BookingCard from '../../../components/admin/BookingCard';
@@ -28,7 +27,7 @@ import {
 import { signOut } from "firebase/auth";
 import { auth } from '@/src/firebase/firebaseConfig';
 
-export default function BookingHistory() {
+export default function ProfessionalHistory() {
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
@@ -177,7 +176,7 @@ export default function BookingHistory() {
                     {/* <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
                         <Image source={leftArrowIcon} style={styles.backBtn} />
                     </TouchableOpacity> */}
-                    <Text style={styles.title}>Booking History</Text>
+                    <Text style={styles.title}>Professional History</Text>
                 </View>
 
                 <View style={styles.inputContainer}>

@@ -21,6 +21,9 @@ import { User } from 'firebase/auth';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// 🛢️ Realtime Database Core Hooks
+import { getDatabase, ref, get } from 'firebase/database';
+
 // Safe try/catch static import for OneSignal to avoid runtime crashes if not configured
 let OneSignal: any = null;
 try {
@@ -40,6 +43,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [fbUser, setFbUser] = useState<User | null>(null);
+  const [role, setRole] = useState<string | null>(null); // ✨ Track DB Security Role Configuration
 
   const isActive = (route: string) => pathname === route;
 
@@ -52,13 +56,29 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsLoggedIn(true);
         setFbUser(user);
+
+        // 🔍 Fetch user record node from Realtime Database asynchronously
+        try {
+          const db = getDatabase();
+          const userSnapshot = await get(ref(db, `users/${user.uid}`));
+          if (userSnapshot.exists()) {
+            const userData = userSnapshot.val();
+            setRole(userData?.role || null);
+          } else {
+            setRole(null);
+          }
+        } catch (dbError) {
+          console.warn("Failed to reconcile user role payload snapshot:", dbError);
+          setRole(null);
+        }
       } else {
         setIsLoggedIn(false);
         setFbUser(null);
+        setRole(null);
       }
     });
     return unsubscribe;
@@ -151,15 +171,46 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
           
           <View style={styles.divider} />
 
-          {/* MIDDLE SECTION */}
+          {/* 🔀 MIDDLE SECTION: CONDITIONAL STRUCTURAL SECURITY ROLE LAYOUTS */}
           {isLoggedIn ? (
             <>
+              {/* Common Base Item across all authenticated entities */}
               <MenuItem
                 icon={isActive('/admin/BookingHistory') ? "calendar" : "calendar-outline"}
                 label="View Booking"
                 active={isActive('/admin/BookingHistory')}
                 onPress={() => navigateTo('/admin/BookingHistory')}
               />
+
+              {/* 🛑 Admin Exclusive Node */}
+              {role === "admin" && (
+                <MenuItem
+                  icon={isActive('/admin/HelpboxHistory') ? "help-circle" : "help-circle-outline"}
+                  label="View Helpbox History"
+                  active={isActive('/admin/HelpboxHistory')}
+                  onPress={() => navigateTo('/admin/HelpboxHistory')}
+                />
+              )}
+
+              {/* 🛑 SuperAdmin Orchestration Nodes */}
+              {role === "superadmin" && (
+                <>
+                  <MenuItem
+                    icon={isActive('/admin/HelpboxHistory') ? "help-circle" : "help-circle-outline"}
+                    label="View Helpbox History"
+                    active={isActive('/admin/HelpboxHistory')}
+                    onPress={() => navigateTo('/admin/HelpboxHistory')}
+                  />
+                  <MenuItem
+                    icon={isActive('/admin/ProfessionalHistory') ? "people" : "people-outline"}
+                    label="View Professional History"
+                    active={isActive('/admin/ProfessionalHistory')}
+                    onPress={() => navigateTo('/admin/ProfessionalHistory')}
+                  />
+                </>
+              )}
+
+              {/* Common Trailing Items across all authenticated profiles */}
               <MenuItem
                 icon={isActive('/admin/Notifications') ? "notifications" : "notifications-outline"}
                 label="Notifications"
@@ -218,7 +269,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
               icon={isActive('/admin/AdminLogin') ? "shield-checkmark" : "shield-checkmark-outline"}
               label="Admin"
               active={false}
-              onPress={() => navigateTo('/Admin')}
+              onPress={() => navigateTo('/admin/AdminLogin')}
             />
           )}
         </ScrollView>

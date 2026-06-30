@@ -21,7 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useWorkforceProfile } from '@/api/hooks/useWorkforceProfile';
 
 // --- DATA SOURCE IMPORT ---
-import { services, area, positionAppliedFor } from '@/src/data/Data';
+import { services, area } from '@/src/data/Data';
 import Header4 from '@/components/Header4Admin';
 
 interface FieldProps {
@@ -51,7 +51,7 @@ const ProfileDropdownArrayList = ({
     onChangeText,
     icon,
     placeholder,
-    options,
+    options = [],
     maxSelect
 }: DropdownListProps) => {
     const [modalVisible, setModalVisible] = useState(false);
@@ -82,7 +82,7 @@ const ProfileDropdownArrayList = ({
     };
 
     const filteredOptions = options.filter(option =>
-        option.toLowerCase().includes(searchQuery.toLowerCase())
+        option?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -112,9 +112,11 @@ const ProfileDropdownArrayList = ({
                 activeOpacity={0.7}
             >
                 <Ionicons name={icon} size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <Text style={[styles.textInput, !value && { color: '#9CA3AF' }]} numberOfLines={1}>
-                    {value ? `Selected (${selectedItems.length}/${maxSelect}) items` : placeholder}
-                </Text>
+                <View style={styles.textInputWrapper}>
+                    <Text style={[styles.selectorPlaceholderText, value ? styles.selectorValueText : null]} numberOfLines={1}>
+                        {value ? `Selected (${selectedItems.length}/${maxSelect}) items` : placeholder}
+                    </Text>
+                </View>
                 <Ionicons name="chevron-down" size={18} color="#6B7280" />
             </TouchableOpacity>
 
@@ -123,7 +125,7 @@ const ProfileDropdownArrayList = ({
                 visible={modalVisible}
                 animationType="slide"
                 transparent={true}
-                onRequestClose={() => setModalVisible(false)}
+                onRequestClose={() => { setModalVisible(false); setSearchQuery(''); }}
             >
                 <View style={styles.modalOverlay}>
                     <TouchableOpacity
@@ -155,9 +157,10 @@ const ProfileDropdownArrayList = ({
                             data={filteredOptions}
                             keyExtractor={(item) => item}
                             initialNumToRender={15}
-                            maxToRenderPerBatch={15}
+                            maxToRenderPerBatch={20}
                             windowSize={10}
-                            contentContainerStyle={{ paddingBottom: 20 }}
+                            getItemLayout={(_, index) => ({ length: 50, offset: 50 * index, index })}
+                            contentContainerStyle={{ paddingBottom: 40 }}
                             renderItem={({ item }) => {
                                 const isSelected = selectedItems.includes(item);
                                 return (
@@ -226,34 +229,32 @@ const ProfileInputField = React.memo(({
 
 export default function ModernUpdateProfile() {
     const {
-        fetching,
-        loading,
-        fullName,
+        fetching = false,
+        loading = false,
+        fullName = '',
         setFullName,
-        phone,
+        phone = '',
         setPhone,
-        email,
+        email = '',
         setEmail,
-        preferredWorkingArea,
+        preferredWorkingArea = '',
         setPreferredWorkingArea,
-        areaOfExpertise,
+        areaOfExpertise = '',
         setAreaOfExpertise,
-        emergencyContact,
+        emergencyContact = '',
         setEmergencyContact,
         updateProfile,
     } = useWorkforceProfile();
 
-    // Local state for the selected profile image URI
     const [profileImage, setProfileImage] = useState<string | null>(null);
 
     const getInitials = () => {
-        const cleanName = fullName.trim();
+        const cleanName = (fullName || '').trim();
         if (!cleanName) return "US";
         const words = cleanName.split(/\s+/);
         return words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : words[0].slice(0, 2).toUpperCase();
     };
 
-    // Handler to launch image library selection
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -274,9 +275,7 @@ export default function ModernUpdateProfile() {
         }
     };
 
-    // Handler to route towards security settings layout
     const handleChangeSecurityDetails = () => {
-        // Customize this route to point cleanly to your security layout config name
         router.push('/(drawer)/AdminChangePassword'); 
     };
 
@@ -300,7 +299,7 @@ export default function ModernUpdateProfile() {
                 keyboardShouldPersistTaps="handled"
             >
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'position' : undefined}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
                 >
                     <View style={styles.headerTitleContainer}>
@@ -308,7 +307,7 @@ export default function ModernUpdateProfile() {
                         <Text style={styles.headerSubtitle}>Admin Control Panel</Text>
                     </View>
 
-                    {/* Profile Badge Card with Image Upload integration */}
+                    {/* Profile Badge Card */}
                     <View style={styles.profileBadgeCard}>
                         <TouchableOpacity 
                             style={styles.avatarPickerContainer} 
@@ -322,7 +321,6 @@ export default function ModernUpdateProfile() {
                                     <Text style={styles.avatarText}>{getInitials()}</Text>
                                 </View>
                             )}
-                            {/* Overlay Edit Cam Icon Badge */}
                             <View style={styles.cameraIconBadge}>
                                 <Ionicons name="camera" size={14} color="#FFF" />
                             </View>
@@ -342,7 +340,7 @@ export default function ModernUpdateProfile() {
                     <View style={styles.card}>
                         <ProfileInputField label="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" placeholder="John Doe" />
                         <ProfileInputField label="Email Address" value={email} onChangeText={setEmail} icon="mail-outline" placeholder="admin@domain.com" keyboardType="email-address" />
-                        <ProfileInputField label="Emergency Contact" value={emergencyContact} onChangeText={(v) => setEmergencyContact(v.replace(/[^0-9]/g, '').slice(0, 10))} icon="alert-circle-outline" placeholder="Emergency phone number" keyboardType="number-pad" />
+                        <ProfileInputField label="Emergency Contact" value={emergencyContact} onChangeText={(v) => setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10))} icon="alert-circle-outline" placeholder="Emergency phone number" keyboardType="number-pad" />
                     </View>
 
                     <Text style={styles.sectionHeading}>Work & Capabilities</Text>
@@ -368,7 +366,6 @@ export default function ModernUpdateProfile() {
                         />
                     </View>
 
-                    {/* Security Management Link Card Block */}
                     <Text style={styles.sectionHeading}>Security</Text>
                     <View style={styles.card}>
                         <TouchableOpacity 
@@ -386,7 +383,7 @@ export default function ModernUpdateProfile() {
 
                     <TouchableOpacity
                         style={styles.saveButton}
-                        onPress={() => updateProfile(() => router.back())}
+                        onPress={() => updateProfile?.(() => router.back())}
                         disabled={loading}
                         activeOpacity={0.8}
                     >
@@ -407,19 +404,16 @@ export default function ModernUpdateProfile() {
 
 const styles = StyleSheet.create({
     mainContainer: { flex: 1, backgroundColor: '#F9FAFB' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 55 : 40, paddingBottom: 15, backgroundColor: '#FFF', borderBottomWidth: 1, borderColor: '#E5E7EB' },
-    backButton: { padding: 8, borderRadius: 12, backgroundColor: '#F3F4F6' },
     headerTitleContainer: { alignItems: 'center', paddingBottom: 20 },
     headerTitle: { fontSize: 22, fontWeight: '700', color: '#1F2937' },
     headerSubtitle: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
-    headerRightPlaceholder: { width: 40 },
     scrollContent: { padding: 20, paddingBottom: 80 },
     profileBadgeCard: { alignItems: 'center', backgroundColor: '#FFF', borderRadius: 24, paddingVertical: 24, paddingHorizontal: 20, marginBottom: 25, borderWidth: 1, borderColor: '#E5E7EB', elevation: 2 },
     
     avatarPickerContainer: { position: 'relative', marginBottom: 14, alignItems: 'center' },
     avatarImage: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#16A34A' },
     avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#A5D6A7' },
-    cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#16A34A', width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 1.41 },
+    cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#16A34A', width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', elevation: 3 },
     
     avatarText: { fontSize: 26, fontWeight: '800', color: '#2E7D32', letterSpacing: 0.5 },
     badgeName: { fontSize: 19, fontWeight: '700', color: '#1F2937', marginBottom: 6 },
@@ -436,13 +430,15 @@ const styles = StyleSheet.create({
     inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 14, height: 50, backgroundColor: '#F9FAFB', paddingHorizontal: 14 },
     containerFocused: { borderColor: '#16A34A', backgroundColor: '#FFF' },
     inputIcon: { marginRight: 10 },
-    textInput: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1F2937', justifyContent: 'center' },
+    textInputWrapper: { flex: 1, justifyContent: 'center' },
+    textInput: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1F2937' },
+    selectorPlaceholderText: { fontSize: 15, fontWeight: '500', color: '#9CA3AF' },
+    selectorValueText: { color: '#1F2937' },
     arrayBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 },
     chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: '#A5D6A7' },
     chipText: { fontSize: 13, fontWeight: '600', color: '#2E7D32' },
     chipCloseButton: { marginLeft: 6, justifyContent: 'center', alignItems: 'center' },
     
-    // Security Row Specific Layout Styles
     securityButtonRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
     securityLeftContent: { flexDirection: 'row', alignItems: 'center' },
     securityButtonText: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
@@ -458,7 +454,7 @@ const styles = StyleSheet.create({
     modalTitle: { fontSize: 16, fontWeight: '700', color: '#1F2937' },
     modalSearchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 12, paddingHorizontal: 12, height: 44, marginTop: 15, marginBottom: 10 },
     modalSearchInput: { flex: 1, fontSize: 14, color: '#1F2937' },
-    optionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+    optionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 50, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
     optionRowSelected: { backgroundColor: '#F0FDF4', paddingHorizontal: 8, borderRadius: 8 },
     optionText: { fontSize: 15, color: '#4B5563', fontWeight: '500' },
     optionTextSelected: { color: '#16A34A', fontWeight: '600' },

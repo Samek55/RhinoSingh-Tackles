@@ -15,28 +15,17 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
-
-// 1. MODULAR SDK IMPORTS
-import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-
-// Exported global placeholder for screen orchestration
-export let globalFirebaseConfirmation: any = null;
+import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 
 const NumberBar = ({ onFocus = () => { } }) => {
   const [phone, setPhone] = useState('');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
-  const fontSize = wp('4.2%'); 
-
-  const cleanPhone = phone.replace(/\s/g, '');
+  const fontSize = wp('4.2%');
 
   const handleContinue = async () => {
-    // 1. Force remove everything except digits just in case
+    // Force remove everything except digits
     const structuralClean = phone.replace(/[^0-9]/g, '');
-
-    console.log("--- OTP TRIGGER DEBUG ---");
-    console.log("Raw state phone value:", phone);
-    console.log("Stripped clean digits:", structuralClean);
 
     if (structuralClean.length !== 10) {
       Alert.alert('Phone number must be 10 digits', `You entered ${structuralClean.length} digits.`);
@@ -47,40 +36,33 @@ const NumberBar = ({ onFocus = () => { } }) => {
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      const formattedPhone = '+977' + structuralClean;
-      console.log("Sending SMS to target:", formattedPhone);
+      const formattedPhone = '+91' + structuralClean;
 
-      const authInstance = getAuth();
+      // 💾 Construct payload and write records directly to Supabase DB node
+      const payload = {
+        phone: formattedPhone,
+        date_created: new Date().toISOString() // Dynamic current date timestamp
+      };
 
-      // 2. Wrap execution directly
-      const confirmation = await signInWithPhoneNumber(authInstance, formattedPhone);
-
-      console.log("Firebase SMS successfully initialized!", confirmation);
-      globalFirebaseConfirmation = confirmation;
+      await createHelpboxSB(payload);
 
       setOverlayVisible(false);
 
-      router.push({
-        pathname: '/helpbox/helpboxOTP',
-        params: { phone: structuralClean },
-      });
+      // 🔀 Route cleanly without parameter signatures to target location
+      router.push('/helpbox/otpVerifiedHB');
 
     } catch (error: any) {
       setOverlayVisible(false);
-
-      // 3. FORCE print full system diagnostics to your terminal log 
-      console.error("CRITICAL FIREBASE TRACE:", JSON.stringify(error, null, 2));
-
-      // Fallback native window alert breakdown
+      console.error("CRITICAL SUPABASE TRACE:", error.message);
       Alert.alert(
-        'System Dispatch Error',
-        error.message || 'An unhandled exception blocked the Firebase pipeline.'
+        'Database Write Error',
+        error.message || 'An unhandled exception blocked the database update pipeline.'
       );
     }
   };
 
   return (
-    <View style={[styles.container, { width: wp('86%') }]}> 
+    <View style={[styles.container, { width: wp('86%') }]}>
       <SubmitOverlay
         visible={overlayVisible}
         status={overlayStatus}
@@ -111,13 +93,13 @@ const NumberBar = ({ onFocus = () => { } }) => {
             placeholderTextColor="#94A3B8"
             style={[styles.input, { fontSize }]}
             keyboardType="numeric"
-            maxLength={1298}
+            maxLength={12} 
           />
         </View>
       </View>
 
-      <TouchableOpacity 
-        onPress={handleContinue} 
+      <TouchableOpacity
+        onPress={handleContinue}
         style={styles.helpButton}
         activeOpacity={0.82}
       >
@@ -130,10 +112,10 @@ const NumberBar = ({ onFocus = () => { } }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    height: hp('6.6%'), 
-    borderRadius: 100, // Complete geometric rounding regardless of device layout
+    height: hp('6.6%'),
+    borderRadius: 100,
     borderWidth: 1.5,
-    borderColor: '#1E293B', // Dark, high-contrast border for high visual quality
+    borderColor: '#1E293B',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     paddingLeft: wp('1.5%'),
@@ -154,7 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    paddingLeft: wp('4%'), 
+    paddingLeft: wp('4%'),
     paddingRight: wp('2%'),
     height: '100%',
   },
@@ -162,7 +144,7 @@ const styles = StyleSheet.create({
     height: hp('2.4%'),
     width: wp('5.2%'),
     marginRight: wp('3%'),
-    opacity: 0.75, // Keeps iconography sleek and un-cluttered
+    opacity: 0.75,
   },
   inputContainer: {
     flex: 1,
@@ -171,19 +153,19 @@ const styles = StyleSheet.create({
   },
   input: {
     width: '100%',
-    color: '#0F172A', 
-    fontWeight: '700', // Bolder typography weights for visibility
-    textAlign: 'left', 
+    color: '#0F172A',
+    fontWeight: '700',
+    textAlign: 'left',
     includeFontPadding: false,
-    letterSpacing: 1.2, 
+    letterSpacing: 1.2,
     paddingVertical: 0,
-    marginLeft:10
+    marginLeft: 10
   },
   helpButton: {
     backgroundColor: '#075f47',
-    paddingHorizontal: wp('6.5%'), 
-    height: '85%', // Floats nicely within the outer border architecture
-    borderRadius: 100, 
+    paddingHorizontal: wp('6.5%'),
+    height: '85%',
+    borderRadius: 100,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({

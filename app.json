@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.pracas.rocketsingh"
     },
     "android": {
+      "versionCode": 13,
       "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {

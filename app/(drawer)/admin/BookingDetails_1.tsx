@@ -31,14 +31,15 @@ export default function BookingDetails() {
     const [visible, setVisible] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
-    // Single unified fetch logic entirely mapped to Supabase
+    // Single unified fetch logic entirely mapped to Supabase with structural defenses
     useEffect(() => {
         const load = async () => {
             if (!id) return;
             setLoading(true);
             try {
                 const data = await fetchBookingsFromSupabase();
-                const found = data.find((item: any) => item.id === id);
+                const safeData = Array.isArray(data) ? data : [];
+                const found = safeData.find((item: any) => item && String(item.id) === String(id));
 
                 setBooking(found || null);
             } catch (error) {
@@ -79,10 +80,12 @@ export default function BookingDetails() {
         } catch (error) {
             console.error("Failed to process order acceptance notifications:", error);
         } finally {
-            // Safe forward route routing 
+            // Hardened safe structural parameter typing
+            const routeId = booking?.id ? String(booking.id) : '';
+            
             router.push({
                 pathname: '/admin/BookingDetails_2',
-                params: { id: booking?.id?.toString() },
+                params: { id: routeId },
             });
         }
     };
@@ -114,24 +117,24 @@ export default function BookingDetails() {
                         <Text style={styles.loadingText}>Loading details...</Text>
                     ) : booking ? (
                         <View style={styles.card}>
-                            <Text style={styles.heading}>{booking?.fullName}</Text>
-                            <Text style={styles.bookingId}>Booking ID : {booking?.bookingId}</Text>
+                            <Text style={styles.heading}>{booking?.fullName || 'N/A'}</Text>
+                            <Text style={styles.bookingId}>Booking ID : {booking?.bookingId || 'N/A'}</Text>
 
                             <View style={styles.rowflex}>
                                 <Text style={styles.labelFlex}>Service(s)</Text>
-                                <Text style={styles.valueFlex}>{booking?.service}</Text>
+                                <Text style={styles.valueFlex}>{booking?.service || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.rowflex}>
                                 <Text style={styles.labelFlex}>Budget</Text>
-                                <Text style={[styles.valueFlex, { paddingLeft: hp('4%') }]}>{booking?.budget}</Text>
+                                <Text style={[styles.valueFlex, { paddingLeft: hp('4%') }]}>{booking?.budget || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.rowLocation}>
                                 <View style={styles.rowLocationInside}>
                                     <Text style={styles.labelFlex}>Location</Text>
                                     <Text style={[styles.value, { paddingLeft: hp('3%'), flex: 1 }]}>
-                                        {booking?.area}, {booking?.city}
+                                        {booking?.area || ''}{booking?.city ? `, ${booking.city}` : 'N/A'}
                                     </Text>
                                 </View>
                                 <View>
@@ -141,17 +144,17 @@ export default function BookingDetails() {
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Booking Date & Time</Text>
-                                <Text style={styles.value}>{booking?.bookingDate}</Text>
+                                <Text style={styles.value}>{booking?.bookingDate || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Service Starting Date & Time</Text>
-                                <Text style={styles.value}>{booking?.startingDate}</Text>
+                                <Text style={styles.value}>{booking?.startingDate || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Service Ending Date & Time</Text>
-                                <Text style={styles.value}>{booking?.completionDate}</Text>
+                                <Text style={styles.value}>{booking?.completionDate || 'N/A'}</Text>
                             </View>
 
                             <View style={styles.rowflex}>

@@ -8,18 +8,19 @@ import {
     Dimensions,
     TouchableWithoutFeedback,
     Keyboard,
+    NativeSyntheticEvent,
+    TextInputKeyPressEventData
 } from 'react-native';
 import React, { useRef, useState } from 'react';
 import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 const { width, height } = Dimensions.get('window');
-import { createHelpbox } from '../../../../api/PostApiHelpbox';
 import { router } from 'expo-router';
 import Header2 from '@/components/Header3drawer';
 
 // 1. MODULAR SDK IMPORTS
 import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-import { globalFirebaseConfirmation } from '../../../../components/home/NumberBar';
+import { globalFirebaseConfirmation, setGlobalFirebaseConfirmation } from '../../../../components/home/NumberBar';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 
 const scaleFont = (size: number) => {
@@ -32,8 +33,11 @@ export default function HelpboxOTP() {
     const inputRefs = useRef<Array<TextInput | null>>([]);
     const route = useRoute<any>();
 
-    const phone = route.params?.phone;
+    const phone = route.params?.phone; // Contains +977...
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Filter country code for visual UI readability
+    const displayPhone = phone ? String(phone).replace('+977', '') : '98*****011';
 
     useFocusEffect(
         React.useCallback(() => {
@@ -60,7 +64,7 @@ export default function HelpboxOTP() {
         }
     };
 
-    const handleKeyPress = (event: any, index: number) => {
+    const handleKeyPress = (event: NativeSyntheticEvent<TextInputKeyPressEventData>, index: number) => {
         if (event.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
@@ -71,9 +75,12 @@ export default function HelpboxOTP() {
         try {
             Alert.alert('Resending', 'Requesting a new verification code...');
 
-            // 2. FIX SYNC: Pass auth instance explicitly + pass boolean resend trigger
+            // 2. FIX SYNC: Pass auth instance explicitly + strip bad extra parameter types
             const authInstance = getAuth();
-            await (signInWithPhoneNumber as any)(authInstance, phone, true);
+            const newConfirmation = await signInWithPhoneNumber(authInstance, phone);
+
+            // Re-bind the freshly instantiated instance back to global reference module container
+            setGlobalFirebaseConfirmation(newConfirmation);
 
             Alert.alert('Success', 'A new code has been successfully sent.');
         } catch (error: any) {
@@ -95,8 +102,8 @@ export default function HelpboxOTP() {
         try {
             console.log(`Verifying phone: ${phone} with Firebase code: ${enteredOtp}`);
 
-            if (!globalFirebaseConfirmation) {
-                Alert.alert('Session Expired', 'Authentication context missing. Please go back and try again.');
+            if (!globalFirebaseConfirmation || typeof globalFirebaseConfirmation.confirm !== 'function') {
+                Alert.alert('Session Expired', 'Authentication context missing or lost native prototype binding. Please go back and try again.');
                 setIsSubmitting(false);
                 return;
             }
@@ -129,7 +136,7 @@ export default function HelpboxOTP() {
                     </Text>
 
                     <Text style={styles.bookingText}>
-                        Enter the 6 digits code sent to your customer number {phone ? phone : '98*****011'} below.
+                        Enter the 6 digits code sent to your customer number {displayPhone} below.
                     </Text>
 
                     <Text style={styles.otpPromptText}>Enter your OTP to continue.</Text>

@@ -19,7 +19,7 @@ export default function Header3() {
             fontSize: 22,
             fontWeight: 'bold',
             color: '#fff',
-          }}>Rocket Singh</Text>
+          }}>RocketSingh</Text>
         </View>
 
         <View style={styles.right}>
