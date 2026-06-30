@@ -292,17 +292,7 @@ export default function CreateProfessional() {
             </TouchableOpacity>
           </View>
 
-          <View style={{ marginTop: hp('2%') }}>
-            <Text
-              style={{ marginBottom: 5, fontWeight: '700', color: '#0b176f' }}
-              onPress={()=> router.push('/AdminCreate')}
-            >Create Admin Account</Text>
-            <Text
-              style={{ fontWeight: '700', color: '#0b176f' }}
-              onPress={()=> router.push('/SuperAdminCreate')}
-
-            >Create SuperAdmin Account</Text>
-          </View>
+        
         </View>
       </TouchableOpacity>
     </View>
