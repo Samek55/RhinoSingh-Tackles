@@ -8,27 +8,22 @@ import {
     Platform,
     StyleSheet,
     TextInput,
-    FlatList,
-    Alert
+    FlatList
 } from 'react-native';
 
 import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
-
-import BookingCard from '../../../components/admin/BookingCard';
+import HelpboxCard, { BookingItem } from '../../../components/admin/HelpboxCard';
 import Header4 from '@/components/Header4Admin';
 import { router, useFocusEffect } from 'expo-router';
-import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
+import { fetchHelpboxFromSupabase } from '@/api/supabase/fetchHelpboxSB';
 
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 
-import { signOut } from "firebase/auth";
-import { auth } from '@/src/firebase/firebaseConfig';
-
 export default function HelpboxHistory() {
-    const [bookings, setBookings] = useState<any[]>([]);
+    const [helpboxItems, setHelpboxItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
     const [filter, setFilter] = useState('All');
@@ -36,37 +31,37 @@ export default function HelpboxHistory() {
 
     const lastDataRef = useRef<string>('');
 
-    // FETCH BOOKINGS (Kept clean and simple with strict array fallback)
-    const loadBookings = useCallback(async () => {
+    const loadHelpboxData = useCallback(async () => {
         try {
-            const data = await fetchBookingsFromSupabase();
+            const data = await fetchHelpboxFromSupabase();
+            
+
             const safeData = Array.isArray(data) ? data : [];
             const serialized = JSON.stringify(safeData);
 
-            if (serialized === lastDataRef.current) return;
+            if (serialized === lastDataRef.current) {
+                return;
+            }
 
             lastDataRef.current = serialized;
-            setBookings(safeData);
+            setHelpboxItems(safeData);
         } catch (error) {
-            console.error('Failed to load bookings:', error);
+            console.error('DEBUG ERROR: Failed to load helpbox entries:', error);
         } finally {
             setLoading(false);
         }
     }, []);
 
-    // Safely setup polling intervals without recreating loops
     useFocusEffect(
         useCallback(() => {
-            loadBookings();
+            loadHelpboxData();
 
             const intervalId = setInterval(() => {
-                loadBookings();
+                loadHelpboxData();
             }, 15000);
 
-            return () => {
-                clearInterval(intervalId);
-            };
-        }, [loadBookings])
+            return () => clearInterval(intervalId);
+        }, [loadHelpboxData])
     );
 
     const toggleCard = useCallback((id: string) => {
@@ -74,24 +69,20 @@ export default function HelpboxHistory() {
     }, []);
 
     const handlePress = useCallback((id: string) => {
-        const selectedBooking = bookings.find(b => b.id === id);
-        const currentStatus = selectedBooking?.status?.toLowerCase()?.trim() || '';
+        const selectedItem = helpboxItems.find(b => b.id === id);
+        const currentStatus = selectedItem?.status?.toLowerCase()?.trim() || '';
 
-        const isHistorical = ['completed', 'pending', 'cancel'].some(status =>
-            currentStatus.includes(status)
-        );
+   
 
         router.push({
-            pathname: isHistorical ? '/admin/BookingDetails_2' : '/admin/BookingDetails_1',
+            pathname: '/admin/HelpboxDetails',
             params: { id },
         });
-    }, [bookings]);
+    }, [helpboxItems]);
 
-    // FILTER & SEARCH BOOKINGS 
     const filteredData = useMemo(() => {
-        let data = [...bookings]; // Create a copy to protect original state tracking
+        let data = [...helpboxItems];
 
-        // 1. Apply Status Filter
         if (filter !== 'All') {
             data = data.filter(item => {
                 const status = (item?.status || '').toLowerCase().trim();
@@ -101,37 +92,34 @@ export default function HelpboxHistory() {
             });
         }
 
-        // 2. Apply Text Search Filter
         if (searchQuery.trim() !== '') {
             const query = searchQuery.toLowerCase().trim();
             data = data.filter(item => {
                 if (!item) return false;
-                const bookingId = String(item.bookingId || '').toLowerCase();
-                const customerName = String(item.fullName || '').toLowerCase();
+                const uin = String(item.helpbox_uin || '').toLowerCase();
                 const phoneNumber = String(item.phone || '').toLowerCase();
 
-                return (
-                    bookingId.includes(query) ||
-                    customerName.includes(query) ||
-                    phoneNumber.includes(query)
-                );
+                return uin.includes(query) || phoneNumber.includes(query);
             });
         }
 
-        // 3. Client-side Sort validation fallback (using accurate ISO timestamps)
         data.sort((a, b) => {
-            const timeA = a?.rawBookingDate ? new Date(a.rawBookingDate).getTime() : 0;
-            const timeB = b?.rawBookingDate ? new Date(b.rawBookingDate).getTime() : 0;
-            return timeB - timeA; // Newest date strings bubble to index 0
+            const timeA = a.rawBookingDate ? new Date(a.rawBookingDate).getTime() : 0;
+            const timeB = b.rawBookingDate ? new Date(b.rawBookingDate).getTime() : 0;
+            return timeB - timeA;
         });
 
         return data;
-    }, [filter, searchQuery, bookings]);
-    
-    const renderItem = useCallback(({ item }: any) => {
-        if (!item || !item.id) return null; // Defensive check against blank data rows
+    }, [filter, searchQuery, helpboxItems]);
+
+    const renderItem = useCallback(({ item, index }: any) => {
+        // Crucial logic verification log
+        if (!item || !item.id) {
+            return null;
+        }
+        
         return (
-            <BookingCard
+            <HelpboxCard
                 item={item}
                 isOpen={openId === item.id}
                 onToggle={() => toggleCard(item.id)}
@@ -139,29 +127,6 @@ export default function HelpboxHistory() {
             />
         );
     }, [openId, toggleCard, handlePress]);
-
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            
-            // Native Environment Guard Protection Check
-            try {
-                const OneSignalModule = require('react-native-onesignal');
-                const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
-                if (OneSignal && typeof OneSignal.logout === 'function') {
-                    OneSignal.logout();
-                }
-            } catch (e) {
-                console.warn('OneSignal clean-up safely bypassed:', e);
-            }
-
-            Alert.alert("Logged Out", "You have been logged out successfully.", [
-                { text: "OK", onPress: () => router.replace('/admin/AdminLogin') }
-            ]);
-        } catch (error: any) {
-            Alert.alert("Logout Error", error.message);
-        }
-    };
 
     return (
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -173,16 +138,13 @@ export default function HelpboxHistory() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
             >
                 <View style={styles.headerRow}>
-                    {/* <TouchableOpacity style={styles.backButton} onPress={handleLogout}>
-                        <Image source={leftArrowIcon} style={styles.backBtn} />
-                    </TouchableOpacity> */}
-                    <Text style={styles.title}>Helpbox History</Text>
+                    <Text style={styles.title}>Helpbox History ({filteredData.length})</Text>
                 </View>
 
                 <View style={styles.inputContainer}>
                     <Image source={SearchIcon} style={{ height: 20, width: 20 }} />
                     <TextInput
-                        placeholder="Search"
+                        placeholder="Search phone or UIN..."
                         placeholderTextColor={'rgba(67, 67, 67,0.8)'}
                         style={styles.textInput}
                         value={searchQuery}
@@ -204,20 +166,20 @@ export default function HelpboxHistory() {
                     ))}
                 </View>
 
-                <FlatList
-                    data={filteredData}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => item?.id ? item.id.toString() : index.toString()}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={{ paddingBottom: hp('15%') }}
-                    initialNumToRender={8}
-                    maxToRenderPerBatch={6}
-                    windowSize={7}
-                    removeClippedSubviews={true}
-                    updateCellsBatchingPeriod={50}
-                    keyboardDismissMode="on-drag"
-                />
+                {loading ? (
+                    <Text style={{ alignSelf: 'center', marginTop: 20 }}>Loading records...</Text>
+                ) : filteredData.length === 0 ? (
+                    <Text style={{ alignSelf: 'center', marginTop: 20, color: 'gray' }}>No records to display.</Text>
+                ) : (
+                    <FlatList
+                        data={filteredData}
+                        renderItem={renderItem}
+                        keyExtractor={(item) => item.helpbox_uin}
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{ paddingBottom: hp('15%'), paddingHorizontal: wp('4%') }}
+                    />
+                )}
             </KeyboardAvoidingView>
         </View>
     );
@@ -227,8 +189,6 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
     headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: wp('4%'), marginTop: hp('1.5%'), height: hp('5%') },
     title: { fontSize: hp('2.3%'), fontWeight: '600', color: 'green', marginLeft: wp('2%') },
-    backButton: { padding: 4 },
-    backBtn: { width: hp('3.5%'), height: hp('3.5%'), tintColor: 'green' },
     inputContainer: { flexDirection: 'row', paddingHorizontal: hp('2%'), borderWidth: 1.5, width: '90%', marginBottom: '5%', borderRadius: 200, borderColor: 'rgba(0, 0, 0,0.3)', height: hp('5%'), marginTop: hp('2%'), alignItems: 'center', alignSelf: 'center' },
     textInput: { flex: 1, fontSize: hp(1.8), fontWeight: '500', color: '#000', paddingLeft: 8, letterSpacing: 0.3 },
     mainBtns: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', paddingHorizontal: wp('4%'), paddingBottom: hp('3%') },

@@ -12,7 +12,6 @@ import {
     Alert
 } from 'react-native';
 
-import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import SearchIcon from '../../../assets/images/TabIcon/searchbar.png';
 
 import BookingCard from '../../../components/admin/BookingCard';
@@ -140,29 +139,6 @@ export default function BookingHistory() {
             />
         );
     }, [openId, toggleCard, handlePress]);
-
-    const handleLogout = async () => {
-        try {
-            await signOut(auth);
-            
-            // Native Environment Guard Protection Check
-            try {
-                const OneSignalModule = require('react-native-onesignal');
-                const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
-                if (OneSignal && typeof OneSignal.logout === 'function') {
-                    OneSignal.logout();
-                }
-            } catch (e) {
-                console.warn('OneSignal clean-up safely bypassed:', e);
-            }
-
-            Alert.alert("Logged Out", "You have been logged out successfully.", [
-                { text: "OK", onPress: () => router.replace('/admin/AdminLogin') }
-            ]);
-        } catch (error: any) {
-            Alert.alert("Logout Error", error.message);
-        }
-    };
 
     return (
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
