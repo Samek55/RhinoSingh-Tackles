@@ -217,12 +217,16 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
                 active={isActive('/admin/Notifications')}
                 onPress={() => navigateTo('/Home')}
               />
-              <MenuItem
-                icon={isActive('/admin/UpdateProfile') ? "person-circle" : "person-circle-outline"}
-                label="Update Profile"
-                active={isActive('/admin/UpdateProfile')}
-                onPress={() => navigateTo('/admin/UpdateProfile')}
-              />
+
+              {/* 🛑 Hide Update Profile for Admin and SuperAdmin Roles */}
+              {role !== "admin" && role !== "superadmin" && (
+                <MenuItem
+                  icon={isActive('/admin/UpdateProfile') ? "person-circle" : "person-circle-outline"}
+                  label="Update Profile"
+                  active={isActive('/admin/UpdateProfile')}
+                  onPress={() => navigateTo('/admin/UpdateProfile')}
+                />
+              )}
             </>
           ) : (
             <>
@@ -288,7 +292,6 @@ type MenuItemProps = {
   isLogout?: boolean;
 };
 
-// Pure React component wrapper optimization to avoid unnecessary menu item re-renders
 const MenuItem = React.memo(({ icon, label, onPress, active, isLogout }: MenuItemProps) => {
   const getIconColor = () => {
     if (active) return '#059669';

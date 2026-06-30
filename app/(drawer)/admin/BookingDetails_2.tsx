@@ -204,9 +204,7 @@ export default function BookingDetails() {
                                     style={styles.dropdownBtn}
                                     onPress={() => {
                                         setOpenDropdown(!openDropdown);
-                                        setTimeout(() => {
-                                            scrollRef.current?.scrollToEnd({ animated: true });
-                                        }, 100);
+            
                                     }}
                                 >
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

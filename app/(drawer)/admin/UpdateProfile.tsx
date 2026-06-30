@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
     View,
     Text,
@@ -44,8 +44,8 @@ interface DropdownListProps {
     maxSelect: number;
 }
 
-// Reusable Multi-Select Dropdown Component
-const ProfileDropdownArrayList = ({
+// Reusable Multi-Select Dropdown Component (Optimized with React.memo)
+const ProfileDropdownArrayList = React.memo(({
     label,
     value,
     onChangeText,
@@ -57,9 +57,12 @@ const ProfileDropdownArrayList = ({
     const [modalVisible, setModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const selectedItems = value ? value.split(',').map(item => item.trim()).filter(Boolean) : [];
+    const selectedItems = useMemo(() => 
+        value ? value.split(',').map(item => item.trim()).filter(Boolean) : [],
+        [value]
+    );
 
-    const toggleItem = (item: string) => {
+    const toggleItem = useCallback((item: string) => {
         let updatedItems;
         if (selectedItems.includes(item)) {
             updatedItems = selectedItems.filter(i => i !== item);
@@ -74,16 +77,24 @@ const ProfileDropdownArrayList = ({
             updatedItems = [...selectedItems, item];
         }
         onChangeText(updatedItems.join(', '));
-    };
+    }, [selectedItems, maxSelect, label, onChangeText]);
 
-    const removeItem = (itemToRemove: string) => {
+    const removeItem = useCallback((itemToRemove: string) => {
         const updatedItems = selectedItems.filter(item => item !== itemToRemove);
         onChangeText(updatedItems.join(', '));
+    }, [selectedItems, onChangeText]);
+
+    const filteredOptions = useMemo(() => 
+        options.filter(option => option?.toLowerCase().includes(searchQuery.toLowerCase())),
+        [options, searchQuery]
+    );
+
+    const handleClose = () => {
+        setModalVisible(false);
+        setSearchQuery('');
     };
 
-    const filteredOptions = options.filter(option =>
-        option?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    
 
     return (
         <View style={styles.inputWrapper}>
@@ -125,19 +136,19 @@ const ProfileDropdownArrayList = ({
                 visible={modalVisible}
                 animationType="slide"
                 transparent={true}
-                onRequestClose={() => { setModalVisible(false); setSearchQuery(''); }}
+                onRequestClose={handleClose}
             >
                 <View style={styles.modalOverlay}>
                     <TouchableOpacity
                         style={styles.modalTopDismiss}
                         activeOpacity={1}
-                        onPress={() => { setModalVisible(false); setSearchQuery(''); }}
+                        onPress={handleClose}
                     />
 
                     <View style={styles.modalContent}>
                         <View style={styles.modalHeader}>
                             <Text style={styles.modalTitle}>Select {label} (Max {maxSelect})</Text>
-                            <TouchableOpacity onPress={() => { setModalVisible(false); setSearchQuery(''); }}>
+                            <TouchableOpacity onPress={handleClose}>
                                 <Ionicons name="close" size={24} color="#1F2937" />
                             </TouchableOpacity>
                         </View>
@@ -184,8 +195,9 @@ const ProfileDropdownArrayList = ({
             </Modal>
         </View>
     );
-};
+});
 
+// Reusable Input Component
 const ProfileInputField = React.memo(({
     label,
     value,
@@ -279,6 +291,14 @@ export default function ModernUpdateProfile() {
         router.push('/(drawer)/AdminChangePassword'); 
     };
 
+    const handleSave = () => {
+        updateProfile?.(() => router.back());
+    };
+
+    const handleEmergencyContactChange = useCallback((v: string) => {
+        setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10));
+    }, [setEmergencyContact]);
+
     if (fetching) {
         return (
             <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -289,7 +309,11 @@ export default function ModernUpdateProfile() {
     }
 
     return (
-        <View style={styles.mainContainer}>
+        <KeyboardAvoidingView
+            style={styles.mainContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
+        >
             <StatusBar style="dark" />
             <Header4 />
 
@@ -298,107 +322,102 @@ export default function ModernUpdateProfile() {
                 showsVerticalScrollIndicator={false} 
                 keyboardShouldPersistTaps="handled"
             >
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
-                >
-                    <View style={styles.headerTitleContainer}>
-                        <Text style={styles.headerTitle}>Edit Profile</Text>
-                        <Text style={styles.headerSubtitle}>Admin Control Panel</Text>
-                    </View>
+                <View style={styles.headerTitleContainer}>
+                    <Text style={styles.headerTitle}>Edit Profile</Text>
+                    <Text style={styles.headerSubtitle}>Admin Control Panel</Text>
+                </View>
 
-                    {/* Profile Badge Card */}
-                    <View style={styles.profileBadgeCard}>
-                        <TouchableOpacity 
-                            style={styles.avatarPickerContainer} 
-                            onPress={pickImage} 
-                            activeOpacity={0.85}
-                        >
-                            {profileImage ? (
-                                <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-                            ) : (
-                                <View style={styles.avatarPlaceholder}>
-                                    <Text style={styles.avatarText}>{getInitials()}</Text>
-                                </View>
-                            )}
-                            <View style={styles.cameraIconBadge}>
-                                <Ionicons name="camera" size={14} color="#FFF" />
-                            </View>
-                        </TouchableOpacity>
-
-                        <Text style={styles.badgeName}>{fullName || "Workforce User"}</Text>
-
-                        {phone ? (
-                            <View style={styles.phoneBadgeRow}>
-                                <Ionicons name="call-outline" size={14} color="#6B7280" />
-                                <Text style={styles.badgePhoneText}>{phone}</Text>
-                            </View>
-                        ) : null}
-                    </View>
-
-                    <Text style={styles.sectionHeading}>Personal Information</Text>
-                    <View style={styles.card}>
-                        <ProfileInputField label="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" placeholder="John Doe" />
-                        <ProfileInputField label="Email Address" value={email} onChangeText={setEmail} icon="mail-outline" placeholder="admin@domain.com" keyboardType="email-address" />
-                        <ProfileInputField label="Emergency Contact" value={emergencyContact} onChangeText={(v) => setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10))} icon="alert-circle-outline" placeholder="Emergency phone number" keyboardType="number-pad" />
-                    </View>
-
-                    <Text style={styles.sectionHeading}>Work & Capabilities</Text>
-                    <View style={styles.card}>
-                        <ProfileDropdownArrayList
-                            label="Area of Expertise"
-                            value={areaOfExpertise}
-                            onChangeText={setAreaOfExpertise}
-                            icon="construct-outline"
-                            placeholder="Select Expertise Services"
-                            options={services}
-                            maxSelect={3}
-                        />
-
-                        <ProfileDropdownArrayList
-                            label="Preferred Working Area"
-                            value={preferredWorkingArea}
-                            onChangeText={setPreferredWorkingArea}
-                            icon="location-outline"
-                            placeholder="Select Working Areas"
-                            options={area}
-                            maxSelect={5}
-                        />
-                    </View>
-
-                    <Text style={styles.sectionHeading}>Security</Text>
-                    <View style={styles.card}>
-                        <TouchableOpacity 
-                            style={styles.securityButtonRow} 
-                            onPress={handleChangeSecurityDetails}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.securityLeftContent}>
-                                <Ionicons name="lock-closed-outline" size={20} color="#EF4444" style={styles.inputIcon} />
-                                <Text style={styles.securityButtonText}>Change PIN / Password</Text>
-                            </View>
-                            <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <TouchableOpacity
-                        style={styles.saveButton}
-                        onPress={() => updateProfile?.(() => router.back())}
-                        disabled={loading}
-                        activeOpacity={0.8}
+                {/* Profile Badge Card */}
+                <View style={styles.profileBadgeCard}>
+                    <TouchableOpacity 
+                        style={styles.avatarPickerContainer} 
+                        onPress={pickImage} 
+                        activeOpacity={0.85}
                     >
-                        {loading ? (
-                            <ActivityIndicator color="#fff" size="small" />
+                        {profileImage ? (
+                            <Image source={{ uri: profileImage }} style={styles.avatarImage} />
                         ) : (
-                            <View style={styles.buttonInner}>
-                                <Text style={styles.saveButtonText}>Save Changes</Text>
-                                <Ionicons name="arrow-forward-circle" size={20} color="#fff" />
+                            <View style={styles.avatarPlaceholder}>
+                                <Text style={styles.avatarText}>{getInitials()}</Text>
                             </View>
                         )}
+                        <View style={styles.cameraIconBadge}>
+                            <Ionicons name="camera" size={14} color="#FFF" />
+                        </View>
                     </TouchableOpacity>
-                </KeyboardAvoidingView>
+
+                    <Text style={styles.badgeName}>{fullName || "Workforce User"}</Text>
+
+                    {phone ? (
+                        <View style={styles.phoneBadgeRow}>
+                            <Ionicons name="call-outline" size={14} color="#6B7280" />
+                            <Text style={styles.badgePhoneText}>{phone}</Text>
+                        </View>
+                    ) : null}
+                </View>
+
+                <Text style={styles.sectionHeading}>Personal Information</Text>
+                <View style={styles.card}>
+                    <ProfileInputField label="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" placeholder="John Doe" />
+                    <ProfileInputField label="Email Address" value={email} onChangeText={setEmail} icon="mail-outline" placeholder="admin@domain.com" keyboardType="email-address" />
+                    <ProfileInputField label="Emergency Contact" value={emergencyContact} onChangeText={handleEmergencyContactChange} icon="alert-circle-outline" placeholder="Emergency phone number" keyboardType="number-pad" />
+                </View>
+
+                <Text style={styles.sectionHeading}>Work & Capabilities</Text>
+                <View style={styles.card}>
+                    <ProfileDropdownArrayList
+                        label="Area of Expertise"
+                        value={areaOfExpertise}
+                        onChangeText={setAreaOfExpertise}
+                        icon="construct-outline"
+                        placeholder="Select Expertise Services"
+                        options={services}
+                        maxSelect={3}
+                    />
+
+                    <ProfileDropdownArrayList
+                        label="Preferred Working Area"
+                        value={preferredWorkingArea}
+                        onChangeText={setPreferredWorkingArea}
+                        icon="location-outline"
+                        placeholder="Select Working Areas"
+                        options={area}
+                        maxSelect={5}
+                    />
+                </View>
+
+                <Text style={styles.sectionHeading}>Security</Text>
+                <View style={styles.card}>
+                    <TouchableOpacity 
+                        style={styles.securityButtonRow} 
+                        onPress={handleChangeSecurityDetails}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.securityLeftContent}>
+                            <Ionicons name="lock-closed-outline" size={20} color="#EF4444" style={styles.inputIcon} />
+                            <Text style={styles.securityButtonText}>Change PIN / Password</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+                    </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={handleSave}
+                    disabled={loading}
+                    activeOpacity={0.8}
+                >
+                    {loading ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                        <View style={styles.buttonInner}>
+                            <Text style={styles.saveButtonText}>Save Changes</Text>
+                            <Ionicons name="arrow-forward-circle" size={20} color="#fff" />
+                        </View>
+                    )}
+                </TouchableOpacity>
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

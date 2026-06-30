@@ -22,9 +22,7 @@ import {
 import FileUploadBox from '../../components/bookings/FileUploadBox';
 import ClearFormIcon from '../../assets/icons/booking/clear.png'
 import DropdownAdd from '../../components/bookings/DropdownAdd';
-import { createCareer } from '@/api/PostApiCareer';
 import Header3 from '@/components/Header3drawer';
-import { uploadMultipleToCloudinary } from '@/api/uploadToCloudinary';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createCareerSupabase } from '@/api/supabase/createCareerSupabase';
 import { uploadImageToSupabaseCareer } from '@/src/utils/uploadImageToSBCareer';
@@ -207,6 +205,8 @@ export default function CareerScreen() {
         message: message || null,
         resume_cv: cvImages.map((url) => ({ url })),
         id_proof: idProofImages.map((url) => ({ url })),
+        application_date: new Date().toISOString(),
+        status:'Accepted'
       };
 
       await createCareerSupabase(career);
