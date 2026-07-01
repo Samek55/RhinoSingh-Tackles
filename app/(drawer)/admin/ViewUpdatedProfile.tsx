@@ -246,7 +246,6 @@ export default function ViewUpdatedProfile() {
                         </View>
                     </View>
                     <Text style={styles.profileName}>{profileData.full_name}</Text>
-                    <Text style={styles.profileEmail}>{profileData.email}</Text>
                     {profileData.phone && (
                         <View style={styles.phoneRow}>
                             <Ionicons name="call-outline" size={16} color="#6B7280" />

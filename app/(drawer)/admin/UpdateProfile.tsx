@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as ImagePicker from 'expo-image-picker';
 import { useWorkforceProfile } from '@/api/hooks/useWorkforceProfile';
+import { supabase } from '@/src/lib/supabase';
 
 // --- DATA SOURCE IMPORT ---
 import { services, area } from '@/src/data/Data';
@@ -353,6 +354,7 @@ export default function ModernUpdateProfile() {
     const [uploadingImages, setUploadingImages] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
+    const [checkingPending, setCheckingPending] = useState(false);
 
     // Local state for images
     const [localIdProof, setLocalIdProof] = useState<{ uri: string; fileName?: string }[]>([]);
@@ -432,6 +434,36 @@ export default function ModernUpdateProfile() {
         router.push('/(drawer)/AdminChangePassword');
     };
 
+    // Check for existing pending update
+    const checkForPendingUpdate = async (uin: string): Promise<boolean> => {
+        if (!uin) return false;
+
+        try {
+            setCheckingPending(true);
+
+            const { data, error } = await supabase
+                .from('workforce_update_profile')
+                .select('id_uin, status')
+                .eq('id_uin', uin)
+                .eq('status', 'Pending')
+                .maybeSingle();
+
+            // If there's an error that's not "no rows found"
+            if (error && error.code !== 'PGRST116') {
+                console.error('Error checking pending update:', error);
+                return false;
+            }
+
+            // If data exists, there's a pending update
+            return !!data;
+        } catch (error) {
+            console.error('Error checking pending update:', error);
+            return false;
+        } finally {
+            setCheckingPending(false);
+        }
+    };
+
     // Updated handleDocumentPick - stores locally only
     const handleDocumentPick = async (type: 'id' | 'resume') => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -449,7 +481,7 @@ export default function ModernUpdateProfile() {
         if (!result.canceled) {
             const uri = result.assets[0].uri;
             const fileName = result.assets[0].fileName || `image_${Date.now()}.jpg`;
-            
+
             if (type === 'id') {
                 setLocalIdProof(prev => [...prev, { uri, fileName }]);
             } else {
@@ -484,15 +516,30 @@ export default function ModernUpdateProfile() {
         );
     };
 
-    // Updated handleSave - now uploads all images before saving
+    // Updated handleSave - checks for pending updates first
+    // Updated handleSave - checks for pending updates first
     const handleSave = async () => {
         if (!fullName.trim() || !phone.trim() || !email.trim()) {
             Alert.alert("Error", "Name, Phone, and Email are strictly required.");
             return;
         }
 
+        // Check if there's already a pending update for this UIN
+        if (idUin) {
+            const hasPending = await checkForPendingUpdate(idUin);
+
+            if (hasPending) {
+                Alert.alert(
+                    "Pending Update Exists",
+                    `A pending update request for UIN: ${idUin} is already in the system. You cannot submit another update until the current one is processed.`,
+                    [{ text: "OK", style: "default" }]
+                );
+                return;
+            }
+        }
+
         setIsSaving(true);
-        
+
         try {
             // Upload all ID proof images
             const uploadedIdProofs: string[] = [];
@@ -559,9 +606,26 @@ export default function ModernUpdateProfile() {
                 // Update local state with uploaded URLs
                 setLocalIdProof(uploadedIdProofs.map(url => ({ uri: url })));
                 setLocalResumeCv(uploadedResumeCv.map(url => ({ uri: url })));
-                router.push('/Home');
+
+                // Show success message before navigating
+                Alert.alert(
+                    "Success",
+                    "Profile updated successfully! You can now view your updated profile.",
+                    [
+                        {
+                            text: "View Profile",
+                            onPress: () => {
+                                router.push({
+                                    pathname: '/admin/ViewUpdatedProfile',
+                                    params: { uin: idUin }
+                                });
+                            }
+                        },
+                        { text: "Go to Home", onPress: () => router.push('/Home') }
+                    ]
+                );
             });
-            
+
         } catch (error: any) {
             Alert.alert("Error", error.message || "Failed to save profile.");
         } finally {
@@ -569,11 +633,69 @@ export default function ModernUpdateProfile() {
         }
     };
 
-    const handleViewUpdatedProfile = () => {
-        router.push({
-            pathname: '/admin/ViewUpdatedProfile',
-            params: { uin: idUin }
-        });
+    const handleViewUpdatedProfile = async () => {
+        // Check if there's a UIN
+        if (!idUin) {
+            Alert.alert(
+                "No Profile Found",
+                "No profile data found. Please save your profile first before viewing.",
+                [{ text: "OK", style: "default" }]
+            );
+            return;
+        }
+
+        try {
+            // First, check if there's any data in the workforce_update_profile table with this UIN
+            const { data, error } = await supabase
+                .from('workforce_update_profile')
+                .select('id_uin, status')
+                .eq('id_uin', idUin)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error checking for profile updates:', error);
+                Alert.alert(
+                    "Error",
+                    "Unable to check for profile updates. Please try again later.",
+                    [{ text: "OK", style: "default" }]
+                );
+                return;
+            }
+
+            // If no data exists, the user hasn't made any changes yet
+            if (!data) {
+                Alert.alert(
+                    "No Changes Made",
+                    "You haven't made any profile changes yet. Please make some changes and save them before viewing the updated profile.",
+                    [{ text: "OK", style: "default" }]
+                );
+                return;
+            }
+
+            // If data exists but status is not 'Pending' or 'Approved', inform the user
+            if (data.status !== 'Pending' && data.status !== 'Approved') {
+                Alert.alert(
+                    "No Active Updates",
+                    `Your profile update status is "${data.status}". Only pending or approved updates can be viewed.`,
+                    [{ text: "OK", style: "default" }]
+                );
+                return;
+            }
+
+            // If everything is fine, navigate to the view page
+            router.push({
+                pathname: '/admin/ViewUpdatedProfile',
+                params: { uin: idUin }
+            });
+
+        } catch (error) {
+            console.error('Navigation error:', error);
+            Alert.alert(
+                "Navigation Error",
+                "Unable to navigate to the updated profile page. Please try again later.",
+                [{ text: "OK", style: "default" }]
+            );
+        }
     };
 
     // Reset handler with confirmation
@@ -584,30 +706,29 @@ export default function ModernUpdateProfile() {
     const confirmReset = async () => {
         setIsResetting(true);
         setShowResetConfirm(false);
-        
+
         try {
             // Reset all form data using the hook's reset function
             resetProfile?.();
-            
+
             // Reset local image states to original values
             setLocalIdProof(idProof.map(url => ({ uri: url })) || []);
             setLocalResumeCv(resumeCv.map(url => ({ uri: url })) || []);
             setProfileImage(null);
-            
+
             // Show success message
             Alert.alert("Reset Complete", "Profile form has been reset to original values.");
-            
+
             // Reload the page by replacing the current route with itself
-            // This forces a re-render and re-fetch of data
             router.replace('/admin/UpdateProfile');
-            
+
         } catch (error) {
             Alert.alert("Error", "Failed to reset profile. Please try again.");
         } finally {
             setIsResetting(false);
         }
     };
-    
+
     const handleEmergencyContactChange = useCallback((v: string) => {
         setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10));
     }, [setEmergencyContact]);
@@ -655,7 +776,7 @@ export default function ModernUpdateProfile() {
                     <TouchableOpacity
                         style={styles.avatarPickerContainer}
                         onPress={pickImage}
-                        disabled={isSaving || loading || isResetting}
+                        disabled={isSaving || loading || isResetting || checkingPending}
                         activeOpacity={0.85}
                     >
                         {profileImage ? (
@@ -678,35 +799,42 @@ export default function ModernUpdateProfile() {
                             <Text style={styles.badgePhoneText}>{phone}</Text>
                         </View>
                     ) : null}
+
+                    {idUin ? (
+                        <View style={[styles.phoneBadgeRow, { marginTop: 4 }]}>
+                            <Ionicons name="finger-print-outline" size={14} color="#6B7280" />
+                            <Text style={styles.badgePhoneText}>UIN: {idUin}</Text>
+                        </View>
+                    ) : null}
                 </View>
 
                 <Text style={styles.sectionHeading}>Personal Information</Text>
                 <View style={styles.card}>
-                    <ProfileInputField 
-                        label="Full Name" 
-                        value={fullName} 
-                        onChangeText={setFullName} 
-                        icon="person-outline" 
-                        placeholder="John Doe" 
-                        editable={!isSaving && !loading && !isResetting}
+                    <ProfileInputField
+                        label="Full Name"
+                        value={fullName}
+                        onChangeText={setFullName}
+                        icon="person-outline"
+                        placeholder="John Doe"
+                        editable={!isSaving && !loading && !isResetting && !checkingPending}
                     />
-                    <ProfileInputField 
-                        label="Email Address" 
-                        value={email} 
-                        onChangeText={setEmail} 
-                        icon="mail-outline" 
-                        placeholder="admin@domain.com" 
+                    <ProfileInputField
+                        label="Email Address"
+                        value={email}
+                        onChangeText={setEmail}
+                        icon="mail-outline"
+                        placeholder="admin@domain.com"
                         keyboardType="email-address"
-                        editable={!isSaving && !loading && !isResetting}
+                        editable={!isSaving && !loading && !isResetting && !checkingPending}
                     />
-                    <ProfileInputField 
-                        label="Emergency Contact" 
-                        value={emergencyContact} 
-                        onChangeText={handleEmergencyContactChange} 
-                        icon="alert-circle-outline" 
-                        placeholder="Emergency phone number" 
+                    <ProfileInputField
+                        label="Emergency Contact"
+                        value={emergencyContact}
+                        onChangeText={handleEmergencyContactChange}
+                        icon="alert-circle-outline"
+                        placeholder="Emergency phone number"
                         keyboardType="number-pad"
-                        editable={!isSaving && !loading && !isResetting}
+                        editable={!isSaving && !loading && !isResetting && !checkingPending}
                     />
                 </View>
 
@@ -738,7 +866,7 @@ export default function ModernUpdateProfile() {
                     <TouchableOpacity
                         style={styles.securityButtonRow}
                         onPress={handleChangeSecurityDetails}
-                        disabled={isSaving || loading || isResetting}
+                        disabled={isSaving || loading || isResetting || checkingPending}
                         activeOpacity={0.7}
                     >
                         <View style={styles.securityLeftContent}>
@@ -757,7 +885,7 @@ export default function ModernUpdateProfile() {
                     onDeleteImage={(index) => handleDeleteImage('id', index)}
                     onImagePress={(index) => openLightbox(localIdProof, index)}
                     emptyMessage="No ID documents uploaded"
-                    uploading={isSaving || loading || isResetting}
+                    uploading={isSaving || loading || isResetting || checkingPending}
                 />
 
                 {/* Resume / CV Gallery Component Section */}
@@ -768,14 +896,14 @@ export default function ModernUpdateProfile() {
                     onDeleteImage={(index) => handleDeleteImage('resume', index)}
                     onImagePress={(index) => openLightbox(localResumeCv, index)}
                     emptyMessage="No resume documents uploaded"
-                    uploading={isSaving || loading || isResetting}
+                    uploading={isSaving || loading || isResetting || checkingPending}
                 />
 
                 {/* View Updated Profile Button */}
                 <TouchableOpacity
-                    style={[styles.viewProfileButton, (isSaving || loading || isResetting) && styles.buttonDisabled]}
+                    style={[styles.viewProfileButton, (isSaving || loading || isResetting || checkingPending) && styles.buttonDisabled]}
                     onPress={handleViewUpdatedProfile}
-                    disabled={isSaving || loading || isResetting}
+                    disabled={isSaving || loading || isResetting || checkingPending}
                     activeOpacity={0.8}
                 >
                     <Ionicons name="eye-outline" size={22} color="#16A34A" />
@@ -787,7 +915,7 @@ export default function ModernUpdateProfile() {
                     <TouchableOpacity
                         style={[styles.actionButton, styles.resetButton]}
                         onPress={handleReset}
-                        disabled={isSaving || loading || isResetting}
+                        disabled={isSaving || loading || isResetting || checkingPending}
                         activeOpacity={0.8}
                     >
                         {isResetting ? (
@@ -801,12 +929,12 @@ export default function ModernUpdateProfile() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionButton, styles.saveButton, (isSaving || loading || isResetting) && styles.buttonDisabled]}
+                        style={[styles.actionButton, styles.saveButton, (isSaving || loading || isResetting || checkingPending) && styles.buttonDisabled]}
                         onPress={handleSave}
-                        disabled={isSaving || loading || isResetting}
+                        disabled={isSaving || loading || isResetting || checkingPending}
                         activeOpacity={0.8}
                     >
-                        {isSaving || loading ? (
+                        {isSaving || loading || checkingPending ? (
                             <ActivityIndicator color="#fff" size="small" />
                         ) : (
                             <>
@@ -816,6 +944,16 @@ export default function ModernUpdateProfile() {
                         )}
                     </TouchableOpacity>
                 </View>
+
+                {/* Status Message for Pending Updates */}
+                {idUin && (
+                    <View style={styles.statusInfoContainer}>
+                        <Ionicons name="information-circle-outline" size={18} color="#6B7280" />
+                        <Text style={styles.statusInfoText}>
+                            UIN: {idUin} - {checkingPending ? 'Checking for pending updates...' : 'Ready for update'}
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
 
             {/* Reset Confirmation Modal */}
@@ -838,14 +976,14 @@ export default function ModernUpdateProfile() {
                             <TouchableOpacity
                                 style={[styles.confirmModalButton, styles.confirmCancelButton]}
                                 onPress={() => setShowResetConfirm(false)}
-                                disabled={isSaving || loading || isResetting}
+                                disabled={isSaving || loading || isResetting || checkingPending}
                             >
                                 <Text style={styles.confirmCancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.confirmModalButton, styles.confirmResetButton]}
                                 onPress={confirmReset}
-                                disabled={isSaving || loading || isResetting}
+                                disabled={isSaving || loading || isResetting || checkingPending}
                             >
                                 <Text style={styles.confirmResetButtonText}>Reset</Text>
                             </TouchableOpacity>
@@ -1239,5 +1377,22 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: '#FFF',
+    },
+
+    // Status Info
+    statusInfoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 12,
+        padding: 8,
+        backgroundColor: '#F3F4F6',
+        borderRadius: 8,
+        gap: 6,
+    },
+    statusInfoText: {
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '500',
     },
 });
