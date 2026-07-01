@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -241,10 +241,94 @@ const ProfileInputField = React.memo(({
     );
 });
 
+// Image Gallery Component with Upload and Delete
+const ImageGallerySection = React.memo(({
+    title,
+    images,
+    onAddImage,
+    onDeleteImage,
+    onImagePress,
+    emptyMessage = "No documents uploaded",
+    uploading = false
+}: {
+    title: string;
+    images: { uri: string; fileName?: string }[];
+    onAddImage: () => void;
+    onDeleteImage: (index: number) => void;
+    onImagePress: (index: number) => void;
+    emptyMessage?: string;
+    uploading?: boolean;
+}) => {
+    return (
+        <View style={styles.row}>
+            <View style={styles.galleryHeader}>
+                <Text style={styles.label}>{title}</Text>
+                <TouchableOpacity
+                    style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+                    onPress={onAddImage}
+                    disabled={uploading}
+                    activeOpacity={0.8}
+                >
+                    {uploading ? (
+                        <ActivityIndicator size="small" color="#16A34A" />
+                    ) : (
+                        <>
+                            <Ionicons name="cloud-upload-outline" size={20} color="#16A34A" />
+                            <Text style={styles.uploadButtonText}>Upload</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+            </View>
+
+            {images.length > 0 ? (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.galleryContainer}
+                >
+                    {images.map((item, index) => (
+                        <View key={`img-${index}`} style={styles.galleryItemWrapper}>
+                            <TouchableOpacity
+                                onPress={() => onImagePress(index)}
+                                activeOpacity={0.7}
+                                style={styles.galleryImageTouch}
+                            >
+                                <Image
+                                    source={{ uri: item.uri }}
+                                    style={styles.galleryImage}
+                                    resizeMode="cover"
+                                />
+                                <View style={styles.imageOverlay}>
+                                    <Ionicons name="expand-outline" size={20} color="#FFF" />
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.deleteImageButton}
+                                onPress={() => onDeleteImage(index)}
+                                disabled={uploading}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="close-circle" size={24} color={uploading ? "#D1D5DB" : "#EF4444"} />
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+                </ScrollView>
+            ) : (
+                <View style={styles.emptyGalleryContainer}>
+                    <Ionicons name="document-outline" size={40} color="#D1D5DB" />
+                    <Text style={styles.emptyGalleryText}>{emptyMessage}</Text>
+                    <Text style={styles.emptyGallerySubText}>Tap "Upload" to add documents</Text>
+                </View>
+            )}
+        </View>
+    );
+});
+
 export default function ModernUpdateProfile() {
     const {
         fetching = false,
         loading = false,
+        idUin,
         fullName = '',
         setFullName,
         phone = '',
@@ -257,6 +341,7 @@ export default function ModernUpdateProfile() {
         emergencyContact = '',
         setEmergencyContact,
         saveProfile,
+        resetProfile,
         idProof,
         resumeCv,
         setIdProof,
@@ -264,16 +349,42 @@ export default function ModernUpdateProfile() {
     } = useWorkforceProfile();
 
     const [profileImage, setProfileImage] = useState<string | null>(null);
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [uploadingImages, setUploadingImages] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+
+    // Local state for images
+    const [localIdProof, setLocalIdProof] = useState<{ uri: string; fileName?: string }[]>([]);
+    const [localResumeCv, setLocalResumeCv] = useState<{ uri: string; fileName?: string }[]>([]);
+
+    // Initialize local state from props
+    useEffect(() => {
+        if (idProof && idProof.length > 0) {
+            setLocalIdProof(idProof.map(url => ({ uri: url })));
+        }
+    }, [idProof]);
+
+    useEffect(() => {
+        if (resumeCv && resumeCv.length > 0) {
+            setLocalResumeCv(resumeCv.map(url => ({ uri: url })));
+        }
+    }, [resumeCv]);
+
+    // Reset profile image when form resets
+    useEffect(() => {
+        if (!fullName) {
+            setProfileImage(null);
+        }
+    }, [fullName]);
 
     // Lightbox State Management
     const [viewerVisible, setViewerVisible] = useState(false);
-    const [activeImages, setActiveImages] = useState<string[]>([]);
+    const [activeImages, setActiveImages] = useState<{ uri: string; fileName?: string }[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Change the logic to expect strings, not objects with .url
-    const openLightbox = (images: { url: string }[], index: number) => {
-        const urls = images.map(img => img.url);
-        setActiveImages(urls);
+    const openLightbox = (images: { uri: string; fileName?: string }[], index: number) => {
+        setActiveImages(images);
         setCurrentIndex(index);
         setViewerVisible(true);
     };
@@ -321,24 +432,195 @@ export default function ModernUpdateProfile() {
         router.push('/(drawer)/AdminChangePassword');
     };
 
-    const handleSave = () => {
-        saveProfile?.(() => router.push('/Home'));
+    // Updated handleDocumentPick - stores locally only
+    const handleDocumentPick = async (type: 'id' | 'resume') => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+        if (permissionResult.granted === false) {
+            Alert.alert("Permission Denied", "You need to allow access to your photos to upload documents.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            const uri = result.assets[0].uri;
+            const fileName = result.assets[0].fileName || `image_${Date.now()}.jpg`;
+            
+            if (type === 'id') {
+                setLocalIdProof(prev => [...prev, { uri, fileName }]);
+            } else {
+                setLocalResumeCv(prev => [...prev, { uri, fileName }]);
+            }
+        }
     };
 
+    // Updated handleDeleteImage - works with local state
+    const handleDeleteImage = (type: 'id' | 'resume', index: number) => {
+        Alert.alert(
+            "Delete Document",
+            "Are you sure you want to remove this document?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: () => {
+                        if (type === 'id') {
+                            const newProof = [...localIdProof];
+                            newProof.splice(index, 1);
+                            setLocalIdProof(newProof);
+                        } else {
+                            const newResume = [...localResumeCv];
+                            newResume.splice(index, 1);
+                            setLocalResumeCv(newResume);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    // Updated handleSave - now uploads all images before saving
+    const handleSave = async () => {
+        if (!fullName.trim() || !phone.trim() || !email.trim()) {
+            Alert.alert("Error", "Name, Phone, and Email are strictly required.");
+            return;
+        }
+
+        setIsSaving(true);
+        
+        try {
+            // Upload all ID proof images
+            const uploadedIdProofs: string[] = [];
+            let hasUploadError = false;
+
+            for (const item of localIdProof) {
+                // Skip if it's already a URL (existing image)
+                if (item.uri.startsWith('http')) {
+                    uploadedIdProofs.push(item.uri);
+                } else {
+                    // Upload new image
+                    try {
+                        const publicUrl = await uploadWorkforceDocument(
+                            { uri: item.uri },
+                            phone,
+                            'id_proof'
+                        );
+                        uploadedIdProofs.push(publicUrl);
+                    } catch (error: any) {
+                        hasUploadError = true;
+                        Alert.alert("Upload Failed", `Failed to upload ID document: ${error.message}`);
+                        break;
+                    }
+                }
+            }
+
+            if (hasUploadError) {
+                setIsSaving(false);
+                return;
+            }
+
+            // Upload all Resume/CV images
+            const uploadedResumeCv: string[] = [];
+            for (const item of localResumeCv) {
+                if (item.uri.startsWith('http')) {
+                    uploadedResumeCv.push(item.uri);
+                } else {
+                    try {
+                        const publicUrl = await uploadWorkforceDocument(
+                            { uri: item.uri },
+                            phone,
+                            'resume_cv'
+                        );
+                        uploadedResumeCv.push(publicUrl);
+                    } catch (error: any) {
+                        hasUploadError = true;
+                        Alert.alert("Upload Failed", `Failed to upload resume document: ${error.message}`);
+                        break;
+                    }
+                }
+            }
+
+            if (hasUploadError) {
+                setIsSaving(false);
+                return;
+            }
+
+            // Update the state with uploaded URLs
+            setIdProof(uploadedIdProofs);
+            setResumeCv(uploadedResumeCv);
+
+            // Now save the profile
+            await saveProfile?.(() => {
+                // Update local state with uploaded URLs
+                setLocalIdProof(uploadedIdProofs.map(url => ({ uri: url })));
+                setLocalResumeCv(uploadedResumeCv.map(url => ({ uri: url })));
+                router.push('/Home');
+            });
+            
+        } catch (error: any) {
+            Alert.alert("Error", error.message || "Failed to save profile.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleViewUpdatedProfile = () => {
+        router.push({
+            pathname: '/admin/ViewUpdatedProfile',
+            params: { uin: idUin }
+        });
+    };
+
+    // Reset handler with confirmation
+    const handleReset = () => {
+        setShowResetConfirm(true);
+    };
+
+    const confirmReset = async () => {
+        setIsResetting(true);
+        setShowResetConfirm(false);
+        
+        try {
+            // Reset all form data using the hook's reset function
+            resetProfile?.();
+            
+            // Reset local image states to original values
+            setLocalIdProof(idProof.map(url => ({ uri: url })) || []);
+            setLocalResumeCv(resumeCv.map(url => ({ uri: url })) || []);
+            setProfileImage(null);
+            
+            // Show success message
+            Alert.alert("Reset Complete", "Profile form has been reset to original values.");
+            
+            // Reload the page by replacing the current route with itself
+            // This forces a re-render and re-fetch of data
+            router.replace('/admin/UpdateProfile');
+            
+        } catch (error) {
+            Alert.alert("Error", "Failed to reset profile. Please try again.");
+        } finally {
+            setIsResetting(false);
+        }
+    };
+    
     const handleEmergencyContactChange = useCallback((v: string) => {
         setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10));
     }, [setEmergencyContact]);
 
-    // --- SIMPLIFIED ARRAY PARSING ---
-    const idProofImages = useMemo(() => {
-        // idProof is now string[] from the hook
-        return (idProof || []).map(url => ({ url }));
-    }, [idProof]);
-
-    const resumeCVImages = useMemo(() => {
-        // resumeCv is now string[] from the hook
-        return (resumeCv || []).map(url => ({ url }));
-    }, [resumeCv]);
+    // Show loading overlay during reset
+    if (isResetting) {
+        return (
+            <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#16A34A" />
+                <Text style={{ marginTop: 12, color: '#6B7280', fontWeight: '500' }}>Resetting profile...</Text>
+            </View>
+        );
+    }
 
     if (fetching) {
         return (
@@ -348,35 +630,6 @@ export default function ModernUpdateProfile() {
             </View>
         );
     }
-
-    const handleDocumentPick = async (type: 'id' | 'resume') => {
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: 'images' as any,
-            quality: 0.8,
-        });
-
-        if (!result.canceled && phone) {
-            try {
-                // Pass 'id_proof' or 'resume_cv' to the function
-                const column = type === 'id' ? 'id_proof' : 'resume_cv';
-                const publicUrl = await uploadWorkforceDocument(
-                    { uri: result.assets[0].uri },
-                    phone,
-                    column
-                );
-
-                // Update UI state locally so the gallery refreshes immediately
-                if (type === 'id') {
-                    setIdProof(prev => [...prev, publicUrl]);
-                } else {
-                    setResumeCv(prev => [...prev, publicUrl]);
-                }
-            } catch (error: any) {
-                Alert.alert("Upload Failed", error.message);
-            }
-        }
-    };
-    
 
     return (
         <KeyboardAvoidingView
@@ -402,6 +655,7 @@ export default function ModernUpdateProfile() {
                     <TouchableOpacity
                         style={styles.avatarPickerContainer}
                         onPress={pickImage}
+                        disabled={isSaving || loading || isResetting}
                         activeOpacity={0.85}
                     >
                         {profileImage ? (
@@ -428,9 +682,32 @@ export default function ModernUpdateProfile() {
 
                 <Text style={styles.sectionHeading}>Personal Information</Text>
                 <View style={styles.card}>
-                    <ProfileInputField label="Full Name" value={fullName} onChangeText={setFullName} icon="person-outline" placeholder="John Doe" />
-                    <ProfileInputField label="Email Address" value={email} onChangeText={setEmail} icon="mail-outline" placeholder="admin@domain.com" keyboardType="email-address" />
-                    <ProfileInputField label="Emergency Contact" value={emergencyContact} onChangeText={handleEmergencyContactChange} icon="alert-circle-outline" placeholder="Emergency phone number" keyboardType="number-pad" />
+                    <ProfileInputField 
+                        label="Full Name" 
+                        value={fullName} 
+                        onChangeText={setFullName} 
+                        icon="person-outline" 
+                        placeholder="John Doe" 
+                        editable={!isSaving && !loading && !isResetting}
+                    />
+                    <ProfileInputField 
+                        label="Email Address" 
+                        value={email} 
+                        onChangeText={setEmail} 
+                        icon="mail-outline" 
+                        placeholder="admin@domain.com" 
+                        keyboardType="email-address"
+                        editable={!isSaving && !loading && !isResetting}
+                    />
+                    <ProfileInputField 
+                        label="Emergency Contact" 
+                        value={emergencyContact} 
+                        onChangeText={handleEmergencyContactChange} 
+                        icon="alert-circle-outline" 
+                        placeholder="Emergency phone number" 
+                        keyboardType="number-pad"
+                        editable={!isSaving && !loading && !isResetting}
+                    />
                 </View>
 
                 <Text style={styles.sectionHeading}>Work & Capabilities</Text>
@@ -461,6 +738,7 @@ export default function ModernUpdateProfile() {
                     <TouchableOpacity
                         style={styles.securityButtonRow}
                         onPress={handleChangeSecurityDetails}
+                        disabled={isSaving || loading || isResetting}
                         activeOpacity={0.7}
                     >
                         <View style={styles.securityLeftContent}>
@@ -472,90 +750,109 @@ export default function ModernUpdateProfile() {
                 </View>
 
                 {/* ID / Proof Gallery Component Section */}
-                <View style={styles.row}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={styles.label}>ID / Proof Documents</Text>
-                        <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() => handleDocumentPick('id')}
-                        >
-                            <Ionicons name="add-circle" size={24} color="#16A34A" />
-                        </TouchableOpacity>
-                    </View>
-                    {idProofImages.length > 0 ? (
-                        <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.carouselContainer}
-                            style={styles.carouselWrapper}
-                        >
-                            {idProofImages.map((item, index) => (
-                                <TouchableOpacity
-                                    key={`id-${index}`}
-                                    onPress={() => openLightbox(idProofImages, index)}
-                                    activeOpacity={0.7}
-                                    style={styles.thumbnailTouch}
-                                >
-                                    <Image
-                                        source={{ uri: item?.url }}
-                                        style={styles.thumbnailImage}
-                                        resizeMode="cover"
-                                    />
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    ) : (
-                        <Text style={styles.value}>No Documents Uploaded</Text>
-                    )}
-                </View>
+                <ImageGallerySection
+                    title="ID / Proof Documents"
+                    images={localIdProof}
+                    onAddImage={() => handleDocumentPick('id')}
+                    onDeleteImage={(index) => handleDeleteImage('id', index)}
+                    onImagePress={(index) => openLightbox(localIdProof, index)}
+                    emptyMessage="No ID documents uploaded"
+                    uploading={isSaving || loading || isResetting}
+                />
 
                 {/* Resume / CV Gallery Component Section */}
-                <View style={styles.row}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Text style={styles.label}>Resume / CV Documents</Text>
-                        <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() => handleDocumentPick('resume')}
-                        >
-                            <Ionicons name="add-circle" size={24} color="#16A34A" />
-                        </TouchableOpacity>
-                    </View>
-                    {resumeCVImages.length > 0 ? (
-                        <View style={styles.carouselWrapper}>
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
-                                {resumeCVImages.map((item, index) => (
-                                    <TouchableOpacity
-                                        key={`res-${index}`}
-                                        onPress={() => openLightbox(resumeCVImages, index)}
-                                        activeOpacity={0.7}
-                                        style={styles.thumbnailTouch}
-                                    >
-                                        <Image source={{ uri: item?.url }} style={styles.thumbnailImage} resizeMode="cover" />
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
-                    ) : (
-                        <Text style={styles.value}>No Documents Uploaded</Text>
-                    )}
-                </View>
+                <ImageGallerySection
+                    title="Resume / CV Documents"
+                    images={localResumeCv}
+                    onAddImage={() => handleDocumentPick('resume')}
+                    onDeleteImage={(index) => handleDeleteImage('resume', index)}
+                    onImagePress={(index) => openLightbox(localResumeCv, index)}
+                    emptyMessage="No resume documents uploaded"
+                    uploading={isSaving || loading || isResetting}
+                />
 
+                {/* View Updated Profile Button */}
                 <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={handleSave}
-                    disabled={loading}
+                    style={[styles.viewProfileButton, (isSaving || loading || isResetting) && styles.buttonDisabled]}
+                    onPress={handleViewUpdatedProfile}
+                    disabled={isSaving || loading || isResetting}
                     activeOpacity={0.8}
                 >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                        <View style={styles.buttonInner}>
-                            <Text style={styles.saveButtonText}>Save Changes</Text>
-                            <Ionicons name="arrow-forward-circle" size={20} color="#fff" />
-                        </View>
-                    )}
+                    <Ionicons name="eye-outline" size={22} color="#16A34A" />
+                    <Text style={styles.viewProfileButtonText}>View Updated Profile</Text>
                 </TouchableOpacity>
+
+                {/* Action Buttons Row */}
+                <View style={styles.actionButtonsRow}>
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.resetButton]}
+                        onPress={handleReset}
+                        disabled={isSaving || loading || isResetting}
+                        activeOpacity={0.8}
+                    >
+                        {isResetting ? (
+                            <ActivityIndicator size="small" color="#EF4444" />
+                        ) : (
+                            <>
+                                <Ionicons name="refresh-outline" size={20} color="#EF4444" />
+                                <Text style={styles.resetButtonText}>Reset</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.actionButton, styles.saveButton, (isSaving || loading || isResetting) && styles.buttonDisabled]}
+                        onPress={handleSave}
+                        disabled={isSaving || loading || isResetting}
+                        activeOpacity={0.8}
+                    >
+                        {isSaving || loading ? (
+                            <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                            <>
+                                <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                                <Text style={styles.saveButtonText}>Save Changes</Text>
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
             </ScrollView>
+
+            {/* Reset Confirmation Modal */}
+            <Modal
+                visible={showResetConfirm}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowResetConfirm(false)}
+            >
+                <View style={styles.confirmModalOverlay}>
+                    <View style={styles.confirmModalContent}>
+                        <View style={styles.confirmModalIcon}>
+                            <Ionicons name="warning-outline" size={48} color="#EF4444" />
+                        </View>
+                        <Text style={styles.confirmModalTitle}>Reset Form?</Text>
+                        <Text style={styles.confirmModalMessage}>
+                            This will discard all unsaved changes and restore the form to its original values.
+                        </Text>
+                        <View style={styles.confirmModalButtons}>
+                            <TouchableOpacity
+                                style={[styles.confirmModalButton, styles.confirmCancelButton]}
+                                onPress={() => setShowResetConfirm(false)}
+                                disabled={isSaving || loading || isResetting}
+                            >
+                                <Text style={styles.confirmCancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.confirmModalButton, styles.confirmResetButton]}
+                                onPress={confirmReset}
+                                disabled={isSaving || loading || isResetting}
+                            >
+                                <Text style={styles.confirmResetButtonText}>Reset</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             {/* --- LIGHTBOX VIEWER OVERLAY --- */}
             <Modal
@@ -591,7 +888,7 @@ export default function ModernUpdateProfile() {
                         {/* Image Viewer Target */}
                         {activeImages.length > 0 && (
                             <Image
-                                source={{ uri: activeImages[currentIndex] }}
+                                source={{ uri: activeImages[currentIndex].uri }}
                                 style={styles.fullViewerImage}
                                 resizeMode="contain"
                             />
@@ -655,9 +952,62 @@ const styles = StyleSheet.create({
     securityLeftContent: { flexDirection: 'row', alignItems: 'center' },
     securityButtonText: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
 
-    saveButton: { backgroundColor: '#16A34A', borderRadius: 16, height: 54, justifyContent: 'center', alignItems: 'center', marginTop: 5 },
-    buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    saveButtonText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+    actionButtonsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 5,
+    },
+    actionButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 16,
+        height: 54,
+        gap: 8,
+    },
+    saveButton: {
+        backgroundColor: '#16A34A',
+        flex: 2,
+    },
+    resetButton: {
+        backgroundColor: '#FEF2F2',
+        borderWidth: 1.5,
+        borderColor: '#FCA5A5',
+        flex: 1,
+    },
+    saveButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFF',
+    },
+    resetButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#EF4444',
+    },
+    buttonDisabled: {
+        opacity: 0.6,
+    },
+
+    // View Profile Button
+    viewProfileButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F0FDF4',
+        borderWidth: 1.5,
+        borderColor: '#86EFAC',
+        borderRadius: 16,
+        height: 50,
+        marginBottom: 16,
+        gap: 10,
+    },
+    viewProfileButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#16A34A',
+    },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
     modalTopDismiss: { height: '20%' },
@@ -672,41 +1022,108 @@ const styles = StyleSheet.create({
     optionTextSelected: { color: '#16A34A', fontWeight: '600' },
     emptyText: { textAlign: 'center', color: '#9CA3AF', marginVertical: 30, fontSize: 14 },
 
+    // Gallery Styles
     row: {
-        marginBottom: 20,
+        marginBottom: 24,
         paddingHorizontal: 4,
         width: '100%',
+    },
+    galleryHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 12,
     },
     label: {
         fontSize: 14,
         fontWeight: '600',
         color: '#4B5563',
-        marginBottom: 8,
     },
-    value: {
-        fontSize: 14,
-        color: '#9CA3AF',
-        fontStyle: 'italic',
-    },
-    carouselWrapper: {
-        marginVertical: 8,
-        height: 90,
-    },
-    carouselContainer: {
+    uploadButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingRight: 16,
+        backgroundColor: '#F0FDF4',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#86EFAC',
+        gap: 6,
     },
-    thumbnailTouch: {
-        width: 80,
-        height: 80,
-        marginRight: 10,
+    uploadButtonDisabled: {
+        opacity: 0.6,
     },
-    thumbnailImage: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-        backgroundColor: '#E5E7EB',
+    uploadButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#16A34A',
+    },
+    galleryContainer: {
+        flexDirection: 'row',
+        paddingVertical: 4,
+        gap: 12,
+    },
+    galleryItemWrapper: {
+        position: 'relative',
+        marginRight: 4,
+    },
+    galleryImageTouch: {
+        width: 100,
+        height: 100,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: '#F3F4F6',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+    galleryImage: {
+        width: '100%',
+        height: '100%',
+    },
+    imageOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        opacity: 0,
+    },
+    deleteImageButton: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        backgroundColor: '#FFF',
+        borderRadius: 12,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+    },
+    emptyGalleryContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 30,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        borderStyle: 'dashed',
+        minHeight: 120,
+    },
+    emptyGalleryText: {
+        fontSize: 14,
+        color: '#9CA3AF',
+        fontWeight: '500',
+        marginTop: 8,
+    },
+    emptyGallerySubText: {
+        fontSize: 12,
+        color: '#D1D5DB',
+        marginTop: 4,
     },
 
     /* Lightbox Viewer Styles */
@@ -763,8 +1180,64 @@ const styles = StyleSheet.create({
     navRight: {
         right: 10,
     },
-    addButton: {
-        padding: 4,
+
+    // Reset Confirmation Modal Styles
+    confirmModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmModalContent: {
+        backgroundColor: '#FFF',
+        borderRadius: 24,
+        padding: 24,
+        width: '85%',
+        maxWidth: 340,
+        alignItems: 'center',
+    },
+    confirmModalIcon: {
+        marginBottom: 16,
+    },
+    confirmModalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1F2937',
         marginBottom: 8,
+    },
+    confirmModalMessage: {
+        fontSize: 15,
+        color: '#6B7280',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    confirmModalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    confirmModalButton: {
+        flex: 1,
+        height: 48,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    confirmCancelButton: {
+        backgroundColor: '#F3F4F6',
+    },
+    confirmResetButton: {
+        backgroundColor: '#EF4444',
+    },
+    confirmCancelButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#4B5563',
+    },
+    confirmResetButtonText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#FFF',
     },
 });

@@ -8,7 +8,6 @@ export function useWorkforceProfile() {
     const [fetching, setFetching] = useState(true);
     const [fbUser, setFbUser] = useState<User | null>(null);
     
-
     // Track the source table's unique identifying node
     const [idUin, setIdUin] = useState('');
 
@@ -23,6 +22,19 @@ export function useWorkforceProfile() {
     const [preferredWorkingArea, setPreferredWorkingArea] = useState('');
     const [areaOfExpertise, setAreaOfExpertise] = useState('');
     const [emergencyContact, setEmergencyContact] = useState('');
+
+    // Store initial values for reset
+    const [initialValues, setInitialValues] = useState({
+        fullName: '',
+        phone: '',
+        email: '',
+        preferredWorkingArea: '',
+        areaOfExpertise: '',
+        emergencyContact: '',
+        idProof: [] as string[],
+        resumeCv: [] as string[],
+        idUin: '',
+    });
 
     useEffect(() => {
         const fetchWorkforceData = async () => {
@@ -58,29 +70,51 @@ export function useWorkforceProfile() {
                     if (currentUser.phoneNumber) setPhone(currentUser.phoneNumber);
                     console.log('Supabase match fallback:', error.message);
                 } else if (data) {
-                    setIdUin(data.uin || '');
-
-                    // Capture absolute document/image URLs from database fields
-                    setIdProof(data.id_proof || null);
-                    setResumeCv(data.resume_cv || null);
-
-                    setFullName(data.full_name || '');
-                    setPhone(data.phone || '');
-                    setEmail(data.email || '');
-                    setEmergencyContact(data.emergency_contact_number || '');
-
-                    // Safe conversion for Postgres arrays -> Comma strings
+                    const newIdUin = data.uin || '';
+                    const newIdProof = data.id_proof || [];
+                    const newResumeCv = data.resume_cv || [];
+                    const newFullName = data.full_name || '';
+                    const newPhone = data.phone || '';
+                    const newEmail = data.email || '';
+                    const newEmergencyContact = data.emergency_contact_number || '';
+                    
+                    let newAreaOfExpertise = '';
                     if (Array.isArray(data.area_of_expertise)) {
-                        setAreaOfExpertise(data.area_of_expertise.join(', '));
+                        newAreaOfExpertise = data.area_of_expertise.join(', ');
                     } else {
-                        setAreaOfExpertise(data.area_of_expertise || '');
+                        newAreaOfExpertise = data.area_of_expertise || '';
                     }
 
+                    let newPreferredWorkingArea = '';
                     if (Array.isArray(data.preferred_working_area)) {
-                        setPreferredWorkingArea(data.preferred_working_area.join(', '));
+                        newPreferredWorkingArea = data.preferred_working_area.join(', ');
                     } else {
-                        setPreferredWorkingArea(data.preferred_working_area || '');
+                        newPreferredWorkingArea = data.preferred_working_area || '';
                     }
+
+                    // Set all form states
+                    setIdUin(newIdUin);
+                    setIdProof(newIdProof);
+                    setResumeCv(newResumeCv);
+                    setFullName(newFullName);
+                    setPhone(newPhone);
+                    setEmail(newEmail);
+                    setEmergencyContact(newEmergencyContact);
+                    setAreaOfExpertise(newAreaOfExpertise);
+                    setPreferredWorkingArea(newPreferredWorkingArea);
+
+                    // Store initial values for reset
+                    setInitialValues({
+                        fullName: newFullName,
+                        phone: newPhone,
+                        email: newEmail,
+                        preferredWorkingArea: newPreferredWorkingArea,
+                        areaOfExpertise: newAreaOfExpertise,
+                        emergencyContact: newEmergencyContact,
+                        idProof: newIdProof,
+                        resumeCv: newResumeCv,
+                        idUin: newIdUin,
+                    });
                 }
             } catch (err) {
                 console.error('Error loading profiles:', err);
@@ -91,6 +125,19 @@ export function useWorkforceProfile() {
 
         fetchWorkforceData();
     }, []);
+
+    // Reset function to restore initial values
+    const resetProfile = () => {
+        setFullName(initialValues.fullName);
+        setPhone(initialValues.phone);
+        setEmail(initialValues.email);
+        setPreferredWorkingArea(initialValues.preferredWorkingArea);
+        setAreaOfExpertise(initialValues.areaOfExpertise);
+        setEmergencyContact(initialValues.emergencyContact);
+        setIdProof(initialValues.idProof);
+        setResumeCv(initialValues.resumeCv);
+        setIdUin(initialValues.idUin);
+    };
 
     const saveProfile = async (onSuccess: () => void) => {
         if (!fullName.trim() || !phone.trim() || !email.trim()) {
@@ -106,16 +153,13 @@ export function useWorkforceProfile() {
         const finalPayload = {
             id_uin: idUin || null,
             full_name: fullName.trim(),
+            phone: phone.trim(),
             email: email.trim(),
             area_of_expertise: cleanExpertiseArr.length > 0 ? `{${cleanExpertiseArr.join(',')}}` : null,
             preferred_working_area: cleanWorkingAreaArr.length > 0 ? `{${cleanWorkingAreaArr.join(',')}}` : null,
             emergency_contact_number: emergencyContact.trim() || null,
-
-            // --- ADD THESE LINES TO SAVE THE DOCUMENT PATHS/URLS ---
             id_proof: idProof,
             resume_cv: resumeCv,
-            // ------------------------------------------------------
-
             status: 'Pending'
         };
 
@@ -137,6 +181,7 @@ export function useWorkforceProfile() {
     };
 
     return {
+        idUin,
         fetching,
         loading,
         fullName,
@@ -155,5 +200,6 @@ export function useWorkforceProfile() {
         resumeCv,
         setResumeCv,
         saveProfile,
+        resetProfile,  // <-- Added reset function
     };
 }
