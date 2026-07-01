@@ -85,10 +85,14 @@ export default function ProfessionalHistory() {
   const filteredData = useMemo(() => {
     let data = [...applications];
 
-    // 1. Status Filter
+    // 1. Status Filter - Updated to include 'Pending-Update'
     if (filter !== 'All') {
       data = data.filter((item) => {
         const status = (item?.status || '').toLowerCase().trim();
+        // Handle 'Pending-Update' specifically
+        if (filter === 'Pending-Update') {
+          return status === 'pending-update' || status === 'pending update';
+        }
         return status.includes(filter.toLowerCase().trim());
       });
     }
@@ -104,8 +108,9 @@ export default function ProfessionalHistory() {
         const nameMatch = String(item.fullName || '').toLowerCase().trim().includes(query);
         const phoneMatch = String(item.phone || '').toLowerCase().includes(query);
         const emailMatch = String(item.email || '').toLowerCase().includes(query);
+        const statusMatch = String(item.status || '').toLowerCase().includes(query);
 
-        return idMatch || uinMatch || nameMatch || phoneMatch || emailMatch;
+        return idMatch || uinMatch || nameMatch || phoneMatch || emailMatch || statusMatch;
       });
     }
 
@@ -150,7 +155,7 @@ export default function ProfessionalHistory() {
         <View style={styles.inputContainer}>
           <Image source={SearchIcon} style={{ height: 20, width: 20 }} />
           <TextInput
-            placeholder="Search Application or UIN"
+            placeholder="Search Application, UIN, or Status"
             placeholderTextColor={'rgba(67, 67, 67,0.8)'}
             style={styles.textInput}
             value={searchQuery}
@@ -161,13 +166,22 @@ export default function ProfessionalHistory() {
         </View>
 
         <View style={styles.mainBtns}>
-          {['All', 'Pending', 'Accepted', 'Rejected'].map((f) => (
+          {['All', 'Pending', 'Accepted', 'Rejected', 'Pending-Update'].map((f) => (
             <TouchableOpacity
               key={f}
-              style={[styles.btn, filter === f && styles.activeBtn]}
+              style={[
+                styles.btn, 
+                filter === f && styles.activeBtn,
+                f === 'Pending-Update' && styles.pendingUpdateBtn
+              ]}
               onPress={() => setFilter(f)}
             >
-              <Text style={styles.btnText}>{f}</Text>
+              <Text style={[
+                styles.btnText,
+                f === 'Pending-Update' && styles.pendingUpdateBtnText
+              ]}>
+                {f}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -245,6 +259,15 @@ const styles = StyleSheet.create({
     marginBottom: hp('1.5%'),
   },
   activeBtn: { backgroundColor: '#b3dbb3' },
+  pendingUpdateBtn: { 
+    backgroundColor: '#FFE4B5', // Light orange color for pending-update
+    borderWidth: 1,
+    borderColor: '#FFA500',
+  },
+  pendingUpdateBtnText: {
+    color: '#D2691E', // Dark orange text
+    fontWeight: '600',
+  },
   btnText: { fontSize: wp('3.4%'), fontWeight: '500', color: 'rgba(0,0,0,0.7)' },
   emptyContainer: { alignItems: 'center', marginTop: 40, paddingHorizontal: 20 },
   emptyText: { color: '#666', fontSize: 16, fontWeight: '500' },

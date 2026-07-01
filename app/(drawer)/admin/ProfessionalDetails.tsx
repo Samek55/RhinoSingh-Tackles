@@ -23,10 +23,11 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import Header5 from '@/components/Header5Admin';
 import { fetchWorkforceFromSupabase } from '@/api/supabase/fetchWorkforceSB';
-import { updateWorkforceStatusSB } from '@/api/supabase/updateWorkforceStatusSB';
+import { useWorkforceUpdateProfile } from '@/api/hooks/superadmin/useWorkforceUpdateProfile';
+import { updateWorkforceStatusSA } from '@/api/hooks/superadmin/updateWorkforceStatusSA';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-type StatusType = 'Accepted' | 'Pending' | 'Rejected';
+type StatusType = 'Accepted' | 'Pending' | 'Rejected' | 'Pending-Update';
 
 export default function ProfessionalDetails() {
     const scrollRef = useRef<ScrollView>(null);
@@ -45,7 +46,7 @@ export default function ProfessionalDetails() {
     const [initialIndex, setInitialIndex] = useState(0);
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    const STATUS_OPTIONS: StatusType[] = ['Accepted', 'Pending', 'Rejected'];
+    const STATUS_OPTIONS: StatusType[] = ['Accepted', 'Pending', 'Rejected', 'Pending-Update'];
 
     useEffect(() => {
         const load = async () => {
@@ -73,15 +74,17 @@ export default function ProfessionalDetails() {
         load();
     }, [id]);
 
+    // Use the new hook to fetch pending update data
+    const { updateData, loading: updateLoading, hasPendingUpdate } = useWorkforceUpdateProfile(
+        applicant?.workforce_uin || applicant?.uin || ''
+    );
+
     const handleStatusChange = (newStatus: StatusType) => {
         setWorkStatus(newStatus);
         setOpenDropdown(false);
     };
 
-    // Update this function to handle strings instead of objects
     const openLightbox = (images: string[], index: number) => {
-        // Since 'images' is already an array of strings ['https://...', 'https://...']
-        // You don't need to .map() or .filter() anymore.
         setActiveImages(images);
         setInitialIndex(index);
         setCurrentIndex(index);
@@ -115,14 +118,32 @@ export default function ProfessionalDetails() {
         if (submitting) return;
         setSubmitting(true);
         try {
-            const trueDatabaseId = applicant?.id;
+            const trueDatabaseId = applicant?.workforce_uin || applicant?.uin || applicant?.id;
             if (!trueDatabaseId) {
                 alert("Could not extract a valid identifier from the applicant object.");
                 return;
             }
-            await updateWorkforceStatusSB(trueDatabaseId, workStatus);
+
+            // Call the updated API function
+            const result = await updateWorkforceStatusSA(trueDatabaseId, workStatus);
+
+            // Update local state
             setApplicant((prev: any) => ({ ...prev, status: workStatus }));
-            alert("Application status updated successfully!");
+
+            // If status is Accepted or Rejected, also clear the pending update from local state
+            if (workStatus === 'Accepted' || workStatus === 'Rejected') {
+                // You might want to refetch the data or clear the pending update state
+                // For example, you could refetch the applicant data
+                const refreshedData = await fetchWorkforceFromSupabase();
+                const found = refreshedData.find((item: any) =>
+                    String(item.workforce_uin || item.uin || item.id) === String(trueDatabaseId)
+                );
+                if (found) {
+                    setApplicant(found);
+                }
+            }
+
+            alert(result.message || "Application status updated successfully!");
             router.replace('/admin/ProfessionalHistory');
         } catch (error) {
             console.error('Failed to update status:', error);
@@ -133,12 +154,72 @@ export default function ProfessionalDetails() {
     };
 
     const getParsedImages = (fieldData: any) => {
-        // No parsing needed anymore, just ensure it's an array
         return Array.isArray(fieldData) ? fieldData : [];
     };
 
     const idProofImages = getParsedImages(applicant?.idProof);
     const resumeCVImages = getParsedImages(applicant?.resumeCV);
+
+    // Render a field comparison row
+    const renderFieldRow = (label: string, originalValue: any, updatedValue: any) => {
+        const originalStr = Array.isArray(originalValue) ? originalValue.join(', ') : String(originalValue || 'N/A');
+        const updatedStr = Array.isArray(updatedValue) ? updatedValue.join(', ') : String(updatedValue || 'N/A');
+
+        if (originalStr === updatedStr) return null;
+
+        return (
+            <View style={styles.updateRow}>
+                <Text style={styles.updateLabel}>{label}</Text>
+                <View style={styles.updateValuesContainer}>
+                    <View style={styles.originalValueContainer}>
+                        <Text style={styles.updateOriginalLabel}>Original:</Text>
+                        <Text style={styles.updateOriginalValue}>{originalStr}</Text>
+                    </View>
+                    <View style={styles.updatedValueContainer}>
+                        <Text style={styles.updateUpdatedLabel}>Updated:</Text>
+                        <Text style={styles.updateUpdatedValue}>{updatedStr}</Text>
+                    </View>
+                </View>
+            </View>
+        );
+    };
+
+    // Render image comparison
+    const renderImageComparison = (label: string, originalImages: string[], updatedImages: string[]) => {
+        if (JSON.stringify(originalImages) === JSON.stringify(updatedImages)) return null;
+
+        return (
+            <View style={styles.updateRow}>
+                <Text style={styles.updateLabel}>{label}</Text>
+                <View style={styles.updateValuesContainer}>
+                    <View style={styles.originalValueContainer}>
+                        <Text style={styles.updateOriginalLabel}>Original:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.updateImageScroll}>
+                            {originalImages.length > 0 ? (
+                                originalImages.map((url, idx) => (
+                                    <Image key={`orig-${idx}`} source={{ uri: url }} style={styles.updateThumbnail} resizeMode="cover" />
+                                ))
+                            ) : (
+                                <Text style={styles.noImageText}>No images</Text>
+                            )}
+                        </ScrollView>
+                    </View>
+                    <View style={styles.updatedValueContainer}>
+                        <Text style={styles.updateUpdatedLabel}>Updated:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.updateImageScroll}>
+                            {updatedImages.length > 0 ? (
+                                updatedImages.map((url, idx) => (
+                                    <Image key={`upd-${idx}`} source={{ uri: url }} style={styles.updateThumbnail} resizeMode="cover" />
+                                ))
+                            ) : (
+                                <Text style={styles.noImageText}>No images</Text>
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </View>
+        );
+    };
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f6f7fb' }}>
@@ -164,189 +245,222 @@ export default function ProfessionalDetails() {
                             <Text style={styles.loadingText}>Loading Profile...</Text>
                         </View>
                     ) : applicant ? (
-                        <View style={[styles.card, { marginBottom: hp('10%') }]}>
-                            <Text style={styles.heading}>{applicant?.fullName || 'N/A'}</Text>
-                            <Text style={styles.labelMain}>
-                                <Image source={phoneIcon} style={{ width: 14, height: 11.5, tintColor: '#555' }} />
-                                {' '}{applicant?.phone || 'N/A'}
-                            </Text>
-
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Email Address</Text>
-                                <Text style={styles.value}>{applicant?.email || 'N/A'}</Text>
-                            </View>
-
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Position Applied For</Text>
-                                <Text style={styles.value}>
-                                    {Array.isArray(applicant?.positionAppliedFor)
-                                        ? applicant.positionAppliedFor.join(', ')
-                                        : applicant?.positionAppliedFor || 'N/A'}
-                                </Text>
-                            </View>
-
-                            <View style={styles.rowLocation}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.label}>Years of Experience</Text>
-                                    <Text style={styles.value}>{applicant?.yearsOfExperience ?? 'N/A'}</Text>
-                                </View>
-                                <View style={{ alignItems: 'flex-end' }}>
-                                    <Text style={styles.label}>Current Status</Text>
-                                    <Text style={[
-                                        styles.value,
-                                        applicant?.status?.toLowerCase().includes('accepted') && styles.completed,
-                                        applicant?.status?.toLowerCase().includes('pending') && styles.pending,
-                                        applicant?.status?.toLowerCase().includes('rejected') && styles.cancelled,
-                                    ]}>
-                                        {applicant?.status || 'Pending'}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.rowLocation}>
-                                <View style={styles.rowLocationInside}>
-                                    <Text style={styles.label}>Preferred Working Area</Text>
-                                    <Text style={styles.value}>
-                                        {Array.isArray(applicant?.preferredWorkingArea)
-                                            ? applicant.preferredWorkingArea.join(', ')
-                                            : applicant?.preferredWorkingArea || 'N/A'}
-                                    </Text>
-                                </View>
-                                <View style={{ justifyContent: 'center' }}>
-                                    <Image source={LocationPin} style={{ height: 26, width: 26, tintColor: 'green' }} />
-                                </View>
-                            </View>
-
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Area of Expertise</Text>
-                                <Text style={styles.value}>
-                                    {Array.isArray(applicant?.areaOfExpertise)
-                                        ? applicant.areaOfExpertise.join(', ')
-                                        : applicant?.areaOfExpertise || 'N/A'}
-                                </Text>
-                            </View>
-
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Application Date</Text>
-                                <Text style={styles.value}>
-                                    {applicant?.ApplicationDate ? new Date(applicant.ApplicationDate).toDateString() : 'N/A'}
-                                </Text>
-                            </View>
-
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Insurance Policy Number</Text>
-                                <Text style={styles.value}>{applicant.insurancePolicyNo || 'N/A'}</Text>
-                            </View>
-
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Emergency Contact Number</Text>
-                                <Text style={styles.value}>
+                        <>
+                            {/* Original Profile Card */}
+                            <View style={[styles.card, { marginBottom: hp('2%') }]}>
+                                <Text style={styles.heading}>{applicant?.fullName || 'N/A'}</Text>
+                                <Text style={styles.labelMain}>
                                     <Image source={phoneIcon} style={{ width: 14, height: 11.5, tintColor: '#555' }} />
-                                    {' '}{applicant.emergencyContactNo || 'N/A'}</Text>
-                            </View>
+                                    {' '}{applicant?.phone || 'N/A'}
+                                </Text>
 
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Cover Letter</Text>
-                                <Text style={styles.value}>{applicant.coverLetter || 'N/A'}</Text>
-                            </View>
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Email Address</Text>
+                                    <Text style={styles.value}>{applicant?.email || 'N/A'}</Text>
+                                </View>
 
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Message</Text>
-                                <Text style={styles.value}>{applicant.message || 'N/A'}</Text>
-                            </View>
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Position Applied For</Text>
+                                    <Text style={styles.value}>
+                                        {Array.isArray(applicant?.positionAppliedFor)
+                                            ? applicant.positionAppliedFor.join(', ')
+                                            : applicant?.positionAppliedFor || 'N/A'}
+                                    </Text>
+                                </View>
 
-                            {/* ID / Proof Gallery */}
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
-                                {(idProofImages || []).map((url, index) => (
-                                    <TouchableOpacity
-                                        key={`id-${index}`}
-                                        onPress={() => openLightbox(idProofImages || [], index)}
-                                    >
-                                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-
-                            {/* Resume / CV Gallery */}
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
-                                {(resumeCVImages || []).map((url, index) => (
-                                    <TouchableOpacity
-                                        key={`res-${index}`}
-                                        onPress={() => openLightbox(resumeCVImages || [], index)}
-                                    >
-                                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-
-                            <Text style={styles.statusLabel}>Change Application Status</Text>
-
-                            <View style={[styles.dropdownWrapper, { zIndex: openDropdown ? 9999 : 1 }]}>
-                                <TouchableOpacity
-                                    style={styles.dropdownBtn}
-                                    onPress={() => {
-                                        setOpenDropdown(!openDropdown);
-                                        setTimeout(() => {
-                                            scrollRef.current?.scrollToEnd({ animated: true });
-                                        }, 100);
-                                    }}
-                                >
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Text style={styles.dropdownTextContainer}>{workStatus}</Text>
-                                        <Image source={dropdownIcon} style={{ height: 20, width: 23, tintColor: 'green' }} />
+                                <View style={styles.rowLocation}>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.label}>Years of Experience</Text>
+                                        <Text style={styles.value}>{applicant?.yearsOfExperience ?? 'N/A'}</Text>
                                     </View>
-                                </TouchableOpacity>
-                                {openDropdown && (
-                                    <View style={styles.dropdownMenu}>
-                                        {STATUS_OPTIONS.map((item) => (
-                                            <TouchableOpacity
-                                                key={item}
-                                                style={styles.dropdownItem}
-                                                onPress={() => handleStatusChange(item)}
-                                            >
-                                                <Text style={styles.dropdownTextInside}>{item}</Text>
-                                            </TouchableOpacity>
-                                        ))}
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                        <Text style={styles.label}>Current Status</Text>
+                                        <Text style={[
+                                            styles.value,
+                                            applicant?.status?.toLowerCase().includes('accepted') && styles.completed,
+                                            applicant?.status?.toLowerCase().includes('pending') && styles.pending,
+                                            applicant?.status?.toLowerCase().includes('rejected') && styles.cancelled,
+                                            applicant?.status?.toLowerCase().includes('pending-update') && styles.pendingUpdate,
+                                        ]}>
+                                            {applicant?.status || 'Pending'}
+                                        </Text>
                                     </View>
-                                )}
+                                </View>
+
+                                <View style={styles.rowLocation}>
+                                    <View style={styles.rowLocationInside}>
+                                        <Text style={styles.label}>Preferred Working Area</Text>
+                                        <Text style={styles.value}>
+                                            {Array.isArray(applicant?.preferredWorkingArea)
+                                                ? applicant.preferredWorkingArea.join(', ')
+                                                : applicant?.preferredWorkingArea || 'N/A'}
+                                        </Text>
+                                    </View>
+                                    <View style={{ justifyContent: 'center' }}>
+                                        <Image source={LocationPin} style={{ height: 26, width: 26, tintColor: 'green' }} />
+                                    </View>
+                                </View>
+
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Area of Expertise</Text>
+                                    <Text style={styles.value}>
+                                        {Array.isArray(applicant?.areaOfExpertise)
+                                            ? applicant.areaOfExpertise.join(', ')
+                                            : applicant?.areaOfExpertise || 'N/A'}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Application Date</Text>
+                                    <Text style={styles.value}>
+                                        {applicant?.ApplicationDate ? new Date(applicant.ApplicationDate).toDateString() : 'N/A'}
+                                    </Text>
+                                </View>
+
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Insurance Policy Number</Text>
+                                    <Text style={styles.value}>{applicant.insurancePolicyNo || 'N/A'}</Text>
+                                </View>
+
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Emergency Contact Number</Text>
+                                    <Text style={styles.value}>
+                                        <Image source={phoneIcon} style={{ width: 14, height: 11.5, tintColor: '#555' }} />
+                                        {' '}{applicant.emergencyContactNo || 'N/A'}</Text>
+                                </View>
+
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Cover Letter</Text>
+                                    <Text style={styles.value}>{applicant.coverLetter || 'N/A'}</Text>
+                                </View>
+
+                                <View style={styles.row}>
+                                    <Text style={styles.label}>Message</Text>
+                                    <Text style={styles.value}>{applicant.message || 'N/A'}</Text>
+                                </View>
+
+                                {/* ID / Proof Gallery */}
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
+                                    {(idProofImages || []).map((url, index) => (
+                                        <TouchableOpacity
+                                            key={`id-${index}`}
+                                            onPress={() => openLightbox(idProofImages || [], index)}
+                                        >
+                                            <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+
+                                {/* Resume / CV Gallery */}
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
+                                    {(resumeCVImages || []).map((url, index) => (
+                                        <TouchableOpacity
+                                            key={`res-${index}`}
+                                            onPress={() => openLightbox(resumeCVImages || [], index)}
+                                        >
+                                            <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
                             </View>
 
-                            <View style={styles.ButtonContainer}>
-                                <TouchableOpacity
-                                    style={[styles.AcceptButton, submitting && { backgroundColor: '#ccc' }]}
-                                    onPress={handleSubmit}
-                                    disabled={submitting}
-                                >
-                                    {submitting ? (
-                                        <ActivityIndicator size="small" color="#fff" />
+                            {/* Pending Update Changes Card */}
+                            {hasPendingUpdate && updateData && applicant.status === 'Pending-Update' && (
+                                <View style={[styles.card, styles.updateCard]}>
+                                    <View style={styles.updateCardHeader}>
+                                        <Text style={styles.updateCardTitle}>📝 Changed Professional Data</Text>
+                                        <View style={styles.pendingBadge}>
+                                            <Text style={styles.pendingBadgeText}>Pending Review</Text>
+                                        </View>
+                                    </View>
+
+                                    {updateLoading ? (
+                                        <ActivityIndicator size="small" color="green" />
                                     ) : (
-                                        <Text style={styles.AcceptText}>Update Application</Text>
+                                        <>
+                                            {renderFieldRow('Full Name', applicant?.fullName, updateData.full_name)}
+                                            {renderFieldRow('Phone', applicant?.phone, updateData.phone)}
+                                            {renderFieldRow('Email', applicant?.email, updateData.email)}
+                                            {renderFieldRow('Area of Expertise', applicant?.areaOfExpertise, updateData.area_of_expertise)}
+                                            {renderFieldRow('Preferred Working Area', applicant?.preferredWorkingArea, updateData.preferred_working_area)}
+                                            {renderFieldRow('Emergency Contact', applicant?.emergencyContactNo || applicant?.emergency_contact_number, updateData.emergency_contact_number)}
+
+                                            {renderImageComparison('ID Proof', idProofImages, updateData.id_proof)}
+                                            {renderImageComparison('Resume/CV', resumeCVImages, updateData.resume_cv)}
+
+                                            <Text style={styles.updateTimestamp}>
+                                                Submitted: {updateData.created_at ? new Date(updateData.created_at).toLocaleString() : 'N/A'}
+                                            </Text>
+                                        </>
                                     )}
-                                </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {/* Status Dropdown */}
+                            <View style={[styles.card, { marginBottom: hp('10%') }]}>
+                                <Text style={styles.statusLabel}>Change Application Status</Text>
+
+                                <View style={[styles.dropdownWrapper, { zIndex: openDropdown ? 9999 : 1 }]}>
+                                    <TouchableOpacity
+                                        style={styles.dropdownBtn}
+                                        onPress={() => {
+                                            setOpenDropdown(!openDropdown);
+                                            setTimeout(() => {
+                                                scrollRef.current?.scrollToEnd({ animated: true });
+                                            }, 100);
+                                        }}
+                                    >
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Text style={styles.dropdownTextContainer}>{workStatus}</Text>
+                                            <Image source={dropdownIcon} style={{ height: 20, width: 23, tintColor: 'green' }} />
+                                        </View>
+                                    </TouchableOpacity>
+                                    {openDropdown && (
+                                        <View style={styles.dropdownMenu}>
+                                            {STATUS_OPTIONS.map((item) => (
+                                                <TouchableOpacity
+                                                    key={item}
+                                                    style={styles.dropdownItem}
+                                                    onPress={() => handleStatusChange(item)}
+                                                >
+                                                    <Text style={styles.dropdownTextInside}>{item}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View style={styles.ButtonContainer}>
+                                    <TouchableOpacity
+                                        style={[styles.AcceptButton, submitting && { backgroundColor: '#ccc' }]}
+                                        onPress={handleSubmit}
+                                        disabled={submitting}
+                                    >
+                                        {submitting ? (
+                                            <ActivityIndicator size="small" color="#fff" />
+                                        ) : (
+                                            <Text style={styles.AcceptText}>Update Application</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
+                        </>
                     ) : (
                         <View style={styles.loadingContainer}>
                             <Text style={styles.loadingText}>No profile information matches this ID.</Text>
                         </View>
-                    )
-                    }
-                </ScrollView >
-            </KeyboardAvoidingView >
+                    )}
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* LIGHTBOX SLIDER & ZOOM MODAL */}
-            < Modal visible={viewerVisible} transparent={true} animationType="fade" onRequestClose={() => setViewerVisible(false)}>
+            <Modal visible={viewerVisible} transparent={true} animationType="fade" onRequestClose={() => setViewerVisible(false)}>
                 <View style={styles.modalBackground}>
-
-                    {/* Close Header Bar */}
                     <TouchableOpacity style={styles.closeModalButton} onPress={() => setViewerVisible(false)}>
                         <Text style={styles.closeModalText}>✕ Close</Text>
                     </TouchableOpacity>
 
-                    {/* VIEWPORT CONTROLS WRAPPER */}
                     <View style={styles.viewerWrapper}>
-
-                        {/* Prev Arrow Icon */}
                         {activeImages.length > 1 && currentIndex > 0 && (
                             <TouchableOpacity style={[styles.arrowButton, styles.leftArrow]} onPress={handlePrevImage}>
                                 <Text style={styles.arrowText}>‹</Text>
@@ -377,7 +491,6 @@ export default function ProfessionalDetails() {
                             ))}
                         </ScrollView>
 
-                        {/* Next Arrow Icon */}
                         {activeImages.length > 1 && currentIndex < activeImages.length - 1 && (
                             <TouchableOpacity style={[styles.arrowButton, styles.rightArrow]} onPress={handleNextImage}>
                                 <Text style={styles.arrowText}>›</Text>
@@ -385,15 +498,14 @@ export default function ProfessionalDetails() {
                         )}
                     </View>
 
-                    {/* Floating Counter Footer Indicator */}
                     {activeImages.length > 1 && (
                         <Text style={styles.swipeIndicator}>
                             {currentIndex + 1} / {activeImages.length}
                         </Text>
                     )}
                 </View>
-            </Modal >
-        </View >
+            </Modal>
+        </View>
     );
 }
 
@@ -442,6 +554,102 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
+    },
+    updateCard: {
+        borderWidth: 2,
+        borderColor: '#FFA500',
+        backgroundColor: '#FFF8F0',
+        marginBottom: hp('2%'),
+    },
+    updateCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: hp('1.5%'),
+        paddingBottom: hp('1%'),
+        borderBottomWidth: 1,
+        borderBottomColor: '#FFE4B5',
+    },
+    updateCardTitle: {
+        fontSize: hp('2.2%'),
+        fontWeight: '700',
+        color: '#D2691E',
+    },
+    pendingBadge: {
+        backgroundColor: '#FFE4B5',
+        paddingHorizontal: wp('3%'),
+        paddingVertical: hp('0.5%'),
+        borderRadius: 12,
+    },
+    pendingBadgeText: {
+        fontSize: hp('1.2%'),
+        fontWeight: '600',
+        color: '#D2691E',
+    },
+    updateRow: {
+        marginBottom: hp('1.5%'),
+        paddingBottom: hp('1%'),
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#F0E6D3',
+    },
+    updateLabel: {
+        fontSize: hp('1.6%'),
+        fontWeight: '700',
+        color: '#333',
+        marginBottom: hp('0.5%'),
+    },
+    updateValuesContainer: {
+        marginLeft: wp('2%'),
+    },
+    originalValueContainer: {
+        marginBottom: hp('0.5%'),
+    },
+    updatedValueContainer: {
+        marginTop: hp('0.3%'),
+    },
+    updateOriginalLabel: {
+        fontSize: hp('1.3%'),
+        fontWeight: '600',
+        color: '#888',
+    },
+    updateUpdatedLabel: {
+        fontSize: hp('1.3%'),
+        fontWeight: '600',
+        color: '#16A34A',
+    },
+    updateOriginalValue: {
+        fontSize: hp('1.5%'),
+        color: '#666',
+        marginLeft: wp('2%'),
+    },
+    updateUpdatedValue: {
+        fontSize: hp('1.5%'),
+        color: '#16A34A',
+        fontWeight: '600',
+        marginLeft: wp('2%'),
+    },
+    updateImageScroll: {
+        flexDirection: 'row',
+        marginTop: hp('0.5%'),
+    },
+    updateThumbnail: {
+        width: wp('15%'),
+        height: hp('7%'),
+        borderRadius: 6,
+        marginRight: wp('2%'),
+        backgroundColor: '#eee',
+    },
+    noImageText: {
+        fontSize: hp('1.3%'),
+        color: '#999',
+        fontStyle: 'italic',
+    },
+    updateTimestamp: {
+        fontSize: hp('1.3%'),
+        color: '#888',
+        marginTop: hp('1%'),
+        textAlign: 'right',
+        fontStyle: 'italic',
     },
     heading: {
         fontSize: hp('2.8%'),
@@ -497,6 +705,14 @@ const styles = StyleSheet.create({
         color: 'red',
         fontWeight: '700',
     },
+    pendingUpdate: {
+        color: '#D2691E',
+        fontWeight: '700',
+        backgroundColor: '#FFE4B5',
+        paddingHorizontal: wp('2%'),
+        paddingVertical: hp('0.2%'),
+        borderRadius: 4,
+    },
     dropdownWrapper: {
         width: '100%',
         marginTop: hp('1.5%'),
@@ -546,7 +762,7 @@ const styles = StyleSheet.create({
     },
     statusLabel: {
         fontSize: hp('2.1%'),
-        marginTop: hp('3%'),
+        marginTop: hp('1%'),
         fontWeight: '700',
         color: '#111',
     },

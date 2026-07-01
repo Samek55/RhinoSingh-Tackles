@@ -68,7 +68,7 @@ export function useWorkforceProfile() {
                     const newPhone = data.phone || '';
                     const newEmail = data.email || '';
                     const newEmergencyContact = data.emergency_contact_number || '';
-                    
+
                     let newAreaOfExpertise = '';
                     if (Array.isArray(data.area_of_expertise)) {
                         newAreaOfExpertise = data.area_of_expertise.join(', ');
@@ -139,30 +139,41 @@ export function useWorkforceProfile() {
         const cleanExpertiseArr = areaOfExpertise.split(',').map(s => s.trim()).filter(Boolean);
         const cleanWorkingAreaArr = preferredWorkingArea.split(',').map(s => s.trim()).filter(Boolean);
 
-        const finalPayload = {
-            id_uin: idUin || null,
-            full_name: fullName.trim(),
-            phone: phone.trim(),
-            email: email.trim(),
-            area_of_expertise: cleanExpertiseArr.length > 0 ? cleanExpertiseArr : null,
-            preferred_working_area: cleanWorkingAreaArr.length > 0 ? cleanWorkingAreaArr : null,
-            emergency_contact_number: emergencyContact.trim() || null,
-            id_proof: idProofUrls, // Use the URLs passed in
-            resume_cv: resumeCvUrls, // Use the URLs passed in
-            status: 'Pending'
-        };
-
         try {
-            const { error } = await supabase
+            // First, update the status in the workforce table
+            const { error: updateError } = await supabase
+                .from('workforce')
+                .update({
+                    status: 'Pending-Update'
+                })
+                .eq('uin', idUin); // Assuming 'uin' is the primary key in workforce table
+
+            if (updateError) throw updateError;
+
+            // Then, insert the profile update data into workforce_update_profile
+            const finalPayload = {
+                id_uin: idUin || null,
+                full_name: fullName.trim(),
+                phone: phone.trim(),
+                email: email.trim(),
+                area_of_expertise: cleanExpertiseArr.length > 0 ? cleanExpertiseArr : null,
+                preferred_working_area: cleanWorkingAreaArr.length > 0 ? cleanWorkingAreaArr : null,
+                emergency_contact_number: emergencyContact.trim() || null,
+                id_proof: idProofUrls,
+                resume_cv: resumeCvUrls,
+                status: 'Pending'
+            };
+
+            const { error: insertError } = await supabase
                 .from('workforce_update_profile')
                 .insert([finalPayload]);
 
-            if (error) throw error;
+            if (insertError) throw insertError;
 
             Alert.alert("Success", "Profile update request saved!");
             onSuccess();
         } catch (error: any) {
-            console.log("Database write error detail:", error);
+            console.log("Database error detail:", error);
             Alert.alert("Error", error.message || "Failed to save profile.");
         } finally {
             setLoading(false);
