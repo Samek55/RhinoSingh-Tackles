@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { getAuth, User } from 'firebase/auth';
-import { supabase } from '@/src/lib/supabase'; 
+import { supabase } from '@/src/lib/supabase';
 
 export function useWorkforceProfile() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [fbUser, setFbUser] = useState<User | null>(null);
+    
+
+    // Track the source table's unique identifying node
+    const [idUin, setIdUin] = useState('');
+
+    // Document links fetched from the workforce table
+    const [idProof, setIdProof] = useState<string[]>([]);
+    const [resumeCv, setResumeCv] = useState<string[]>([]);
 
     // Form states matching your exact schema fields
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
-    const [positionAppliedFor, setPositionAppliedFor] = useState('');
     const [preferredWorkingArea, setPreferredWorkingArea] = useState('');
     const [areaOfExpertise, setAreaOfExpertise] = useState('');
     const [emergencyContact, setEmergencyContact] = useState('');
-    const [status, setStatus] = useState('');
-    const [whatsapp, setWhatsapp] = useState('');
 
     useEffect(() => {
         const fetchWorkforceData = async () => {
@@ -41,6 +46,7 @@ export function useWorkforceProfile() {
                     return;
                 }
 
+                // FETCH FROM: 'workforce' table
                 const { data, error } = await supabase
                     .from('workforce')
                     .select('*')
@@ -52,27 +58,25 @@ export function useWorkforceProfile() {
                     if (currentUser.phoneNumber) setPhone(currentUser.phoneNumber);
                     console.log('Supabase match fallback:', error.message);
                 } else if (data) {
+                    setIdUin(data.uin || '');
+
+                    // Capture absolute document/image URLs from database fields
+                    setIdProof(data.id_proof || null);
+                    setResumeCv(data.resume_cv || null);
+
                     setFullName(data.full_name || '');
                     setPhone(data.phone || '');
                     setEmail(data.email || '');
                     setEmergencyContact(data.emergency_contact_number || '');
-                    setStatus(data.status || '');
-                    setWhatsapp(data.whatsapp || '');
 
                     // Safe conversion for Postgres arrays -> Comma strings
-                    if (Array.isArray(data.position_applied_for)) {
-                        setPositionAppliedFor(data.position_applied_for.join(', '));
-                    } else {
-                        setPositionAppliedFor(data.position_applied_for || '');
-                    }
-
                     if (Array.isArray(data.area_of_expertise)) {
                         setAreaOfExpertise(data.area_of_expertise.join(', '));
                     } else {
                         setAreaOfExpertise(data.area_of_expertise || '');
                     }
 
-                     if (Array.isArray(data.preferred_working_area)) {
+                    if (Array.isArray(data.preferred_working_area)) {
                         setPreferredWorkingArea(data.preferred_working_area.join(', '));
                     } else {
                         setPreferredWorkingArea(data.preferred_working_area || '');
@@ -88,40 +92,45 @@ export function useWorkforceProfile() {
         fetchWorkforceData();
     }, []);
 
-    const updateProfile = async (onSuccess: () => void) => {
+    const saveProfile = async (onSuccess: () => void) => {
         if (!fullName.trim() || !phone.trim() || !email.trim()) {
             Alert.alert("Error", "Name, Phone, and Email are strictly required.");
             return;
         }
 
         setLoading(true);
-        
+
+        const cleanExpertiseArr = areaOfExpertise.split(',').map(s => s.trim()).filter(Boolean);
+        const cleanWorkingAreaArr = preferredWorkingArea.split(',').map(s => s.trim()).filter(Boolean);
+
         const finalPayload = {
+            id_uin: idUin || null,
             full_name: fullName.trim(),
-            phone: phone.trim(),
             email: email.trim(),
-            // Split back into arrays before saving back to Postgres
-            position_applied_for: positionAppliedFor.split(',').map(s => s.trim()).filter(Boolean),
-            area_of_expertise: areaOfExpertise.split(',').map(s => s.trim()).filter(Boolean),
-            preferred_working_area: preferredWorkingArea.trim() || null,
+            area_of_expertise: cleanExpertiseArr.length > 0 ? `{${cleanExpertiseArr.join(',')}}` : null,
+            preferred_working_area: cleanWorkingAreaArr.length > 0 ? `{${cleanWorkingAreaArr.join(',')}}` : null,
             emergency_contact_number: emergencyContact.trim() || null,
-            whatsapp: whatsapp.trim() || `https://api.whatsapp.com/send?phone=${phone.trim()}`,
-            firebase_uid: fbUser?.uid || null
-            // 'status' is omitted here to keep it protected unless intentional
+
+            // --- ADD THESE LINES TO SAVE THE DOCUMENT PATHS/URLS ---
+            id_proof: idProof,
+            resume_cv: resumeCv,
+            // ------------------------------------------------------
+
+            status: 'Pending'
         };
 
         try {
             const { error } = await supabase
-                .from('workforce')
-                .update(finalPayload)
-                .eq('phone', phone);
+                .from('workforce_update_profile')
+                .insert([finalPayload]);
 
             if (error) throw error;
 
-            Alert.alert("Success", "Profile updated perfectly!");
+            Alert.alert("Success", "Profile update request saved!");
             onSuccess();
         } catch (error: any) {
-            Alert.alert("Error", error.message || "Failed to update profile.");
+            console.log("Database write error detail:", error);
+            Alert.alert("Error", error.message || "Failed to save profile.");
         } finally {
             setLoading(false);
         }
@@ -130,23 +139,21 @@ export function useWorkforceProfile() {
     return {
         fetching,
         loading,
-        fbUser,
         fullName,
         setFullName,
         phone,
-        setPhone,
         email,
         setEmail,
-        positionAppliedFor,
-        setPositionAppliedFor,
         preferredWorkingArea,
         setPreferredWorkingArea,
         areaOfExpertise,
         setAreaOfExpertise,
         emergencyContact,
         setEmergencyContact,
-        status,
-        whatsapp,
-        updateProfile,
+        idProof,
+        setIdProof,
+        resumeCv,
+        setResumeCv,
+        saveProfile,
     };
 }

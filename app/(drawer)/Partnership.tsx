@@ -27,7 +27,7 @@ import { notifyAdmins } from '@/api/notifications';
 import Header3 from '@/components/Header3drawer';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createPartnershipSupabase } from '@/api/supabase/createPartnershipSupabase';
-import {uploadImageToSupabasePartnership } from '@/src/utils/uploadImageToSBPartnership';
+import { uploadImageToSupabasePartnership } from '@/src/utils/uploadImageToSBPartnership';
 
 const { width, height } = Dimensions.get('window');
 
@@ -151,8 +151,8 @@ export default function PartnershipScreen() {
         partnership_interests: selectedPartnership,
         how_did_you_hear_about_us: selectedHowHeard,
         message: message.trim(),
-        company_photos: companyImages.map((url) => ({ url })),
-        company_registration_certificates: crcImages.map((url) => ({ url })),
+        company_photos: companyImages,
+        company_registration_certificates: crcImages,
       };
 
       await createPartnershipSupabase(partnership);
@@ -347,7 +347,7 @@ export default function PartnershipScreen() {
             onFocus={() => setActiveInput('message')}
             onBlur={() => setActiveInput(null)}
             style={[
-              styles.textAreaBase, 
+              styles.textAreaBase,
               activeInput === 'message' ? styles.inputActive : styles.inputInactive
             ]}
           />

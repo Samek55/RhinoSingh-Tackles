@@ -19,10 +19,10 @@ export const fetchWorkforceFromSupabase = async () => {
         message, 
         id_proof, 
         resume_cv, 
-        application_date, 
+        created_at, 
         status
       `)
-      .order("application_date", { ascending: false }); 
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.log("Supabase Error fetching workforce:", error);
@@ -33,29 +33,29 @@ export const fetchWorkforceFromSupabase = async () => {
 
     return records.map((item) => ({
       // FIX: Map 'uin' from the database to the 'id' key the frontend list expects
-      id: item.uin || "", 
+      id: item.uin || "",
       workforce_uin: item.uin || "",
       fullName: item.full_name || "N/A",
       email: item.email || "N/A",
       phone: item.phone || "N/A",
-      
+
       positionAppliedFor: item.position_applied_for,
       preferredWorkingArea: item.preferred_working_area,
       areaOfExpertise: item.area_of_expertise,
       yearsOfExperience: item.years_of_experience,
       insurancePolicyNo: item.insurance_policy_number,
       emergencyContactNo: item.emergency_contact_number,
-      
+
       coverLetter: item.cover_letter || "",
       message: item.message || "",
-      idProof: item.id_proof || "",
-      resumeCV: item.resume_cv || "",
+      idProof: item.id_proof || [],
+      resumeCV: item.resume_cv || [],
 
-      ApplicationDate: item.application_date || "",
-      rawBookingDate: item.application_date || "", 
+      ApplicationDate: item.created_at || "",
+      rawBookingDate: item.created_at || "",
       status: item.status || "Pending",
     }));
-    
+
   } catch (error) {
     console.log("Fetch Workforce Error:", error);
     return [];

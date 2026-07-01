@@ -78,9 +78,11 @@ export default function ProfessionalDetails() {
         setOpenDropdown(false);
     };
 
-    const openLightbox = (images: any[], index: number) => {
-        const urls = images.map(img => img?.url).filter(Boolean);
-        setActiveImages(urls);
+    // Update this function to handle strings instead of objects
+    const openLightbox = (images: string[], index: number) => {
+        // Since 'images' is already an array of strings ['https://...', 'https://...']
+        // You don't need to .map() or .filter() anymore.
+        setActiveImages(images);
         setInitialIndex(index);
         setCurrentIndex(index);
         setViewerVisible(true);
@@ -131,12 +133,8 @@ export default function ProfessionalDetails() {
     };
 
     const getParsedImages = (fieldData: any) => {
-        try {
-            const parsed = typeof fieldData === 'string' ? JSON.parse(fieldData) : fieldData;
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-            return [];
-        }
+        // No parsing needed anymore, just ensure it's an array
+        return Array.isArray(fieldData) ? fieldData : [];
     };
 
     const idProofImages = getParsedImages(applicant?.idProof);
@@ -258,36 +256,28 @@ export default function ProfessionalDetails() {
                             </View>
 
                             {/* ID / Proof Gallery */}
-                            <View style={styles.row}>
-                                <Text style={styles.label}>ID / Proof Documents</Text>
-                                {idProofImages.length > 0 ? (
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
-                                        {idProofImages.map((item, index) => (
-                                            <TouchableOpacity key={`id-${index}`} onPress={() => openLightbox(idProofImages, index)}>
-                                                <Image source={{ uri: item?.url }} style={styles.thumbnailImage} resizeMode="cover" />
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                ) : (
-                                    <Text style={styles.value}>No Documents Uploaded</Text>
-                                )}
-                            </View>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
+                                {(idProofImages || []).map((url, index) => (
+                                    <TouchableOpacity
+                                        key={`id-${index}`}
+                                        onPress={() => openLightbox(idProofImages || [], index)}
+                                    >
+                                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
 
                             {/* Resume / CV Gallery */}
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Resume / CV Documents</Text>
-                                {resumeCVImages.length > 0 ? (
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
-                                        {resumeCVImages.map((item, index) => (
-                                            <TouchableOpacity key={`res-${index}`} onPress={() => openLightbox(resumeCVImages, index)}>
-                                                <Image source={{ uri: item?.url }} style={styles.thumbnailImage} resizeMode="cover" />
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                ) : (
-                                    <Text style={styles.value}>No Documents Uploaded</Text>
-                                )}
-                            </View>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
+                                {(resumeCVImages || []).map((url, index) => (
+                                    <TouchableOpacity
+                                        key={`res-${index}`}
+                                        onPress={() => openLightbox(resumeCVImages || [], index)}
+                                    >
+                                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
 
                             <Text style={styles.statusLabel}>Change Application Status</Text>
 
@@ -339,12 +329,13 @@ export default function ProfessionalDetails() {
                         <View style={styles.loadingContainer}>
                             <Text style={styles.loadingText}>No profile information matches this ID.</Text>
                         </View>
-                    )}
-                </ScrollView>
-            </KeyboardAvoidingView>
+                    )
+                    }
+                </ScrollView >
+            </KeyboardAvoidingView >
 
             {/* LIGHTBOX SLIDER & ZOOM MODAL */}
-            <Modal visible={viewerVisible} transparent={true} animationType="fade" onRequestClose={() => setViewerVisible(false)}>
+            < Modal visible={viewerVisible} transparent={true} animationType="fade" onRequestClose={() => setViewerVisible(false)}>
                 <View style={styles.modalBackground}>
 
                     {/* Close Header Bar */}
@@ -401,8 +392,8 @@ export default function ProfessionalDetails() {
                         </Text>
                     )}
                 </View>
-            </Modal>
-        </View>
+            </Modal >
+        </View >
     );
 }
 

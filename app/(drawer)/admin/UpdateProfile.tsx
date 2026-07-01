@@ -13,6 +13,7 @@ import {
     FlatList,
     Alert,
     Image,
+    Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -23,6 +24,9 @@ import { useWorkforceProfile } from '@/api/hooks/useWorkforceProfile';
 // --- DATA SOURCE IMPORT ---
 import { services, area } from '@/src/data/Data';
 import Header4 from '@/components/Header4Admin';
+import { uploadWorkforceDocument } from '@/src/utils/uploadWorkforceUpdate';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface FieldProps {
     label: string;
@@ -57,7 +61,7 @@ const ProfileDropdownArrayList = React.memo(({
     const [modalVisible, setModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const selectedItems = useMemo(() => 
+    const selectedItems = useMemo(() =>
         value ? value.split(',').map(item => item.trim()).filter(Boolean) : [],
         [value]
     );
@@ -84,7 +88,7 @@ const ProfileDropdownArrayList = React.memo(({
         onChangeText(updatedItems.join(', '));
     }, [selectedItems, onChangeText]);
 
-    const filteredOptions = useMemo(() => 
+    const filteredOptions = useMemo(() =>
         options.filter(option => option?.toLowerCase().includes(searchQuery.toLowerCase())),
         [options, searchQuery]
     );
@@ -93,8 +97,6 @@ const ProfileDropdownArrayList = React.memo(({
         setModalVisible(false);
         setSearchQuery('');
     };
-
-    
 
     return (
         <View style={styles.inputWrapper}>
@@ -246,7 +248,6 @@ export default function ModernUpdateProfile() {
         fullName = '',
         setFullName,
         phone = '',
-        setPhone,
         email = '',
         setEmail,
         preferredWorkingArea = '',
@@ -255,10 +256,39 @@ export default function ModernUpdateProfile() {
         setAreaOfExpertise,
         emergencyContact = '',
         setEmergencyContact,
-        updateProfile,
+        saveProfile,
+        idProof,
+        resumeCv,
+        setIdProof,
+        setResumeCv
     } = useWorkforceProfile();
 
     const [profileImage, setProfileImage] = useState<string | null>(null);
+
+    // Lightbox State Management
+    const [viewerVisible, setViewerVisible] = useState(false);
+    const [activeImages, setActiveImages] = useState<string[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Change the logic to expect strings, not objects with .url
+    const openLightbox = (images: { url: string }[], index: number) => {
+        const urls = images.map(img => img.url);
+        setActiveImages(urls);
+        setCurrentIndex(index);
+        setViewerVisible(true);
+    };
+
+    const nextImage = () => {
+        if (currentIndex < activeImages.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+        }
+    };
+
+    const prevImage = () => {
+        if (currentIndex > 0) {
+            setCurrentIndex(prev => prev - 1);
+        }
+    };
 
     const getInitials = () => {
         const cleanName = (fullName || '').trim();
@@ -288,16 +318,27 @@ export default function ModernUpdateProfile() {
     };
 
     const handleChangeSecurityDetails = () => {
-        router.push('/(drawer)/AdminChangePassword'); 
+        router.push('/(drawer)/AdminChangePassword');
     };
 
     const handleSave = () => {
-        updateProfile?.(() => router.back());
+        saveProfile?.(() => router.push('/Home'));
     };
 
     const handleEmergencyContactChange = useCallback((v: string) => {
         setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10));
     }, [setEmergencyContact]);
+
+    // --- SIMPLIFIED ARRAY PARSING ---
+    const idProofImages = useMemo(() => {
+        // idProof is now string[] from the hook
+        return (idProof || []).map(url => ({ url }));
+    }, [idProof]);
+
+    const resumeCVImages = useMemo(() => {
+        // resumeCv is now string[] from the hook
+        return (resumeCv || []).map(url => ({ url }));
+    }, [resumeCv]);
 
     if (fetching) {
         return (
@@ -308,6 +349,35 @@ export default function ModernUpdateProfile() {
         );
     }
 
+    const handleDocumentPick = async (type: 'id' | 'resume') => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images' as any,
+            quality: 0.8,
+        });
+
+        if (!result.canceled && phone) {
+            try {
+                // Pass 'id_proof' or 'resume_cv' to the function
+                const column = type === 'id' ? 'id_proof' : 'resume_cv';
+                const publicUrl = await uploadWorkforceDocument(
+                    { uri: result.assets[0].uri },
+                    phone,
+                    column
+                );
+
+                // Update UI state locally so the gallery refreshes immediately
+                if (type === 'id') {
+                    setIdProof(prev => [...prev, publicUrl]);
+                } else {
+                    setResumeCv(prev => [...prev, publicUrl]);
+                }
+            } catch (error: any) {
+                Alert.alert("Upload Failed", error.message);
+            }
+        }
+    };
+    
+
     return (
         <KeyboardAvoidingView
             style={styles.mainContainer}
@@ -317,9 +387,9 @@ export default function ModernUpdateProfile() {
             <StatusBar style="dark" />
             <Header4 />
 
-            <ScrollView 
-                contentContainerStyle={styles.scrollContent} 
-                showsVerticalScrollIndicator={false} 
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
                 <View style={styles.headerTitleContainer}>
@@ -329,9 +399,9 @@ export default function ModernUpdateProfile() {
 
                 {/* Profile Badge Card */}
                 <View style={styles.profileBadgeCard}>
-                    <TouchableOpacity 
-                        style={styles.avatarPickerContainer} 
-                        onPress={pickImage} 
+                    <TouchableOpacity
+                        style={styles.avatarPickerContainer}
+                        onPress={pickImage}
                         activeOpacity={0.85}
                     >
                         {profileImage ? (
@@ -388,8 +458,8 @@ export default function ModernUpdateProfile() {
 
                 <Text style={styles.sectionHeading}>Security</Text>
                 <View style={styles.card}>
-                    <TouchableOpacity 
-                        style={styles.securityButtonRow} 
+                    <TouchableOpacity
+                        style={styles.securityButtonRow}
                         onPress={handleChangeSecurityDetails}
                         activeOpacity={0.7}
                     >
@@ -399,6 +469,75 @@ export default function ModernUpdateProfile() {
                         </View>
                         <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
                     </TouchableOpacity>
+                </View>
+
+                {/* ID / Proof Gallery Component Section */}
+                <View style={styles.row}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={styles.label}>ID / Proof Documents</Text>
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => handleDocumentPick('id')}
+                        >
+                            <Ionicons name="add-circle" size={24} color="#16A34A" />
+                        </TouchableOpacity>
+                    </View>
+                    {idProofImages.length > 0 ? (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.carouselContainer}
+                            style={styles.carouselWrapper}
+                        >
+                            {idProofImages.map((item, index) => (
+                                <TouchableOpacity
+                                    key={`id-${index}`}
+                                    onPress={() => openLightbox(idProofImages, index)}
+                                    activeOpacity={0.7}
+                                    style={styles.thumbnailTouch}
+                                >
+                                    <Image
+                                        source={{ uri: item?.url }}
+                                        style={styles.thumbnailImage}
+                                        resizeMode="cover"
+                                    />
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    ) : (
+                        <Text style={styles.value}>No Documents Uploaded</Text>
+                    )}
+                </View>
+
+                {/* Resume / CV Gallery Component Section */}
+                <View style={styles.row}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={styles.label}>Resume / CV Documents</Text>
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => handleDocumentPick('resume')}
+                        >
+                            <Ionicons name="add-circle" size={24} color="#16A34A" />
+                        </TouchableOpacity>
+                    </View>
+                    {resumeCVImages.length > 0 ? (
+                        <View style={styles.carouselWrapper}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselContainer}>
+                                {resumeCVImages.map((item, index) => (
+                                    <TouchableOpacity
+                                        key={`res-${index}`}
+                                        onPress={() => openLightbox(resumeCVImages, index)}
+                                        activeOpacity={0.7}
+                                        style={styles.thumbnailTouch}
+                                    >
+                                        <Image source={{ uri: item?.url }} style={styles.thumbnailImage} resizeMode="cover" />
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    ) : (
+                        <Text style={styles.value}>No Documents Uploaded</Text>
+                    )}
                 </View>
 
                 <TouchableOpacity
@@ -417,6 +556,60 @@ export default function ModernUpdateProfile() {
                     )}
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* --- LIGHTBOX VIEWER OVERLAY --- */}
+            <Modal
+                visible={viewerVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setViewerVisible(false)}
+            >
+                <View style={styles.viewerContainer}>
+                    {/* Top Dismiss Action Header */}
+                    <View style={styles.viewerHeader}>
+                        <Text style={styles.viewerIndexText}>
+                            {activeImages.length > 0 ? `${currentIndex + 1} / ${activeImages.length}` : ''}
+                        </Text>
+                        <TouchableOpacity style={styles.viewerCloseBtn} onPress={() => setViewerVisible(false)}>
+                            <Ionicons name="close" size={28} color="#FFF" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Main Viewer Body with Navigation */}
+                    <View style={styles.viewerMainBody}>
+                        {/* Prev Button `<` */}
+                        {activeImages.length > 1 && (
+                            <TouchableOpacity
+                                style={[styles.navBtn, styles.navLeft, currentIndex === 0 && { opacity: 0.3 }]}
+                                onPress={prevImage}
+                                disabled={currentIndex === 0}
+                            >
+                                <Ionicons name="chevron-back" size={32} color="#FFF" />
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Image Viewer Target */}
+                        {activeImages.length > 0 && (
+                            <Image
+                                source={{ uri: activeImages[currentIndex] }}
+                                style={styles.fullViewerImage}
+                                resizeMode="contain"
+                            />
+                        )}
+
+                        {/* Next Button `>` */}
+                        {activeImages.length > 1 && (
+                            <TouchableOpacity
+                                style={[styles.navBtn, styles.navRight, currentIndex === activeImages.length - 1 && { opacity: 0.3 }]}
+                                onPress={nextImage}
+                                disabled={currentIndex === activeImages.length - 1}
+                            >
+                                <Ionicons name="chevron-forward" size={32} color="#FFF" />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -428,12 +621,12 @@ const styles = StyleSheet.create({
     headerSubtitle: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
     scrollContent: { padding: 20, paddingBottom: 80 },
     profileBadgeCard: { alignItems: 'center', backgroundColor: '#FFF', borderRadius: 24, paddingVertical: 24, paddingHorizontal: 20, marginBottom: 25, borderWidth: 1, borderColor: '#E5E7EB', elevation: 2 },
-    
+
     avatarPickerContainer: { position: 'relative', marginBottom: 14, alignItems: 'center' },
     avatarImage: { width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#16A34A' },
     avatarPlaceholder: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#A5D6A7' },
     cameraIconBadge: { position: 'absolute', bottom: 0, right: 0, backgroundColor: '#16A34A', width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#FFF', elevation: 3 },
-    
+
     avatarText: { fontSize: 26, fontWeight: '800', color: '#2E7D32', letterSpacing: 0.5 },
     badgeName: { fontSize: 19, fontWeight: '700', color: '#1F2937', marginBottom: 6 },
 
@@ -457,7 +650,7 @@ const styles = StyleSheet.create({
     chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: '#A5D6A7' },
     chipText: { fontSize: 13, fontWeight: '600', color: '#2E7D32' },
     chipCloseButton: { marginLeft: 6, justifyContent: 'center', alignItems: 'center' },
-    
+
     securityButtonRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
     securityLeftContent: { flexDirection: 'row', alignItems: 'center' },
     securityButtonText: { fontSize: 15, fontWeight: '600', color: '#1F2937' },
@@ -478,4 +671,100 @@ const styles = StyleSheet.create({
     optionText: { fontSize: 15, color: '#4B5563', fontWeight: '500' },
     optionTextSelected: { color: '#16A34A', fontWeight: '600' },
     emptyText: { textAlign: 'center', color: '#9CA3AF', marginVertical: 30, fontSize: 14 },
+
+    row: {
+        marginBottom: 20,
+        paddingHorizontal: 4,
+        width: '100%',
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4B5563',
+        marginBottom: 8,
+    },
+    value: {
+        fontSize: 14,
+        color: '#9CA3AF',
+        fontStyle: 'italic',
+    },
+    carouselWrapper: {
+        marginVertical: 8,
+        height: 90,
+    },
+    carouselContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingRight: 16,
+    },
+    thumbnailTouch: {
+        width: 80,
+        height: 80,
+        marginRight: 10,
+    },
+    thumbnailImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        backgroundColor: '#E5E7EB',
+    },
+
+    /* Lightbox Viewer Styles */
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        justifyContent: 'center',
+    },
+    viewerHeader: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        zIndex: 10,
+    },
+    viewerIndexText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    viewerCloseBtn: {
+        padding: 6,
+    },
+    viewerMainBody: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+    },
+    fullViewerImage: {
+        width: SCREEN_WIDTH - 40,
+        height: '75%',
+    },
+    navBtn: {
+        position: 'absolute',
+        top: '50%',
+        marginTop: -25,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 15,
+    },
+    navLeft: {
+        left: 10,
+    },
+    navRight: {
+        right: 10,
+    },
+    addButton: {
+        padding: 4,
+        marginBottom: 8,
+    },
 });

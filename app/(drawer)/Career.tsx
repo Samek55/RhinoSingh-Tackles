@@ -177,17 +177,10 @@ export default function CareerScreen() {
 
     try {
       const [idProofImages, cvImages] = await Promise.all([
-        Promise.all(
-          selectedID.map((item) =>
-            uploadImageToSupabaseCareer(item, "id-proof")
-          )
-        ),
-        Promise.all(
-          selectedCV.map((item) =>
-            uploadImageToSupabaseCareer(item, "cv")
-          )
-        ),
+        Promise.all(selectedID.map((item) => uploadImageToSupabaseCareer(item))),
+        Promise.all(selectedCV.map((item) => uploadImageToSupabaseCareer(item))),
       ]);
+
       const cleanNumber = number.replace(/\s/g, '');
       const cleanEmergencyNumber = emergencyNumber.replace(/\s/g, '');
 
@@ -203,10 +196,9 @@ export default function CareerScreen() {
         emergency_contact_number: cleanEmergencyNumber,
         cover_letter: coverMessage || null,
         message: message || null,
-        resume_cv: cvImages.map((url) => ({ url })),
-        id_proof: idProofImages.map((url) => ({ url })),
-        application_date: new Date().toISOString(),
-        status:'Accepted'
+        resume_cv: cvImages,
+        id_proof: idProofImages,
+        status: 'Accepted'
       };
 
       await createCareerSupabase(career);
@@ -296,8 +288,8 @@ export default function CareerScreen() {
                 activeInput === 'phone' && styles.inputActive
               ]}
               placeholderTextColor={'#4B4B4B'}
-            maxLength={12}
-              
+              maxLength={12}
+
             />
           </View>
 
@@ -435,7 +427,7 @@ export default function CareerScreen() {
                 activeInput === 'emergencyPhone' && styles.inputActive
               ]}
               placeholderTextColor={'#4B4B4B'}
-            maxLength={12}
+              maxLength={12}
             />
           </View>
 
