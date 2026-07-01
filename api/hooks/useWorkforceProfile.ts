@@ -7,15 +7,9 @@ export function useWorkforceProfile() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [fbUser, setFbUser] = useState<User | null>(null);
-    
-    // Track the source table's unique identifying node
     const [idUin, setIdUin] = useState('');
-
-    // Document links fetched from the workforce table
     const [idProof, setIdProof] = useState<string[]>([]);
     const [resumeCv, setResumeCv] = useState<string[]>([]);
-
-    // Form states matching your exact schema fields
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -23,7 +17,6 @@ export function useWorkforceProfile() {
     const [areaOfExpertise, setAreaOfExpertise] = useState('');
     const [emergencyContact, setEmergencyContact] = useState('');
 
-    // Store initial values for reset
     const [initialValues, setInitialValues] = useState({
         fullName: '',
         phone: '',
@@ -48,8 +41,6 @@ export function useWorkforceProfile() {
                 }
 
                 setFbUser(currentUser);
-
-                // Extract the comparison token (First 10 characters)
                 const identifier = currentUser.email || currentUser.phoneNumber || '';
                 const matchToken = identifier.substring(0, 10);
 
@@ -92,7 +83,6 @@ export function useWorkforceProfile() {
                         newPreferredWorkingArea = data.preferred_working_area || '';
                     }
 
-                    // Set all form states
                     setIdUin(newIdUin);
                     setIdProof(newIdProof);
                     setResumeCv(newResumeCv);
@@ -103,7 +93,6 @@ export function useWorkforceProfile() {
                     setAreaOfExpertise(newAreaOfExpertise);
                     setPreferredWorkingArea(newPreferredWorkingArea);
 
-                    // Store initial values for reset
                     setInitialValues({
                         fullName: newFullName,
                         phone: newPhone,
@@ -126,7 +115,6 @@ export function useWorkforceProfile() {
         fetchWorkforceData();
     }, []);
 
-    // Reset function to restore initial values
     const resetProfile = () => {
         setFullName(initialValues.fullName);
         setPhone(initialValues.phone);
@@ -139,7 +127,8 @@ export function useWorkforceProfile() {
         setIdUin(initialValues.idUin);
     };
 
-    const saveProfile = async (onSuccess: () => void) => {
+    // IMPORTANT: This function now expects image URLs to be passed in
+    const saveProfile = async (idProofUrls: string[], resumeCvUrls: string[], onSuccess: () => void) => {
         if (!fullName.trim() || !phone.trim() || !email.trim()) {
             Alert.alert("Error", "Name, Phone, and Email are strictly required.");
             return;
@@ -155,11 +144,11 @@ export function useWorkforceProfile() {
             full_name: fullName.trim(),
             phone: phone.trim(),
             email: email.trim(),
-            area_of_expertise: cleanExpertiseArr.length > 0 ? `{${cleanExpertiseArr.join(',')}}` : null,
-            preferred_working_area: cleanWorkingAreaArr.length > 0 ? `{${cleanWorkingAreaArr.join(',')}}` : null,
+            area_of_expertise: cleanExpertiseArr.length > 0 ? cleanExpertiseArr : null,
+            preferred_working_area: cleanWorkingAreaArr.length > 0 ? cleanWorkingAreaArr : null,
             emergency_contact_number: emergencyContact.trim() || null,
-            id_proof: idProof,
-            resume_cv: resumeCv,
+            id_proof: idProofUrls, // Use the URLs passed in
+            resume_cv: resumeCvUrls, // Use the URLs passed in
             status: 'Pending'
         };
 
@@ -200,6 +189,6 @@ export function useWorkforceProfile() {
         resumeCv,
         setResumeCv,
         saveProfile,
-        resetProfile,  // <-- Added reset function
+        resetProfile,
     };
 }

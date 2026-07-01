@@ -5,20 +5,15 @@ export type FileItem = {
   fileName?: string;
 };
 
-interface WorkforceRecord {
-  id_proof?: string[];
-  resume_cv?: string[];
-}
-
-export const uploadWorkforceDocument = async (
+// SIMPLEST VERSION - Upload to storage and return URL only
+export const uploadDocumentOnly = async (
   file: FileItem,
   userId: string,
   columnName: 'id_proof' | 'resume_cv'
-) => {
+): Promise<string> => {
   const fileExt = file.uri.split(".").pop()?.toLowerCase() || "jpg";
-  const fileName = `${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
-  
-  // REMOVED '/image' from the path
+  const fileName = `${columnName}_${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
+  // Store in a folder within the uploads bucket
   const filePath = `workforce_upload_profile/${userId}/${fileName}`;
 
   try {
@@ -31,6 +26,7 @@ export const uploadWorkforceDocument = async (
       reader.readAsArrayBuffer(blob);
     });
 
+    // Upload to the existing 'uploads' bucket
     const { error: uploadError } = await supabase.storage
       .from("uploads")
       .upload(filePath, arrayBuffer, {
@@ -40,31 +36,9 @@ export const uploadWorkforceDocument = async (
     if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from("uploads").getPublicUrl(filePath);
-    const newPublicUrl = data.publicUrl;
-
-    // Fetch existing data to append
-    const { data: currentRecord, error: fetchError } = await supabase
-      .from("workforce")
-      .select(columnName)
-      .eq("phone", userId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const record = currentRecord as WorkforceRecord;
-    const existingArray = record[columnName] || [];
-    const updatedArray = [...existingArray, newPublicUrl];
-
-    // Update the database
-    const { error: updateError } = await supabase
-      .from("workforce")
-      .update({ [columnName]: updatedArray })
-      .eq("phone", userId);
-
-    if (updateError) throw updateError;
-
-    return newPublicUrl;
+    return data.publicUrl;
   } catch (err) {
+    console.error('Upload error:', err);
     throw err;
   }
 };

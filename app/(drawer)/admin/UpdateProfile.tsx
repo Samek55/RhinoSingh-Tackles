@@ -25,7 +25,7 @@ import { supabase } from '@/src/lib/supabase';
 // --- DATA SOURCE IMPORT ---
 import { services, area } from '@/src/data/Data';
 import Header4 from '@/components/Header4Admin';
-import { uploadWorkforceDocument } from '@/src/utils/uploadWorkforceUpdate';
+import { uploadDocumentOnly } from '@/src/utils/uploadWorkforceUpdate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -419,7 +419,7 @@ export default function ModernUpdateProfile() {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: `images`,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.7,
@@ -448,13 +448,11 @@ export default function ModernUpdateProfile() {
                 .eq('status', 'Pending')
                 .maybeSingle();
 
-            // If there's an error that's not "no rows found"
             if (error && error.code !== 'PGRST116') {
                 console.error('Error checking pending update:', error);
                 return false;
             }
 
-            // If data exists, there's a pending update
             return !!data;
         } catch (error) {
             console.error('Error checking pending update:', error);
@@ -474,7 +472,7 @@ export default function ModernUpdateProfile() {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: `images`,
             quality: 0.8,
         });
 
@@ -516,8 +514,8 @@ export default function ModernUpdateProfile() {
         );
     };
 
-    // Updated handleSave - checks for pending updates first
-    // Updated handleSave - checks for pending updates first
+    // Updated handleSave - uses uploadDocumentOnly and saves only to workforce_update_profile
+    // Updated handleSave function
     const handleSave = async () => {
         if (!fullName.trim() || !phone.trim() || !email.trim()) {
             Alert.alert("Error", "Name, Phone, and Email are strictly required.");
@@ -527,11 +525,10 @@ export default function ModernUpdateProfile() {
         // Check if there's already a pending update for this UIN
         if (idUin) {
             const hasPending = await checkForPendingUpdate(idUin);
-
             if (hasPending) {
                 Alert.alert(
                     "Pending Update Exists",
-                    `A pending update request for UIN: ${idUin} is already in the system. You cannot submit another update until the current one is processed.`,
+                    `A pending update request for UIN: ${idUin} is already in the system.`,
                     [{ text: "OK", style: "default" }]
                 );
                 return;
@@ -541,18 +538,18 @@ export default function ModernUpdateProfile() {
         setIsSaving(true);
 
         try {
-            // Upload all ID proof images
+            // Upload all ID proof images - get URLs
             const uploadedIdProofs: string[] = [];
             let hasUploadError = false;
 
             for (const item of localIdProof) {
-                // Skip if it's already a URL (existing image)
+                // If it's already a URL (existing image), keep it
                 if (item.uri.startsWith('http')) {
                     uploadedIdProofs.push(item.uri);
                 } else {
-                    // Upload new image
+                    // Upload new image to storage
                     try {
-                        const publicUrl = await uploadWorkforceDocument(
+                        const publicUrl = await uploadDocumentOnly(
                             { uri: item.uri },
                             phone,
                             'id_proof'
@@ -571,14 +568,14 @@ export default function ModernUpdateProfile() {
                 return;
             }
 
-            // Upload all Resume/CV images
+            // Upload all Resume/CV images - get URLs
             const uploadedResumeCv: string[] = [];
             for (const item of localResumeCv) {
                 if (item.uri.startsWith('http')) {
                     uploadedResumeCv.push(item.uri);
                 } else {
                     try {
-                        const publicUrl = await uploadWorkforceDocument(
+                        const publicUrl = await uploadDocumentOnly(
                             { uri: item.uri },
                             phone,
                             'resume_cv'
@@ -597,20 +594,15 @@ export default function ModernUpdateProfile() {
                 return;
             }
 
-            // Update the state with uploaded URLs
-            setIdProof(uploadedIdProofs);
-            setResumeCv(uploadedResumeCv);
-
-            // Now save the profile
-            await saveProfile?.(() => {
+            // Save profile with the uploaded URLs - THIS GOES TO workforce_update_profile ONLY
+            await saveProfile(uploadedIdProofs, uploadedResumeCv, () => {
                 // Update local state with uploaded URLs
                 setLocalIdProof(uploadedIdProofs.map(url => ({ uri: url })));
                 setLocalResumeCv(uploadedResumeCv.map(url => ({ uri: url })));
 
-                // Show success message before navigating
                 Alert.alert(
                     "Success",
-                    "Profile updated successfully! You can now view your updated profile.",
+                    "Profile updated successfully!",
                     [
                         {
                             text: "View Profile",
@@ -627,6 +619,7 @@ export default function ModernUpdateProfile() {
             });
 
         } catch (error: any) {
+            console.error('Save error:', error);
             Alert.alert("Error", error.message || "Failed to save profile.");
         } finally {
             setIsSaving(false);
