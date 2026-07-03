@@ -2,6 +2,18 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Environment variables (required for production)
+
+Local dev loads `.env` automatically. **EAS builds do not** — you must sync vars before each production build:
+
+```bash
+cp .env.example .env   # first time only
+npm run sync-eas-env   # pushes EXPO_PUBLIC_* to EAS production/preview/development
+eas build --platform android --profile production
+```
+
+See `.env.example` for the full list. Without these, the Play Store app gets `undefined` Firebase/Supabase config and fails at runtime.
+
 ## Get started
 
 1. Install dependencies

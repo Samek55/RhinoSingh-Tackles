@@ -13,7 +13,7 @@
       "bundleIdentifier": "com.pracas.rocketsingh"
     },
     "android": {
-      "versionCode": 14,
+      "versionCode": 16,
       "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "adjustResize",
       "adaptiveIcon": {
@@ -29,6 +29,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/analytics",
       "@react-native-firebase/crashlytics",
@@ -43,12 +49,6 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
-        }
-      ],
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "development"
         }
       ],
       "expo-font",
