@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   /* HERO SECTION */
   hero: { 
     width: '100%', 
-    height: hp('36%'), 
+    height: hp('31%'), 
     position: 'relative' 
   },
   heroImage: { 

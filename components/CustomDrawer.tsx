@@ -9,7 +9,6 @@ import {
   Alert,
   Platform,
   Dimensions,
-  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
@@ -48,10 +47,20 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const isActive = (route: string) => pathname === route;
 
   const navigateTo = (route: any) => {
+    // Close drawer
     _props.navigation.closeDrawer();
-    // Wait for the drawer close transition to finish before transitioning screens
-    InteractionManager.runAfterInteractions(() => {
-      router.push(route);
+
+    // Use requestAnimationFrame to ensure the state update 
+    // or navigation occurs after the current frame/animation
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        try {
+          router.push(route);
+        } catch (error) {
+          console.error('Navigation error:', error);
+          router.replace(route);
+        }
+      }, 0); // Keep the delay if you need to wait for the drawer animation
     });
   };
 
@@ -89,12 +98,14 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
       _props.navigation.closeDrawer();
       await signOut(auth);
 
+      // Clear local cache/flags
       try {
         await AsyncStorage.removeItem('userProfileSetupCompleted');
       } catch (e) {
         console.warn('Failed to clear storage flag:', e);
       }
 
+      // Handle OneSignal cleanup
       if (OneSignal) {
         try {
           OneSignal.logout();
@@ -103,15 +114,29 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
         }
       }
 
-      Alert.alert("Success", "Logged out cleanly.");
-      InteractionManager.runAfterInteractions(() => {
-        router.replace('/Home');
-      });
+      // Catchy Logout Alert
+      Alert.alert(
+        "Session Ended",
+        "You have been securely signed out. See you again soon! 👋",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Use requestAnimationFrame to ensure the navigation 
+              // happens immediately after the UI finishes processing 
+              // the alert dismissal.
+              requestAnimationFrame(() => {
+                router.replace('/Home');
+              });
+            }
+          }
+        ]
+      );
+
     } catch (error: any) {
-      Alert.alert("Logout Error", error.message);
+      Alert.alert("Logout Failed", "We encountered an issue signing you out. Please try again.");
     }
   };
-
   return (
     <SafeAreaView style={styles.wrapper} edges={['top', 'bottom']}>
       <View style={styles.card}>
@@ -168,7 +193,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             active={isActive('/Contact')}
             onPress={() => navigateTo('/Contact')}
           />
-          
+
           <View style={styles.divider} />
 
           {/* 🔀 MIDDLE SECTION: CONDITIONAL STRUCTURAL SECURITY ROLE LAYOUTS */}
@@ -212,10 +237,10 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
               {/* Common Trailing Items across all authenticated profiles */}
               <MenuItem
-                icon={isActive('/admin/Notifications') ? "notifications" : "notifications-outline"}
+                icon={isActive('/admin/ViewNotification') ? "notifications" : "notifications-outline"}
                 label="Notifications"
-                active={isActive('/admin/Notifications')}
-                onPress={() => navigateTo('/Home')}
+                active={isActive('/admin/ViewNotification')}
+                onPress={() => navigateTo('/admin/ViewNotification')}
               />
 
               {/* 🛑 Hide Update Profile for Admin and SuperAdmin Roles */}
@@ -270,7 +295,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             />
           ) : (
             <MenuItem
-              icon={isActive('/admin/AdminLogin') ? "shield-checkmark" : "shield-checkmark-outline"}
+              icon={isActive('/admin/AdminLogin') ? "shield-checkmark-outline" : "shield-checkmark-outline"}
               label="Admin"
               active={false}
               onPress={() => navigateTo('/admin/AdminLogin')}
@@ -296,6 +321,7 @@ const MenuItem = React.memo(({ icon, label, onPress, active, isLogout }: MenuIte
   const getIconColor = () => {
     if (active) return '#059669';
     if (isLogout) return '#EF4444';
+    if (label === "Admin") return '#047857';
     return '#6B7280';
   };
 
@@ -315,7 +341,8 @@ const MenuItem = React.memo(({ icon, label, onPress, active, isLogout }: MenuIte
       <Text style={[
         styles.label,
         active && styles.labelActive,
-        isLogout && styles.labelLogout
+        isLogout && styles.labelLogout,
+        label === "Admin" && { color: '#047857' }
       ]}>
         {label}
       </Text>

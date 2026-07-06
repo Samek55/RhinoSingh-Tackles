@@ -16,6 +16,7 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
+import { notifyAdminHelpbox } from '@/api/notifications';
 
 const NumberBar = ({ onFocus = () => { } }) => {
   const [phone, setPhone] = useState('');
@@ -45,6 +46,8 @@ const NumberBar = ({ onFocus = () => { } }) => {
       };
 
       await createHelpboxSB(payload);
+
+      notifyAdminHelpbox(formattedPhone);
 
       setOverlayVisible(false);
 
@@ -141,8 +144,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   icon: {
-    height: hp('2.4%'),
-    width: wp('5.2%'),
+    height: hp('3%'),
+    width: wp('6.3%'),
     marginRight: wp('3%'),
     opacity: 0.75,
   },

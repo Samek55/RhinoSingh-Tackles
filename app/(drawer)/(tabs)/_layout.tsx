@@ -137,13 +137,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   floatingButton: {
-
-
+    width: 60,            // Ensure width and height match
+    height: 60,           // Ensure width and height match
+    borderRadius: 30,     // Always half of the width/height
+    backgroundColor: '#fff', // REQUIRED for shadows to show
     justifyContent: 'center',
     alignItems: 'center',
-
     top: -15,
-    boxShadow: '0px 0px 0px 3px #ddd',
-    borderRadius: 400
+    
+    // iOS Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    
+    // Android Shadow
+    elevation: 5,
   },
 })

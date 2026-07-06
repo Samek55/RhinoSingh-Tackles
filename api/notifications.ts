@@ -21,6 +21,27 @@ const sendNotification = async (payload: object) => {
   );
 };
 
+export async function notifyAdminHelpbox(notiPhone: string) {
+  try {
+    const CleanPhone = notiPhone.trim();
+
+    await sendNotification({
+      filters: [
+        { field: 'tag', key: 'role', relation: '=', value: 'admin' },
+        { operator: 'OR' },
+        { field: 'tag', key: 'role', relation: '=', value: 'superadmin' },
+
+      ],
+      headings: { en: '🚀 New Enquiry Available!' },
+      contents: { en: `New phone no : "${CleanPhone}" has sent you an enquiry. Open RocketSingh to respond.` },
+    });
+    
+    console.log(`Helpbox notification successfully targeted for "${CleanPhone}"`);
+  } catch (error: any) {
+    console.error('Helpbox notification error:', error?.response?.data || error.message);
+  }
+}
+
 // Service booking for notifying careers → service providers who serve that specific area and service
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {

@@ -318,6 +318,7 @@ export default function CareerScreen() {
             onSelectOption={setSelectedPosition}
             onOpen={() => setActiveInput('position')}
             onClose={() => setActiveInput(null)}
+            maxSelections={3}
           />
 
           {/* Area of Expertise */}

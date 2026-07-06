@@ -11,6 +11,7 @@ export default function AdminLayout() {
       <Stack.Screen name="BookingHistory" />
       <Stack.Screen name="GeneratePaymentDetails" />
       <Stack.Screen name="PaymentDetails" />
+      <Stack.Screen name="ViewNotifications" />
     </Stack>
   );
 }

@@ -15,6 +15,7 @@ import {
 import PhoneIcon from '../../../assets/header/right.png';
 import EyeOffIcon from '../../../assets/icons/admin/eyeOff.png';
 import EyeOnIcon from '../../../assets/icons/admin/eyeOn.png';
+import AdminIcon from '../../../assets/icons/admin/admin2.png';
 
 import CustomCheckbox from '../../../components/admin/CustomCheckbox';
 
@@ -131,12 +132,21 @@ export default function AdminLogin() {
                     console.warn('OneSignal registration linkage bypassed safely:', e);
                 }
 
+                // 1. Determine the message based on the role
+                const roleLabels: { [key: string]: string } = {
+                    career: "🚀 Welcome back, Professional! Let's get to work.",
+                    admin: "🛡️ Welcome, Admin! System dashboard ready.",
+                    superadmin: "👑 Welcome, SuperAdmin! Orchestration mode enabled."
+                };
+
+                const welcomeMessage = roleLabels[userRole] || "Welcome back!";
+
                 Alert.alert(
                     "Login Successful",
-                    `Welcome back! Access level: ${userRole || 'User'}`,
+                    welcomeMessage,
                     [
                         {
-                            text: "OK",
+                            text: "Let's Go",
                             onPress: () => {
                                 // 🔀 DYNAMIC SECURITY ROLE ROUTING MATRIX
                                 if (userRole === "career") {
@@ -172,18 +182,21 @@ export default function AdminLogin() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled">
 
-                    <Text style={styles.title}>RocketSingh</Text>
-                    <Text style={styles.subtitle}>Admin Login</Text>
+                    <View style={styles.titleContainer}>
+                        <Image source={AdminIcon} style={styles.adminIcon} />
+                        <Text style={styles.title}>RocketSingh</Text>
+                        <Text style={styles.subtitle}>Admin Login</Text>
+                    </View>
 
                     <View style={styles.formContainer}>
-                        <Text style={styles.welcomeText}>Sign in</Text>
+                        <Text style={styles.welcomeText}>Sign In</Text>
 
                         {/* Phone Number Input */}
                         <View style={styles.inputContainer}>
-                            <Image source={PhoneIcon} style={{ width: 30, height: 30 }} />
+                            <Image source={PhoneIcon} style={styles.phoneIcon} />
                             <TextInput
                                 placeholder="Phone Number"
-                                placeholderTextColor={'rgba(67, 67, 67,0.4)'}
+                                placeholderTextColor={'rgba(108, 117, 125, 0.6)'}
                                 style={styles.textInput}
                                 keyboardType="number-pad"
                                 autoCapitalize="none"
@@ -201,12 +214,12 @@ export default function AdminLogin() {
                         <View style={styles.otpSectionWrapper}>
                             {/* Top Section: Label & Eye Icon Switch */}
                             <View style={styles.otpHeaderRow}>
-                                <Text style={styles.pinLabelText}>PIN</Text>
+                                <Text style={styles.pinLabelText}>Security PIN</Text>
                                 <TouchableOpacity onPress={togglePasswordVisibility} style={styles.eyeButton}>
                                     {passwordVisible ? (
-                                        <Image source={EyeOnIcon} style={{ width: 23, height: 27, tintColor: 'hsl(0, 0%, 30%)' }} />
+                                        <Image source={EyeOnIcon} style={styles.eyeIcon} />
                                     ) : (
-                                        <Image source={EyeOffIcon} style={{ width: 22, height: 22, tintColor: 'hsl(0, 0%, 30%)' }} />
+                                        <Image source={EyeOffIcon} style={styles.eyeIcon} />
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -250,14 +263,14 @@ export default function AdminLogin() {
                         <View style={styles.loginDivider} />
 
                         <Text style={styles.btnTextBelow}>Become a member :{' '}
-                            <Text style={{ fontWeight: '900', color: 'black' }}
+                            <Text style={styles.joinNowText}
                                 onPress={() => router.push('/Career')}
                             >
                                 Join Now
                             </Text>
                         </Text>
 
-                        <View style={{ marginTop: 5, width: '100%', alignItems: 'center', gap: 10 }}>
+                        <View style={styles.createAccountContainer}>
                             <TouchableOpacity onPress={() => router.push('/ProfessionalCreate')}>
                                 <Text style={styles.btnTextBelow}>Create Account</Text>
                             </TouchableOpacity>
@@ -273,28 +286,51 @@ export default function AdminLogin() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#064E3B',
     },
     scrollContent: {
         flexGrow: 1,
         alignItems: 'center',
         paddingBottom: 0
     },
+    titleContainer: {
+        alignItems: 'center',
+        padding: 20,
+        marginTop: 10,
+    },
+    adminIcon: {
+        width: 85,
+        height: 85,
+        marginBottom: 15,
+        borderRadius: 42.5,
+        backgroundColor: '#ffffff',
+        padding: 20,
+        tintColor: '#064E3B',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    },
     title: {
-        fontSize: scaleFont(26),
+        fontSize: scaleFont(28),
         fontWeight: '900',
-        marginTop: hp('10%'),
         width: '100%',
-        color: 'green',
-        paddingLeft: hp('3%')
+        color: '#ffffff',
+        letterSpacing: 1.5,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 8,
     },
     subtitle: {
         width: '100%',
         fontSize: hp('2%'),
-        paddingLeft: hp('3%'),
         fontWeight: '500',
-        color: 'hsl(0, 0%, 20%)',
-        marginBottom: hp('5%')
+        color: 'rgba(255, 255, 255, 0.7)',
+        letterSpacing: 3,
+        marginTop: 2,
     },
     btnContainerFlex: {
         flexDirection: 'row',
@@ -304,56 +340,76 @@ const styles = StyleSheet.create({
         marginTop: 15
     },
     btnText: {
-        color: '#333',
-        fontWeight: '500',
+        color: '#6c757d',
+        fontWeight: '600',
         fontSize: hp('1.5%'),
         marginBottom: hp('0.3%')
     },
     btnTextBelow: {
-        color: '#333',
+        color: '#6c757d',
         fontWeight: '500',
         fontSize: hp('1.5%'),
     },
+    joinNowText: {
+        fontWeight: '900',
+        color: '#064E3B',
+    },
     formContainer: {
-        paddingHorizontal: '10%',
+        paddingHorizontal: '7%',
         width: '100%',
         alignItems: 'center',
         paddingVertical: hp('3%'),
-        backgroundColor: '#ebffef',
+        backgroundColor: '#F5F9F8',
         paddingBottom: hp('30%'),
-        marginTop: hp('5%'),
-        borderTopLeftRadius: 30,
-        borderTopRightRadius: 30,
-        borderColor: 'rgba(0, 0, 0,0.1)',
-        borderWidth: 1
+        marginTop: hp('1.5%'),
+        borderTopLeftRadius: 40,
+        borderTopRightRadius: 40,
+        borderColor: 'rgba(0, 0, 0,0.05)',
+        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -5 },
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+        elevation: 10,
     },
     welcomeText: {
-        fontSize: scaleFont(22),
-        fontWeight: '900',
-        marginTop: height * 0.01,
-        marginBottom: height * 0.04,
+        fontSize: scaleFont(24),
+        fontWeight: '800',
+        marginTop: height * 0.04,
+        marginBottom: height * 0.02,
         width: '100%',
-        color: 'green',
-        paddingHorizontal: hp('1.3%')
+        color: '#1a1a2e',
+        paddingHorizontal: hp('1.3%'),
+        letterSpacing: 0.5,
     },
     inputContainer: {
         flexDirection: 'row',
         paddingHorizontal: 16,
-        borderWidth: 1,
+        borderWidth: 2,
         width: '100%',
         marginBottom: '5%',
-        borderRadius: 12,
-        borderColor: 'rgba(0, 0, 0,0.1)',
+        borderRadius: 14,
+        borderColor: 'rgba(0, 0, 0, 0.08)',
         alignItems: 'center',
-        height: hp('6%'),
-        backgroundColor: '#fff'
+        height: hp('6.5%'),
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    phoneIcon: {
+        width: 25,
+        height: 25,
     },
     textInput: {
         fontSize: scaleFont(17),
         fontWeight: '600',
         flex: 1,
         paddingHorizontal: hp('2%'),
-        letterSpacing: 0.5
+        letterSpacing: 0.5,
+        color: '#1a1a2e',
     },
     otpSectionWrapper: {
         width: '100%',
@@ -370,7 +426,8 @@ const styles = StyleSheet.create({
     pinLabelText: {
         fontSize: scaleFont(14),
         fontWeight: '600',
-        color: '#333',
+        color: '#1a1a2e',
+        letterSpacing: 1,
     },
     otpBoxesContainer: {
         flexDirection: "row",
@@ -378,19 +435,32 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     box: {
-        width: 40,
-        height: 50,
-        borderWidth: 1,
-        borderColor: "rgba(0, 0, 0,0.1)",
+        width: 45,
+        height: 55,
+        borderWidth: 1.5,
+        borderColor: '#E5E7EB',
         textAlign: "center",
-        fontSize: 18,
-        borderRadius: 8,
-        backgroundColor: '#fff'
+        fontSize: 20,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        color: '#064E3B',
+        fontWeight: '700',
+        // Added shadow to PIN boxes to make them "pop"
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 2,
     },
     eyeButton: {
         padding: 5,
         justifyContent: 'center',
         alignItems: 'center'
+    },
+    eyeIcon: {
+        width: 23,
+        height: 27,
+        tintColor: '#6c757d',
     },
     loginButton: {
         marginTop: height * 0.04,
@@ -399,18 +469,30 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'green'
+        backgroundColor: '#064E3B',
+        shadowColor: '#064E3B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
     },
     loginButtonText: {
-        fontSize: scaleFont(13),
-        fontWeight: '600',
+        fontSize: scaleFont(14),
+        fontWeight: '700',
         color: '#fff',
+        letterSpacing: 1.5,
     },
     loginDivider: {
         borderWidth: 0.5,
         width: '100%',
-        borderColor: 'rgba(0,0,0,0.2)',
+        borderColor: 'rgba(0,0,0,0.08)',
         marginBottom: hp('3%'),
         marginTop: hp('4%')
+    },
+    createAccountContainer: {
+        marginTop: 5,
+        width: '100%',
+        alignItems: 'center',
+        gap: 10
     },
 });
