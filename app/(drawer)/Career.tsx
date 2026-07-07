@@ -160,10 +160,6 @@ export default function CareerScreen() {
       return Alert.alert('Validation Error', 'Enter a valid emergency contact number');
     }
 
-    if (!selectedCV || selectedCV.length === 0) {
-      return Alert.alert('Validation Error', 'Please upload your CV');
-    }
-
     if (!coverMessage.trim()) {
       return Alert.alert('Validation Error', 'Cover message is required');
     }
@@ -232,7 +228,7 @@ export default function CareerScreen() {
         keyboardDismissMode="on-drag"
       >
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
-          <Text style={styles.title}>RocketSingh - Join Now</Text>
+          <Text style={styles.title}>Join Now</Text>
 
           <View style={styles.spacerGap} />
 
@@ -364,7 +360,7 @@ export default function CareerScreen() {
           <Text style={styles.label}>Preferred Working Area<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
             options={area}
-            placeholder="Select your preferred working area (max 5)"
+            placeholder="Select Maximum 5"
             placeholderColor="#4B4B4B"
             value={selectedArea}
             onSelectOption={setSelectedArea}
@@ -401,7 +397,7 @@ export default function CareerScreen() {
               resizeMode="contain"
             />
             <TextInput
-              placeholder="Enter your emergency contact number"
+              placeholder="Contact number of Spouse/ family members"
               value={emergencyNumber}
               onFocus={() => setActiveInput('emergencyPhone')}
               onBlur={() => setActiveInput(null)}
@@ -433,7 +429,7 @@ export default function CareerScreen() {
           </View>
 
           {/* CV/Resume */}
-          <Text style={styles.label}>CV/Resume<Text style={{ color: 'red' }}>*</Text></Text>
+          <Text style={styles.label}>Upload Training Certificate</Text>
           <FileUploadBox
             value={selectedCV}
             onChange={setSelectedCV}
@@ -453,7 +449,7 @@ export default function CareerScreen() {
           />
 
           {/* Message */}
-          <Text style={styles.label}>Message<Text style={{ color: 'red' }}>*</Text></Text>
+          <Text style={styles.label}>Short Bio<Text style={{ color: 'red' }}>*</Text></Text>
           <TextArea
             value={message}
             onChangeText={setMessage}

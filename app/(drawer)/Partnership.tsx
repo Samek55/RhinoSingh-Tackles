@@ -260,10 +260,10 @@ export default function PartnershipScreen() {
           <FileUploadBox value={selectCompanyPhotos} onChange={setSelectCompanyPhotos} />
 
           {/* Area Dropdown */}
-          <Text style={styles.label}>Area<Text style={{ color: 'red' }}>*</Text></Text>
+          <Text style={styles.label}>City<Text style={{ color: 'red' }}>*</Text></Text>
           <Dropdown
             options={city}
-            placeholder="Select your Area"
+            placeholder="Select your City"
             placeholderColor="#4B4B4B"
             onSelectOption={setSelectedArea}
             value={selectedArea}
@@ -282,6 +282,7 @@ export default function PartnershipScreen() {
             onBlur={() => setActiveInput(null)}
             onChangeText={(text) => setEmployees(text.replace(/[^0-9]/g, ''))}
             style={[styles.input, activeInput === 'employees' && styles.inputActive]}
+            maxLength={7}
           />
 
           {/* Business Type Dropdown */}

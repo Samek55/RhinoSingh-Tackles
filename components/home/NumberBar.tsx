@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     marginLeft: 10
   },
   helpButton: {
-    backgroundColor: '#075f47',
+    backgroundColor: '#064E3B',
     paddingHorizontal: wp('6.5%'),
     height: '85%',
     borderRadius: 100,
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: '#075f47',
+        shadowColor: '#064E3B',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 6,

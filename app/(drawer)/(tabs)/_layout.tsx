@@ -140,18 +140,11 @@ const styles = StyleSheet.create({
     width: 60,            // Ensure width and height match
     height: 60,           // Ensure width and height match
     borderRadius: 30,     // Always half of the width/height
-    backgroundColor: '#fff', // REQUIRED for shadows to show
+    backgroundColor: '#eee', // REQUIRED for shadows to show
     justifyContent: 'center',
     alignItems: 'center',
     top: -15,
     
-    // iOS Shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    
-    // Android Shadow
-    elevation: 5,
+
   },
 })

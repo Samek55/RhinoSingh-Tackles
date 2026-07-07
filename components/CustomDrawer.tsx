@@ -282,7 +282,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             </>
           )}
 
-          <View style={styles.divider} />
+          <View style={styles.dividerAdmin} />
 
           {/* BOTTOM AUTH BUTTON */}
           {isLoggedIn ? (
@@ -296,7 +296,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
           ) : (
             <MenuItem
               icon={isActive('/admin/AdminLogin') ? "shield-checkmark-outline" : "shield-checkmark-outline"}
-              label="Admin"
+              label="Admin Login"
               active={false}
               onPress={() => navigateTo('/admin/AdminLogin')}
             />
@@ -317,17 +317,24 @@ type MenuItemProps = {
   isLogout?: boolean;
 };
 
+/* MENU ITEM SUB-COMPONENT */
 const MenuItem = React.memo(({ icon, label, onPress, active, isLogout }: MenuItemProps) => {
+  const isAdminButton = label === "Admin Login";
+
   const getIconColor = () => {
     if (active) return '#059669';
     if (isLogout) return '#EF4444';
-    if (label === "Admin") return '#047857';
+    if (isAdminButton) return '#FFFFFF'; // White icon for admin button
     return '#6B7280';
   };
 
   return (
     <TouchableOpacity
-      style={[styles.item, active && styles.itemActive]}
+      style={[
+        styles.item,
+        active && styles.itemActive,
+        isAdminButton && styles.adminButton
+      ]}
       onPress={onPress}
       activeOpacity={0.65}
     >
@@ -336,20 +343,22 @@ const MenuItem = React.memo(({ icon, label, onPress, active, isLogout }: MenuIte
         name={icon}
         size={FIXED_FONT_19}
         color={getIconColor()}
-        style={active ? styles.iconActive : null}
+        style={[
+          active ? styles.iconActive : null,
+          isAdminButton && { marginRight: -wp('1%') } // Pulls icon slightly closer to text
+        ]}
       />
       <Text style={[
         styles.label,
         active && styles.labelActive,
         isLogout && styles.labelLogout,
-        label === "Admin" && { color: '#047857' }
+        isAdminButton && styles.adminButtonText // White text for button
       ]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 });
-
 /* STYLES */
 const styles = StyleSheet.create({
   wrapper: {
@@ -376,7 +385,7 @@ const styles = StyleSheet.create({
   },
   profileBox: {
     backgroundColor: '#064E3B',
-    paddingVertical: hp('3.5%'),
+    paddingVertical: hp('2%'),
     paddingHorizontal: wp('5%'),
     alignItems: 'center',
     justifyContent: 'center',
@@ -402,7 +411,7 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: hp('1.5%'),
+    paddingVertical: hp('1.2%'),
     paddingHorizontal: wp('4%'),
     borderRadius: 12,
     marginBottom: 6,
@@ -452,8 +461,13 @@ const styles = StyleSheet.create({
   },
   divider: {
     borderTopWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#ddd',
     marginVertical: hp('1.5%'),
+    marginHorizontal: wp('2%'),
+  },
+    dividerAdmin: {
+    borderColor: '#ddd',
+    marginVertical: hp('1%'),
     marginHorizontal: wp('2%'),
   },
   firebaseAuthText: {
@@ -461,5 +475,31 @@ const styles = StyleSheet.create({
     color: '#A7F3D0',
     fontWeight: '600',
     textAlign: 'center'
+  },
+
+  adminButton: {
+    backgroundColor: '#064E3B',
+    borderRadius: 12,
+    flexDirection: 'row', // Ensure items are aligned in a row
+    justifyContent: 'center', // Centers the content block
+    alignItems: 'center',
+    paddingVertical: hp('1.5%'), // Slightly reduced vertical padding
+    marginTop: hp('0.5%'),
+    ...Platform.select({
+      ios: {
+        shadowColor: '#064E3B',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      }
+    })
+  },
+  adminButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    marginLeft: wp('2%'), // Reduced margin specifically for Admin Login text
   },
 });

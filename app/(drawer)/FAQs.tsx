@@ -46,7 +46,7 @@ export default function FaqsScreen() {
                 style={styles.card}
               >
                 <Text style={styles.cardTitle}>
-                  {item.id}. {item.question}
+                 {item.question}
                 </Text>
 
                 {isOpen && (

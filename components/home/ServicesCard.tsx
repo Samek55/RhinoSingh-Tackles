@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     color: '#295C59',
     textAlign: 'center',
     marginTop: 6,
+    paddingHorizontal: 4,
   },
 });
 

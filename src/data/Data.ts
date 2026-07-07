@@ -39,6 +39,7 @@ export const services = [
   'Electrical Wiring',
   'Deep Cleaning',
   'Handyman',
+  'Others'
 ];
 
 export const positionAppliedFor = [
@@ -118,7 +119,8 @@ export const area = [
   "Valasaravakkam",
   "Velachery",
   "Virugambakkam",
-  "Washermanpet"
+  "Washermanpet",
+  "Other"
 ];
 
 export const city = [

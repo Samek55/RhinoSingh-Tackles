@@ -32,12 +32,12 @@ const { width, height } = Dimensions.get('window');
 
 const Button = ({ children, style, textStyle, onPress, disabled }: any) => {
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
-      activeOpacity={0.85} 
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.85}
       disabled={disabled}
       style={[
-        styles.submitBtn, 
+        styles.submitBtn,
         style
       ]}
     >
@@ -187,11 +187,11 @@ export default function ServiceBookingScreen() {
             </View>
 
             {/* Select Service */}
-            <Text style={styles.label}>Select Service<Text style={styles.required}> *</Text></Text>
+            <Text style={styles.label}>Select a Service<Text style={styles.required}> *</Text></Text>
             <Dropdown
               value={selectedService}
               options={services}
-              placeholder="Select Services"
+              placeholder="Select any One Service"
               placeholderColor="#9CA3AF"
               onSelectOption={setSelectedService}
               onOpen={() => setActiveInput('service')}
@@ -294,22 +294,21 @@ export default function ServiceBookingScreen() {
               style={activeInput === 'message' ? styles.inputActive : undefined}
             />
 
-            {/* Submit Button */}
-            <View style={styles.buttonPadding}>
+            {/* Form Actions */}
+            <View style={styles.buttonContainer}>
+              <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
+                <Image source={ClearFormIcon} style={styles.clearIcon} />
+                <Text style={styles.buttonClear}>Clear form</Text>
+              </Pressable>
+
               <Button
                 onPress={handleSubmit}
                 disabled={isSubmitting}
+                style={styles.buttonSubmit}
               >
                 {isSubmitting ? <ActivityIndicator color="#fff" size="small" /> : 'SUBMIT'}
               </Button>
             </View>
-
-            {/* Clear Form Option */}
-            <Pressable style={styles.buttonClearFlex} onPress={handleClearForm}>
-              <Image source={ClearFormIcon} style={styles.clearIcon} />
-              <Text style={styles.buttonClear}>Clear form</Text>
-            </Pressable>
-
           </View>
         </View>
       </KeyboardAwareScrollView>
@@ -318,24 +317,24 @@ export default function ServiceBookingScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { 
-    flex: 1, 
+  screen: {
+    flex: 1,
   },
-  container: { 
-    flexGrow: 1, 
+  container: {
+    flexGrow: 1,
   },
-  formContainer: { 
-    paddingHorizontal: width * 0.05, 
+  formContainer: {
+    paddingHorizontal: width * 0.05,
     paddingTop: height * 0.015,
   },
   titleArea: {
     paddingBottom: hp('2.5%'),
     paddingHorizontal: 4,
   },
-  title: { 
-    fontSize: width * 0.07, 
-    fontWeight: '800', 
-    color: '#FFFFFF', 
+  title: {
+    fontSize: width * 0.07,
+    fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: -0.5,
     marginBottom: 4,
   },
@@ -344,129 +343,141 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '400',
   },
-  inputCard: { 
+  inputCard: {
     paddingHorizontal: wp('5%'),
-    paddingVertical: hp('3%'), 
-    borderRadius: 24, 
-    backgroundColor: '#FFFFFF', 
+    paddingVertical: hp('3%'),
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
     shadowRadius: 20,
-    elevation: 8, 
+    elevation: 8,
     marginBottom: hp('6%'),
   },
-  label: { 
-    marginBottom: hp('0.8%'), 
-    paddingLeft: 2, 
-    fontSize: wp('3.6%'), 
-    fontWeight: '600', 
-    color: '#374151', // Gray 700
+  label: {
+    marginBottom: hp('0.8%'),
+    paddingLeft: 2,
+    fontSize: wp('3.6%'),
+    fontWeight: '600',
+    color: '#374151',
   },
-  required: { 
-    color: '#EF4444', // Warm red
+  required: {
+    color: '#EF4444',
   },
-  input: { 
-    borderWidth: 1.5, 
-    borderRadius: 14, 
-    paddingHorizontal: width * 0.04, 
-    height: hp('6%'), 
-    marginBottom: height * 0.02, 
-    fontSize: wp('3.8%'), 
-    fontWeight: '500', 
-    borderColor: '#E5E7EB', // Gray 200
-    color: '#111827', 
+  input: {
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: width * 0.04,
+    height: hp('6%'),
+    marginBottom: height * 0.02,
+    fontSize: wp('3.8%'),
+    fontWeight: '500',
+    borderColor: '#E5E7EB',
+    color: '#111827',
     backgroundColor: '#FFFFFF',
   },
-  inputActive: { 
-    borderColor: '#10B981', // Matching active Emerald tone
-    backgroundColor: '#F0FDF4', // Emerald-tinted light fill
+  inputActive: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
   },
-  phoneContainer: { 
-    position: 'relative', 
-    justifyContent: 'center', 
+  phoneContainer: {
+    position: 'relative',
+    justifyContent: 'center',
     marginBottom: height * 0.02,
   },
-  countryIcon: { 
-    width: wp('7%'), 
-    height: hp('3%'), 
-    position: 'absolute', 
-    left: 14, 
+  countryIcon: {
+    width: wp('7%'),
+    height: hp('3%'),
+    position: 'absolute',
+    left: 14,
     zIndex: 2,
   },
-  phoneInput: { 
-    borderWidth: 1.5, 
-    borderRadius: 14, 
-    borderColor: '#E5E7EB', 
-    height: hp('6%'), 
-    paddingLeft: wp('14%'), 
-    paddingRight: 14, 
-    fontSize: wp('3.8%'), 
-    fontWeight: '500', 
-    color: '#111827', 
+  phoneInput: {
+    borderWidth: 1.5,
+    borderRadius: 14,
+    borderColor: '#E5E7EB',
+    height: hp('6%'),
+    paddingLeft: wp('14%'),
+    paddingRight: 14,
+    fontSize: wp('3.8%'),
+    fontWeight: '500',
+    color: '#111827',
     backgroundColor: '#FFFFFF',
   },
-  datePicker: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1.5, 
-    borderColor: '#E5E7EB', 
-    borderRadius: 14, 
-    paddingHorizontal: width * 0.04, 
-    height: hp('6%'), 
-    justifyContent: 'space-between', 
+  datePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    paddingHorizontal: width * 0.04,
+    height: hp('6%'),
+    justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
   },
-  datePickerText: { 
-    fontSize: wp('3.8%'), 
+  datePickerText: {
+    fontSize: wp('3.8%'),
     fontWeight: '500',
   },
-  calendarIcon: { 
-    height: 20, 
-    width: 20, 
+  calendarIcon: {
+    height: 20,
+    width: 20,
     resizeMode: 'contain',
   },
-  buttonPadding: { 
-    marginTop: hp('2%'), 
-    alignItems: 'center', 
-    width: '100%',
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 15,
   },
-  submitBtn: { 
-    width: '50%', 
-    height: hp('6.5%'), 
-    backgroundColor: '#064E3B', // Emerald accent primary
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderRadius: 16,
+  submitBtn: {
+    width: width * 0.4,
+    height: height * 0.058,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#064E3B',
     shadowColor: '#064E3B',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 4,
   },
-  submitBtnText: { 
-    color: '#FFFFFF', 
-    fontSize: wp('4.2%'), 
+  submitBtnText: {
+    color: '#FFFFFF',
+    fontSize: wp('4.2%'),
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  buttonClearFlex: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginTop: hp('2%'), 
+  buttonSubmit: {
+    width: width * 0.4,
+    height: height * 0.058,
     justifyContent: 'center',
-    padding: 8,
+    alignItems: 'center',
+    borderRadius: 12,
+    marginBottom: 40,
+    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  buttonClear: {  
-    fontSize: wp('3.6%'), 
-    fontWeight: '600', 
-    color: '#6B7280',
+  buttonClear: {
+    color: '#0a7de1',
+    fontSize: width * 0.038,
+    fontWeight: '500',
   },
-  clearIcon: { 
-    width: 18, 
-    height: 18, 
-    tintColor: '#9CA3AF', 
-    resizeMode: 'contain', 
-    marginRight: 6,
+  buttonClearFlex: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  clearIcon: {
+    width: wp('6%'),
+    height: hp('2.5%'),
+    resizeMode: 'contain',
+    marginRight: 4,
   },
 });

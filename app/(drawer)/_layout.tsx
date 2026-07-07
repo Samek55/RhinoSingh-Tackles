@@ -4,7 +4,7 @@ import CustomDrawer from '@/components/CustomDrawer';
 
 import { Dimensions } from 'react-native';
 
-const { width,height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function DrawerLayout() {
   return (
@@ -16,8 +16,13 @@ export default function DrawerLayout() {
         drawerType: 'front',
 
         drawerStyle: {
-          width: width * 0.8, // 80% of screen width
+          width: width * 0.8,
+          height: height * 0.9,
           backgroundColor: 'transparent',
+          position: 'absolute',
+          top: height * 0.05, // 5% from top, centers vertically
+          borderRadius: 20,
+          overflow: 'hidden',
         },
 
         overlayColor: 'rgba(0,0,0,0.5)',

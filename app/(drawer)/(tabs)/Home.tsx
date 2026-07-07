@@ -33,12 +33,23 @@ const HOME_SERVICE_NAMES = [
 export default function HomeScreen() {
   const scrollRef = useRef<ScrollView | null>(null);
 
-  const shuffledServices = useMemo(() => {
+  // Get services in the exact order as HOME_SERVICE_NAMES
+  const orderedServices = useMemo(() => {
     const pool = servicesData2.filter((service) => 
       HOME_SERVICE_NAMES.map(n => n.toLowerCase()).includes(service.name.toLowerCase())
     );
-    return [...pool].sort(() => Math.random() - 0.5);
-  }, []);
+    
+    // Sort based on the order in HOME_SERVICE_NAMES
+    return pool.sort((a, b) => {
+      const indexA = HOME_SERVICE_NAMES.findIndex(name => 
+        name.toLowerCase() === a.name.toLowerCase()
+      );
+      const indexB = HOME_SERVICE_NAMES.findIndex(name => 
+        name.toLowerCase() === b.name.toLowerCase()
+      );
+      return indexA - indexB;
+    });
+  }, []); // Empty dependency array means this runs once
 
   return (
     <View style={styles.screen}>
@@ -117,7 +128,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.servicesScrollContent}
           >
-            {shuffledServices.map((service) => (
+            {orderedServices.map((service) => (
               <ServicesCard
                 key={service.id}
                 title={service.name}
@@ -169,15 +180,15 @@ const styles = StyleSheet.create({
     fontSize: wp('7%'),
     fontWeight: '800',
     color: '#ffffff',
-    lineHeight: wp('8.8%'),
+    lineHeight: wp('8%'),
     letterSpacing: -0.2,
   },
   heroSub: {
-    fontSize: wp('3.4%'),
+    fontSize: wp('3.7%'),
     color: 'rgba(255,255,255,0.82)',
     fontWeight: '400',
     marginTop: hp('0.8%'),
-    marginBottom: hp('1.8%'),
+    marginBottom: hp('0.5%'),
   },
   heroNumberBar: { 
     marginTop: hp('0.5%') 
