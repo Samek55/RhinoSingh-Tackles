@@ -11,6 +11,7 @@ import {
   Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 
 import ArrowDownIcon from '../../assets/icons/contact/downarrow.png';
 import DelIcon from '../../assets/icons/contact/deleteicon.png';
@@ -21,27 +22,61 @@ type FileItem = {
   uri: string;
   fileName?: string;
   sizeMB?: number;
+  mimeType?: string;
+  type?: 'image' | 'pdf';
 };
 
 type Props = {
   value: FileItem[];
   onChange: (files: FileItem[]) => void;
-  maxFiles?: number; // Made optional with default value
-  minFiles?: number; // Optional min files requirement
+  maxFiles?: number;
+  minFiles?: number;
+  maxFileSizeMB?: number; // Maximum file size in MB (default: 10MB)
 };
 
 const FileUploadBox: React.FC<Props> = ({ 
   value, 
   onChange, 
-  maxFiles = 5,  // Default to 5 if not specified
-  minFiles = 0   // Default to 0 if not specified
+  maxFiles = 5,
+  minFiles = 0,
+  maxFileSizeMB = 10 // Default 10MB
 }) => {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-  const pickImages = async () => {
-    // Check if already reached max limit
+  // Check if file size is valid
+  const isFileSizeValid = (sizeMB: number = 0) => {
+    return sizeMB <= maxFileSizeMB;
+  };
+
+  const pickFiles = async () => {
     if (value.length >= maxFiles) {
-      Alert.alert('Limit Reached', `You can only upload up to ${maxFiles} images`);
+      Alert.alert('Limit Reached', `You can only upload up to ${maxFiles} files`);
+      return;
+    }
+
+    Alert.alert(
+      'Upload File',
+      `Choose the type of file to upload (Max ${maxFileSizeMB}MB per file)`,
+      [
+        {
+          text: 'Image (PNG, JPG, JPEG)',
+          onPress: pickImages,
+        },
+        {
+          text: 'PDF Document',
+          onPress: pickPDF,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ]
+    );
+  };
+
+  const pickImages = async () => {
+    if (value.length >= maxFiles) {
+      Alert.alert('Limit Reached', `You can only upload up to ${maxFiles} files`);
       return;
     }
 
@@ -51,26 +86,117 @@ const FileUploadBox: React.FC<Props> = ({
       mediaTypes: 'images',
       allowsMultipleSelection: true,
       quality: 0.7,
-      selectionLimit: remainingSlots, // Only allow remaining slots
+      selectionLimit: remainingSlots,
     });
 
     if (result.canceled) return;
 
-    const newFiles = result.assets.map(asset => ({
-      uri: asset.uri,
-      fileName: asset.fileName || 'Unnamed file',
-      sizeMB: asset.fileSize
-        ? +(asset.fileSize / (1024 * 1024)).toFixed(2)
-        : 0,
-    }));
+    // Filter files by size
+    const validFiles: FileItem[] = [];
+    const invalidFiles: string[] = [];
 
-    // Ensure we don't exceed max files
-    const combinedFiles = [...value, ...newFiles];
+    result.assets.forEach(asset => {
+      const sizeMB = asset.fileSize
+        ? +(asset.fileSize / (1024 * 1024)).toFixed(2)
+        : 0;
+      
+      if (isFileSizeValid(sizeMB)) {
+        validFiles.push({
+          uri: asset.uri,
+          fileName: asset.fileName || 'Unnamed file',
+          sizeMB: sizeMB,
+          mimeType: asset.mimeType || 'image/jpeg',
+          type: 'image' as const,
+        });
+      } else {
+        invalidFiles.push(asset.fileName || 'Unnamed file');
+      }
+    });
+
+    // Show alert for invalid files
+    if (invalidFiles.length > 0) {
+      Alert.alert(
+        'File Size Limit Exceeded',
+        `The following file(s) exceed the ${maxFileSizeMB}MB limit and were skipped:\n${invalidFiles.join('\n')}`
+      );
+    }
+
+    if (validFiles.length === 0) {
+      Alert.alert('No Valid Files', `All selected files exceed the ${maxFileSizeMB}MB limit`);
+      return;
+    }
+
+    const combinedFiles = [...value, ...validFiles];
     const trimmedFiles = combinedFiles.slice(0, maxFiles);
     onChange(trimmedFiles);
 
     if (combinedFiles.length > maxFiles) {
-      Alert.alert('Limit Reached', `Only ${maxFiles} images can be uploaded. The first ${maxFiles} were selected.`);
+      Alert.alert('Limit Reached', `Only ${maxFiles} files can be uploaded. The first ${maxFiles} were selected.`);
+    }
+  };
+
+  const pickPDF = async () => {
+    try {
+      if (value.length >= maxFiles) {
+        Alert.alert('Limit Reached', `You can only upload up to ${maxFiles} files`);
+        return;
+      }
+
+      const remainingSlots = maxFiles - value.length;
+      
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/pdf',
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+
+      if (result.canceled) return;
+
+      // Filter files by size
+      const validFiles: FileItem[] = [];
+      const invalidFiles: string[] = [];
+
+      result.assets.slice(0, remainingSlots).forEach(asset => {
+        const sizeMB = asset.size
+          ? +(asset.size / (1024 * 1024)).toFixed(2)
+          : 0;
+        
+        if (isFileSizeValid(sizeMB)) {
+          validFiles.push({
+            uri: asset.uri,
+            fileName: asset.name || 'Unnamed file',
+            sizeMB: sizeMB,
+            mimeType: asset.mimeType || 'application/pdf',
+            type: 'pdf' as const,
+          });
+        } else {
+          invalidFiles.push(asset.name || 'Unnamed file');
+        }
+      });
+
+      // Show alert for invalid files
+      if (invalidFiles.length > 0) {
+        Alert.alert(
+          'File Size Limit Exceeded',
+          `The following file(s) exceed the ${maxFileSizeMB}MB limit and were skipped:\n${invalidFiles.join('\n')}`
+        );
+      }
+
+      if (validFiles.length === 0) {
+        Alert.alert('No Valid Files', `All selected files exceed the ${maxFileSizeMB}MB limit`);
+        return;
+      }
+
+      const combinedFiles = [...value, ...validFiles];
+      const trimmedFiles = combinedFiles.slice(0, maxFiles);
+      onChange(trimmedFiles);
+
+      if (combinedFiles.length > maxFiles) {
+        Alert.alert('Limit Reached', `Only ${maxFiles} files can be uploaded. The first ${maxFiles} were selected.`);
+      }
+    } catch (error) {
+      console.error('Error picking PDF:', error);
+      Alert.alert('Error', 'Failed to select PDF file');
     }
   };
 
@@ -85,15 +211,31 @@ const FileUploadBox: React.FC<Props> = ({
     }
   };
 
+  const isImage = (file: FileItem) => {
+    return file.type === 'image' || 
+           (file.mimeType && file.mimeType.startsWith('image/'));
+  };
+
+  // Get file size display text
+  const getSizeDisplay = (sizeMB: number) => {
+    if (sizeMB < 1) {
+      return `${(sizeMB * 1024).toFixed(0)} KB`;
+    }
+    return `${sizeMB.toFixed(2)} MB`;
+  };
+
   return (
     <View style={styles.container}>
       {/* EMPTY DASHED UPLOAD BOX */}
       {value.length === 0 && (
-        <TouchableOpacity style={styles.boxEmpty} onPress={pickImages} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.boxEmpty} onPress={pickFiles} activeOpacity={0.7}>
           <View style={styles.emptyState}>
             <Image source={ArrowDownIcon} style={styles.uploadIcon} />
             <Text style={styles.placeholder}>
               Drop files/photos here
+            </Text>
+            <Text style={styles.fileLimitText}>
+              Supports PNG, JPG, JPEG & PDF (Max {maxFiles} files, {maxFileSizeMB}MB each)
             </Text>
           </View>
         </TouchableOpacity>
@@ -106,18 +248,30 @@ const FileUploadBox: React.FC<Props> = ({
             {value.map((item, index) => (
               <View key={item.uri} style={styles.columnWrapper}>
                 <TouchableOpacity
-                  onPress={() => setPreviewIndex(index)}
+                  onPress={() => {
+                    if (isImage(item)) {
+                      setPreviewIndex(index);
+                    } else {
+                      Alert.alert('Preview Not Available', 'PDF preview is not available');
+                    }
+                  }}
                   style={styles.previewCard}
                   activeOpacity={0.9}
                 >
-                  <Image source={{ uri: item.uri }} style={styles.previewImage} />
+                  {isImage(item) ? (
+                    <Image source={{ uri: item.uri }} style={styles.previewImage} />
+                  ) : (
+                    <View style={[styles.previewImage, styles.pdfIconContainer]}>
+                      <Text style={styles.pdfIconText}>PDF</Text>
+                    </View>
+                  )}
 
                   <View style={styles.previewInfo}>
                     <Text style={styles.name} numberOfLines={1}>
                       {item.fileName}
                     </Text>
                     {item.sizeMB !== undefined && item.sizeMB > 0 ? (
-                      <Text style={styles.size}>{item.sizeMB} MB</Text>
+                      <Text style={styles.size}>{getSizeDisplay(item.sizeMB)}</Text>
                     ) : null}
                   </View>
 
@@ -134,7 +288,7 @@ const FileUploadBox: React.FC<Props> = ({
             {/* SYMMETRICAL ADD MORE ATTACHMENT ACTION - Only show if less than max files */}
             {value.length < maxFiles && (
               <View style={styles.columnWrapper}>
-                <TouchableOpacity style={styles.addMore} onPress={pickImages} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.addMore} onPress={pickFiles} activeOpacity={0.7}>
                   <Text style={styles.addText}>+ Add more</Text>
                   <Text style={styles.addCountText}>{value.length}/{maxFiles}</Text>
                 </TouchableOpacity>
@@ -144,10 +298,9 @@ const FileUploadBox: React.FC<Props> = ({
         </View>
       )}
 
-      {/* FULL SCREEN LIGHTBOX DIALOG PREVIEW */}
+      {/* FULL SCREEN LIGHTBOX DIALOG PREVIEW - Only for images */}
       <Modal visible={previewIndex !== null} transparent={true} animationType="fade">
         <View style={styles.modalContainer}>
-          {/* Close Button Header Area */}
           <TouchableOpacity
             style={styles.closeBtn}
             onPress={() => setPreviewIndex(null)}
@@ -155,7 +308,7 @@ const FileUploadBox: React.FC<Props> = ({
             <Text style={{ color: '#fff', fontSize: 22, fontWeight: '300' }}>✕</Text>
           </TouchableOpacity>
 
-          {previewIndex !== null && (
+          {previewIndex !== null && isImage(value[previewIndex]) && (
             <Image
               source={{ uri: value[previewIndex].uri }}
               style={styles.fullImage}
@@ -186,7 +339,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 16,
   },
-  // High-fidelity empty state configuration matching dynamic style specs
   boxEmpty: {
     minHeight: 110,
     borderWidth: 1.5,
@@ -247,6 +399,17 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 6,
     backgroundColor: '#E2E8F0',
+  },
+  pdfIconContainer: {
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  pdfIconText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   previewInfo: {
     flex: 1,

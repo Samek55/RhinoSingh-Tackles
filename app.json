@@ -3,7 +3,7 @@
     "name": "RocketSingh",
     "slug": "rocketsingh",
     "version": "1.0.0",
-    "orientation": "default",
+    "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "rocketsingh",
     "userInterfaceStyle": "automatic",
