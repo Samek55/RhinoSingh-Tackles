@@ -7,7 +7,8 @@ import {
   Image,
   Modal,
   Dimensions,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -25,16 +26,32 @@ type FileItem = {
 type Props = {
   value: FileItem[];
   onChange: (files: FileItem[]) => void;
+  maxFiles?: number; // Made optional with default value
+  minFiles?: number; // Optional min files requirement
 };
 
-const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
+const FileUploadBox: React.FC<Props> = ({ 
+  value, 
+  onChange, 
+  maxFiles = 5,  // Default to 5 if not specified
+  minFiles = 0   // Default to 0 if not specified
+}) => {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const pickImages = async () => {
+    // Check if already reached max limit
+    if (value.length >= maxFiles) {
+      Alert.alert('Limit Reached', `You can only upload up to ${maxFiles} images`);
+      return;
+    }
+
+    const remainingSlots = maxFiles - value.length;
+    
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: 'images',
       allowsMultipleSelection: true,
       quality: 0.7,
+      selectionLimit: remainingSlots, // Only allow remaining slots
     });
 
     if (result.canceled) return;
@@ -47,7 +64,14 @@ const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
         : 0,
     }));
 
-    onChange([...value, ...newFiles]);
+    // Ensure we don't exceed max files
+    const combinedFiles = [...value, ...newFiles];
+    const trimmedFiles = combinedFiles.slice(0, maxFiles);
+    onChange(trimmedFiles);
+
+    if (combinedFiles.length > maxFiles) {
+      Alert.alert('Limit Reached', `Only ${maxFiles} images can be uploaded. The first ${maxFiles} were selected.`);
+    }
   };
 
   const removeFile = (uri: string) => {
@@ -107,12 +131,15 @@ const FileUploadBox: React.FC<Props> = ({ value, onChange }) => {
               </View>
             ))}
 
-            {/* SYMMETRICAL ADD MORE ATTACHMENT ACTION */}
-            <View style={styles.columnWrapper}>
-              <TouchableOpacity style={styles.addMore} onPress={pickImages} activeOpacity={0.7}>
-                <Text style={styles.addText}>+ Add more</Text>
-              </TouchableOpacity>
-            </View>
+            {/* SYMMETRICAL ADD MORE ATTACHMENT ACTION - Only show if less than max files */}
+            {value.length < maxFiles && (
+              <View style={styles.columnWrapper}>
+                <TouchableOpacity style={styles.addMore} onPress={pickImages} activeOpacity={0.7}>
+                  <Text style={styles.addText}>+ Add more</Text>
+                  <Text style={styles.addCountText}>{value.length}/{maxFiles}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -165,8 +192,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: 12,
     borderStyle: 'dashed',
-    borderColor: '#B2C5FF',       // Elegant layout preview branding theme hue
-    backgroundColor: '#F8FAFC',   // Cream neutral slate backdrop tint
+    borderColor: '#B2C5FF',
+    backgroundColor: '#F8FAFC',
     padding: 16,
     justifyContent: 'center',
   },
@@ -174,7 +201,7 @@ const styles = StyleSheet.create({
     minHeight: 110,
     borderWidth: 1.5,
     borderRadius: 12,
-    borderColor: '#E2E8F0',       // Uniform inline static wrapper profile gray
+    borderColor: '#E2E8F0',
     backgroundColor: '#fff',
     padding: 8,
   },
@@ -185,7 +212,7 @@ const styles = StyleSheet.create({
   uploadIcon: {
     width: 24,
     height: 24,
-    tintColor: '#2F6BFF',         // Matches universal focus theme engine glow accent
+    tintColor: '#2F6BFF',
   },
   placeholder: {
     marginTop: 8,
@@ -193,7 +220,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4B5563',
   },
-  // Optimized Grid mechanics to replace cross-platform gap rendering limitations
+  fileLimitText: {
+    marginTop: 4,
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '400',
+  },
   previewGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -205,7 +237,7 @@ const styles = StyleSheet.create({
   previewCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',   // Light gray layout card backgrounds
+    backgroundColor: '#F1F5F9',
     padding: 8,
     borderRadius: 10,
     height: 56,
@@ -253,7 +285,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2F6BFF',
   },
-  /* PREVIEW INTERACTION DIALOG BLUEPRINTS */
+  addCountText: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
@@ -277,7 +313,7 @@ const styles = StyleSheet.create({
   deleteFromPreview: {
     position: 'absolute',
     bottom: 50,
-    backgroundColor: '#EF4444',   // Standardized destruct item alert color hex
+    backgroundColor: '#EF4444',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,

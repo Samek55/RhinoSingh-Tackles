@@ -7,6 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Image,
+  FlatList,
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import Header2 from '@/components/Header2';
@@ -46,7 +48,11 @@ export default function BookingDetails() {
     message,
     date,
     role,
+    fileUrls, // Get file URLs from params
   } = useLocalSearchParams();
+
+  // Parse file URLs
+  const uploadedFiles = fileUrls ? JSON.parse(fileUrls as string) : [];
 
   const formattedDate = date
     ? new Date(date as string).toLocaleDateString('en-IN', {
@@ -105,7 +111,9 @@ export default function BookingDetails() {
         work_description: message ? String(message) : '',
         budget: selectedBudget ? String(selectedBudget) : '',
         service_booking_datetime: formatDate(date),
-        status: "New / Open"
+        status: "New / Open",
+        // Add file URLs to the booking data if needed
+        add_photos_picture: uploadedFiles,
       };
 
       // 3. Complete Database Entry Creation Task
@@ -141,6 +149,16 @@ export default function BookingDetails() {
       );
     }
   };
+
+  // Render uploaded images
+  const renderImageItem = ({ item, index }: { item: string; index: number }) => (
+    <View style={styles.imageItemContainer}>
+      <Image source={{ uri: item }} style={styles.uploadedImage} resizeMode="cover" />
+      <View style={styles.imageNumberBadge}>
+        <Text style={styles.imageNumberText}>{index + 1}</Text>
+      </View>
+    </View>
+  );
 
   return (
     <LinearGradient colors={['#064E3B', '#022C22']} style={styles.screen}>
@@ -189,6 +207,26 @@ export default function BookingDetails() {
               </View>
             </>
           ) : null}
+
+          {/* Display uploaded photos */}
+          {uploadedFiles.length > 0 && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.photosSection}>
+                <Text style={styles.photosLabel}>
+                  Uploaded Photos ({uploadedFiles.length})
+                </Text>
+                <FlatList
+                  data={uploadedFiles}
+                  renderItem={renderImageItem}
+                  keyExtractor={(item, index) => `photo-${index}`}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.photosList}
+                />
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.buttonGroup}>
@@ -293,11 +331,58 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginTop: 4,
   },
+  photosSection: {
+    paddingVertical: hp('2%'),
+  },
+  photosLabel: {
+    fontSize: wp('3.6%'),
+    color: '#6B7280',
+    fontWeight: '500',
+    marginBottom: hp('1%'),
+  },
+  photosList: {
+    paddingVertical: 4,
+    gap: 10,
+  },
+  imageItemContainer: {
+    position: 'relative',
+    marginRight: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  uploadedImage: {
+    width: wp('20%'),
+    height: hp('10%'),
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+  },
+  imageNumberBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageNumberText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
   buttonGroup: {
     gap: hp('1.5%'),
   },
   confirmBtn: { 
-    backgroundColor: 'green', 
+    backgroundColor: '#10B981', 
     height: hp('6.5%'), 
     borderRadius: 16, 
     justifyContent: 'center', 

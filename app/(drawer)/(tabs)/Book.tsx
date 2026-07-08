@@ -27,6 +27,10 @@ import {
 import { router } from 'expo-router';
 import Header2 from '@/components/Header2';
 import ClearFormIcon from '../../../assets/icons/booking/clear.png';
+import FileUploadBox from '@/components/bookings/FileUploadBox';
+import { FileItem } from '../Partnership';
+import { uploadMultipleImagesForBooking } from '@/src/utils/fileUploadBooking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -62,6 +66,7 @@ export default function ServiceBookingScreen() {
   const [show, setShow] = useState<boolean>(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectAddPhotos, setSelectAddPhotos] = useState<FileItem[]>([]);
 
   const clearAllFields = () => {
     setName('');
@@ -74,6 +79,7 @@ export default function ServiceBookingScreen() {
     setSelectedBudget('');
     setMessage('');
     setActiveInput(null);
+    setSelectAddPhotos([]);
   };
 
   const handleClearForm = () => {
@@ -87,42 +93,87 @@ export default function ServiceBookingScreen() {
     );
   };
 
-  const handleSubmit = async () => {
-    const cleanNumber = number.replace(/\s/g, '');
+ const handleSubmit = async () => {
+  const cleanNumber = number.replace(/\s/g, '');
 
-    if (!name.trim()) { return Alert.alert('Validation Error', 'Full Name is required'); }
-    if (!cleanNumber || cleanNumber.length !== 10) { return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number'); }
-    if (!selectedService) { return Alert.alert('Validation Error', 'Please select a service'); }
-    if (!date) { return Alert.alert('Validation Error', 'Please select a date'); }
-    if (!selectedShift) { return Alert.alert('Validation Error', 'Please choose a time shift'); }
-    if (!selectedArea) { return Alert.alert('Validation Error', 'Please select your location'); }
-    if (!selectedBudget.trim()) { return Alert.alert('Validation Error', 'Budget cannot be empty'); }
-    if (!selectedPriority.trim()) { return Alert.alert('Validation Error', 'Please choose a Priority'); }
+  if (!name.trim()) { 
+    return Alert.alert('Validation Error', 'Full Name is required'); 
+  }
+  if (!cleanNumber || cleanNumber.length !== 10) { 
+    return Alert.alert('Validation Error', 'Enter a valid 10-digit phone number'); 
+  }
+  if (!selectedService) { 
+    return Alert.alert('Validation Error', 'Please select a service'); 
+  }
+  if (!date) { 
+    return Alert.alert('Validation Error', 'Please select a date'); 
+  }
+  if (!selectedShift) { 
+    return Alert.alert('Validation Error', 'Please choose a time shift'); 
+  }
+  if (!selectedArea) { 
+    return Alert.alert('Validation Error', 'Please select your location'); 
+  }
+  if (!selectedBudget.trim()) { 
+    return Alert.alert('Validation Error', 'Budget cannot be empty'); 
+  }
+  if (!selectedPriority.trim()) { 
+    return Alert.alert('Validation Error', 'Please choose a Priority'); 
+  }
+  
+  // Validate photos - uses the maxFiles from the component
+  if (selectAddPhotos.length === 0) {
+    return Alert.alert('Validation Error', 'Please upload at least 1 photo');
+  }
+  if (selectAddPhotos.length > 5) { // You can make this dynamic too if needed
+    return Alert.alert('Validation Error', 'Maximum 5 photos allowed');
+  }
 
-    setIsSubmitting(true);
 
-    try {
-      router.push({
-        pathname: '/booking/BookingDetail',
-        params: {
-          name: name.trim(),
-          number: cleanNumber,
-          selectedService,
-          selectedShift,
-          selectedArea,
-          selectedPriority,
-          selectedBudget,
-          message: message.trim(),
-          date: date.toISOString(),
-        },
-      });
-    } catch (error) {
-      console.log(error);
-      Alert.alert('Error', 'Something went wrong');
-    } finally {
-      setIsSubmitting(false);
+  setIsSubmitting(true);
+
+  try {
+    // Get user ID from AsyncStorage or generate a temporary one
+    let userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      userId = `user_${Date.now()}`;
+      await AsyncStorage.setItem('userId', userId);
     }
-  };
+
+    // Generate booking ID
+    const bookingId = `booking_${Date.now()}`;
+
+    // Upload files to Supabase
+    const fileUrls = await uploadMultipleImagesForBooking(selectAddPhotos);
+    
+    if (fileUrls.length === 0) {
+      throw new Error('Failed to upload files');
+    }
+
+    // Navigate to booking detail with file URLs
+    router.push({
+      pathname: '/booking/BookingDetail',
+      params: {
+        name: name.trim(),
+        number: cleanNumber,
+        selectedService,
+        selectedShift,
+        selectedArea,
+        selectedPriority,
+        selectedBudget,
+        message: message.trim(),
+        date: date.toISOString(),
+        fileUrls: JSON.stringify(fileUrls),
+        bookingId: bookingId,
+      },
+    });
+  } catch (error) {
+    console.log('Submission error:', error);
+    Alert.alert('Error', 'Failed to submit booking. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <LinearGradient colors={['#064E3B', '#022C22']} style={styles.screen}>
@@ -280,6 +331,9 @@ export default function ServiceBookingScreen() {
               onOpen={() => setActiveInput('budget')}
               onClose={() => setActiveInput(null)}
             />
+
+            <Text style={styles.label}>Photos <Text style={{ fontSize: wp('3.6%'), fontWeight: '400', color: '#374151' }}>(Up to 5)</Text><Text style={styles.required}> *</Text></Text>
+            <FileUploadBox value={selectAddPhotos} onChange={setSelectAddPhotos} maxFiles={5} />
 
             {/* Message */}
             <Text style={styles.label}>Message</Text>
