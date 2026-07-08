@@ -52,7 +52,6 @@ export default function CareerScreen() {
   const [message, setMessage] = useState('');
 
   const [experience, setExperience] = useState('');
-  const [policyNumber, setPolicyNumber] = useState('');
   const [emergencyNumber, setEmergencyNumber] = useState('');
   const [coverMessage, setCoverMessage] = useState('');
 
@@ -66,7 +65,6 @@ export default function CareerScreen() {
   const [selectedID, setSelectedID] = useState<FileItem[]>([]);
 
   // dropdown states
-  const [selectedPosition, setSelectedPosition] = useState<string[]>([]);
   const [selectedExpertise, setSelectedExpertise] = useState<string[]>([]);
   const [selectedArea, setSelectedArea] = useState<string[]>([]);
 
@@ -82,12 +80,10 @@ export default function CareerScreen() {
     setEmail('');
     setMessage('');
     setExperience('');
-    setPolicyNumber('');
     setEmergencyNumber('');
     setCoverMessage('');
     setSelectedCV([]);
     setSelectedID([]);
-    setSelectedPosition([]);
     setSelectedExpertise([]);
     setSelectedArea([]);
     setActiveInput(null);
@@ -132,10 +128,6 @@ export default function CareerScreen() {
       return Alert.alert('Validation Error', 'Enter a valid email address');
     }
 
-    if (!selectedPosition || selectedPosition.length === 0) {
-      return Alert.alert('Validation Error', 'Please select at least one position');
-    }
-
     if (!selectedExpertise || selectedExpertise.length === 0) {
       return Alert.alert('Validation Error', 'Please select at least one expertise');
     }
@@ -150,10 +142,6 @@ export default function CareerScreen() {
 
     if (!selectedArea || selectedArea.length === 0) {
       return Alert.alert('Validation Error', 'Please select area');
-    }
-
-    if (!policyNumber.trim()) {
-      return Alert.alert('Validation Error', 'Policy number is required');
     }
 
     if (!cleanEmergencyNumber || cleanEmergencyNumber.length !== 10) {
@@ -184,11 +172,9 @@ export default function CareerScreen() {
         full_name: name,
         phone: cleanNumber,
         email: email,
-        position_applied_for: selectedPosition,
         preferred_working_area: selectedArea,
         area_of_expertise: selectedExpertise,
         years_of_experience: experience ? Number(experience) : null,
-        insurance_policy_number: policyNumber || null,
         emergency_contact_number: cleanEmergencyNumber,
         cover_letter: coverMessage || null,
         message: message || null,
@@ -304,24 +290,11 @@ export default function CareerScreen() {
             placeholderTextColor={'#4B4B4B'}
           />
 
-          {/* Position Applied For */}
+          {/* Area of Expertise */}
           <Text style={styles.label}>Position Applied For<Text style={{ color: 'red' }}>*</Text></Text>
           <DropdownAdd
-            options={positionAppliedFor}
-            placeholder="Select the position you are applying for"
-            placeholderColor="#4B4B4B"
-            value={selectedPosition}
-            onSelectOption={setSelectedPosition}
-            onOpen={() => setActiveInput('position')}
-            onClose={() => setActiveInput(null)}
-            maxSelections={3}
-          />
-
-          {/* Area of Expertise */}
-          <Text style={styles.label}>Area of Expertise<Text style={{ color: 'red' }}>*</Text></Text>
-          <DropdownAdd
             options={services}
-            placeholder="Select the area of expertise"
+            placeholder="Select the position you are applying for"
             placeholderColor="#4B4B4B"
             value={selectedExpertise}
             onSelectOption={setSelectedExpertise}
@@ -354,6 +327,7 @@ export default function CareerScreen() {
           <FileUploadBox
             value={selectedID}
             onChange={setSelectedID}
+            maxFiles={5}
           />
 
           {/* Preferred Working Area */}
@@ -367,25 +341,6 @@ export default function CareerScreen() {
             onOpen={() => setActiveInput('workingArea')}
             onClose={() => setActiveInput(null)}
             maxSelections={5}
-          />
-
-          {/* Insurance Policy Number */}
-          <Text style={styles.label}>Insurance Policy Number<Text style={{ color: 'red' }}>*</Text></Text>
-          <TextInput
-            placeholder="Enter the insurance policy number"
-            value={policyNumber}
-            onFocus={() => setActiveInput('policy')}
-            onBlur={() => setActiveInput(null)}
-            onChangeText={(text) => {
-              const onlyNumbers = text.replace(/[^0-9]/g, '');
-              setPolicyNumber(onlyNumbers);
-            }}
-            style={[
-              styles.input,
-              activeInput === 'policy' && styles.inputActive
-            ]}
-            placeholderTextColor={'#4B4B4B'}
-            keyboardType="numeric"
           />
 
           {/* Emergency Contact Number */}
@@ -433,6 +388,7 @@ export default function CareerScreen() {
           <FileUploadBox
             value={selectedCV}
             onChange={setSelectedCV}
+            maxFiles={10}
           />
 
           {/* Cover Letter */}

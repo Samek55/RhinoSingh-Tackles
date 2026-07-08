@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Dropdown from '../../../components/bookings/Dropdown';
-import { area, services, shifts, budget, priority } from '../../../src/data/Data';
+import { area, services, shifts, budget, priority, city } from '../../../src/data/Data';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CalenderIcon from '../../../assets/icons/booking/calendar.png';
 import TextArea from '../../../components/bookings/TextArea';
@@ -59,6 +59,7 @@ export default function ServiceBookingScreen() {
   const [selectedService, setSelectedService] = useState('');
   const [selectedShift, setSelectedShift] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('Chennai');
   const [selectedPriority, setSelectedPriority] = useState('');
   const [selectedBudget, setSelectedBudget] = useState('');
   const [message, setMessage] = useState('');
@@ -75,6 +76,7 @@ export default function ServiceBookingScreen() {
     setSelectedShift('');
     setDate(null);
     setSelectedArea('');
+    setSelectedLocation('');
     setSelectedPriority('');
     setSelectedBudget('');
     setMessage('');
@@ -111,8 +113,12 @@ export default function ServiceBookingScreen() {
   if (!selectedShift) { 
     return Alert.alert('Validation Error', 'Please choose a time shift'); 
   }
-  if (!selectedArea) { 
+
+  if (!selectedLocation) { 
     return Alert.alert('Validation Error', 'Please select your location'); 
+  }
+  if (!selectedArea) { 
+    return Alert.alert('Validation Error', 'Please select your area'); 
   }
   if (!selectedBudget.trim()) { 
     return Alert.alert('Validation Error', 'Budget cannot be empty'); 
@@ -159,6 +165,7 @@ export default function ServiceBookingScreen() {
         selectedService,
         selectedShift,
         selectedArea,
+        selectedLocation,
         selectedPriority,
         selectedBudget,
         message: message.trim(),
@@ -296,14 +303,26 @@ export default function ServiceBookingScreen() {
               value={selectedShift}
             />
 
-            {/* Your Location */}
-            <Text style={styles.label}>Your Location<Text style={styles.required}> *</Text></Text>
+              {/* Your Location */}
+            <Text style={styles.label}>City<Text style={styles.required}> *</Text></Text>
+            <Dropdown
+              options={city}
+              placeholder="Select your City"
+              placeholderColor="#9CA3AF"
+              onSelectOption={setSelectedLocation}
+              onOpen={() => setActiveInput('location')}
+              onClose={() => setActiveInput(null)}
+              value={selectedLocation}
+            />
+
+            {/* Your Area */}
+            <Text style={styles.label}>Area<Text style={styles.required}> *</Text></Text>
             <Dropdown
               options={area}
-              placeholder="Select your Location"
+              placeholder="Select your Area"
               placeholderColor="#9CA3AF"
               onSelectOption={setSelectedArea}
-              onOpen={() => setActiveInput('location')}
+              onOpen={() => setActiveInput('area')}
               onClose={() => setActiveInput(null)}
               value={selectedArea}
             />

@@ -42,6 +42,7 @@ export default function BookingDetails() {
     number,
     selectedService,
     selectedShift,
+    selectedLocation,
     selectedArea,
     selectedPriority,
     selectedBudget,
@@ -104,6 +105,7 @@ export default function BookingDetails() {
       const booking = {
         full_name: name ? String(name) : '',
         phone: cleanNumber,
+        city: selectedLocation ? String(selectedLocation) : '',
         area: selectedArea ? [String(selectedArea)] : [],
         select_services: selectedService ? [String(selectedService)] : [],
         priority: selectedPriority ? String(selectedPriority) : 'Normal',
@@ -192,7 +194,9 @@ export default function BookingDetails() {
           <View style={styles.divider} />
           <Row label="Preferred Time" value={selectedShift as string} />
           <View style={styles.divider} />
-          <Row label="Location" value={selectedArea as string} />
+          <Row label="City" value={selectedLocation as string} />
+          <View style={styles.divider} />
+          <Row label="Area" value={selectedArea as string} />
           <View style={styles.divider} />
           <Row label="Priority" value={selectedPriority as string} />
           <View style={styles.divider} />

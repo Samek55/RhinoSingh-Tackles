@@ -75,7 +75,7 @@ export default function PartnershipScreen() {
   const [selectedArea, setSelectedArea] = useState('');
   const [selectedBusinessType, setSelectedBusinessType] = useState('');
   const [selectedPartnership, setSelectedPartnership] = useState('');
-  const [selectedHowHeard, setSelectedHowHeard] = useState('Google Search');
+  const [selectedHowHeard, setSelectedHowHeard] = useState('Facebook ');
   const [selectedServicesOffered, setSelectedServicesOffered] = useState<string[]>([]);
 
   const [overlayVisible, setOverlayVisible] = useState(false);
@@ -94,7 +94,7 @@ export default function PartnershipScreen() {
     setSelectedArea('');
     setSelectedBusinessType('');
     setSelectedPartnership('');
-    setSelectedHowHeard('Google Search');
+    setSelectedHowHeard('Facebook ');
     setSelectedServicesOffered([]);
     setActiveInput(null);
   };
@@ -257,7 +257,7 @@ export default function PartnershipScreen() {
 
           {/* Company Photos */}
           <Text style={styles.label}>Company Photos<Text style={{ color: 'red' }}>*</Text></Text>
-          <FileUploadBox value={selectCompanyPhotos} onChange={setSelectCompanyPhotos} />
+          <FileUploadBox value={selectCompanyPhotos} maxFiles={5} onChange={setSelectCompanyPhotos} />
 
           {/* Area Dropdown */}
           <Text style={styles.label}>City<Text style={{ color: 'red' }}>*</Text></Text>
@@ -323,7 +323,7 @@ export default function PartnershipScreen() {
 
           {/* Company Registration Certificates */}
           <Text style={styles.label}>Company Registration Certificates<Text style={{ color: 'red' }}>*</Text></Text>
-          <FileUploadBox value={selectCRCphotos} onChange={setSelectCRCphotos} />
+          <FileUploadBox value={selectCRCphotos} maxFiles={10} onChange={setSelectCRCphotos} />
 
           {/* How did you hear about us Dropdown */}
           <Text style={styles.label}>How did you hear about us?<Text style={{ color: 'red' }}>*</Text></Text>
