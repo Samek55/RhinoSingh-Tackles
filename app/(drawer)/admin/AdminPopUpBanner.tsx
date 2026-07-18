@@ -582,33 +582,7 @@ const PopupBannerScreen = () => {
               onChangeText={(text: string) => handleInputChange('uploadedBy', text)}
             />
 
-            {/* LIVE PREVIEW SECTION */}
-            {hasPreviewData && (
-              <>
-                <View style={styles.previewHeader}>
-                  <Ionicons name="eye-outline" size={20} color="#2c5f59" />
-                  <Text style={styles.previewTitle}>LIVE PREVIEW</Text>
-                </View>
-                
-                <View style={styles.previewContainer}>
-                  <RoadBlockCard
-                    data={previewData}
-                    runCountdown={false}
-                  />
-                </View>
-
-                <View style={styles.previewInfo}>
-                  <Text style={styles.previewInfoText}>
-                    ⚡ This is how your banner will look to users
-                  </Text>
-                  <Text style={styles.previewInfoSubtext}>
-                    {selectedCities.length > 0 && `📍 ${selectedCities.length} cities selected`}
-                    {selectedUsers.length > 0 && ` • 👥 ${selectedUsers.length} user types`}
-                    {isWorkForceSelected && selectedServices.length > 0 && ` • 💼 ${selectedServices.length} professions`}
-                  </Text>
-                </View>
-              </>
-            )}
+           
 
             {/* Push Banner Button */}
             <TouchableOpacity 

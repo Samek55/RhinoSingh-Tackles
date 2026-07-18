@@ -59,6 +59,8 @@ const RoadBlockCard: React.FC<RoadBlockCardProps> = ({
 
   if (!isVisible) return null;
 
+  const showCountdown = runCountdown && countdown > 0;
+
   return (
     <Modal
       transparent={true}
@@ -68,26 +70,7 @@ const RoadBlockCard: React.FC<RoadBlockCardProps> = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.cardContainer}>
-          {/* Close Button with Countdown */}
-          <TouchableOpacity 
-            style={styles.closeButton}
-            onPress={handleClose}
-            activeOpacity={countdown > 0 && runCountdown ? 0.5 : 0.7}
-            disabled={countdown > 0 && runCountdown}
-          >
-            <View style={styles.closeButtonContent}>
-              <Ionicons 
-                name="close" 
-                size={20} 
-                color={countdown > 0 && runCountdown ? '#999' : '#fff'} 
-              />
-              {runCountdown && countdown > 0 && (
-                <Text style={styles.countdownText}>{countdown}</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-
-          {/* Banner Image */}
+          {/* Banner Image - Full width at top */}
           <View style={styles.imageContainer}>
             <Image 
               source={{ uri: data.imageUrl }}
@@ -97,20 +80,43 @@ const RoadBlockCard: React.FC<RoadBlockCardProps> = ({
             />
           </View>
 
-          {/* Title */}
-          <Text style={styles.title}>{data.title}</Text>
-
-          {/* Message */}
-          <Text style={styles.message}>{data.message}</Text>
-
-          {/* Action Button */}
+          {/* Close Button - positioned on top of image */}
           <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleButtonPress}
-            activeOpacity={0.8}
+            style={styles.closeButton}
+            onPress={handleClose}
+            activeOpacity={showCountdown ? 0.5 : 0.7}
+            disabled={showCountdown}
           >
-            <Text style={styles.buttonText}>{data.buttonLabel || 'View More'}</Text>
+            <View style={styles.closeButtonContent}>
+              {showCountdown ? (
+                <Text style={styles.countdownText}>{countdown}</Text>
+              ) : (
+                <Ionicons 
+                  name="close" 
+                  size={wp('5%')} 
+                  color="#fff" 
+                />
+              )}
+            </View>
           </TouchableOpacity>
+
+          {/* Content below image */}
+          <View style={styles.contentContainer}>
+            {/* Title */}
+            <Text style={styles.title}>{data.title}</Text>
+
+            {/* Message */}
+            <Text style={styles.message}>{data.message}</Text>
+
+            {/* Action Button */}
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleButtonPress}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonText}>{data.buttonLabel || 'View More'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -129,12 +135,10 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: wp('5%'),
     width: width * 0.9,
     maxWidth: 400,
-    padding: wp('4%'),
-    alignItems: 'center',
-    position: 'relative',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -143,77 +147,85 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  closeButton: {
-    position: 'absolute',
-    top: -12,
-    right: -12,
-    zIndex: 10,
-    backgroundColor: '#295C59',
-    borderRadius: 20,
-    padding: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  closeButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 4,
-  },
-  countdownText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    minWidth: 18,
-    textAlign: 'center',
   },
   imageContainer: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: hp('2%'),
     backgroundColor: '#f0f0f0',
   },
   image: {
     width: '100%',
     height: '100%',
   },
+  closeButton: {
+    position: 'absolute',
+    top: wp('3%'),
+    right: wp('3%'),
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 100,
+    width: wp('9%'),
+    height: wp('9%'),
+    minWidth: 32,
+    minHeight: 32,
+    maxWidth: 44,
+    maxHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  closeButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  countdownText: {
+    color: '#fff',
+    fontSize: wp('4.5%'),
+    fontWeight: 'bold',
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+  contentContainer: {
+    padding: wp('4%'),
+    paddingTop: wp('3%'),
+    alignItems: 'center',
+  },
   title: {
-    fontSize: 20,
+    fontSize: wp('5.5%'),
     fontWeight: '800',
     color: '#1C2B2A',
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: hp('1%'),
-    lineHeight: 26,
+    lineHeight: wp('7%'),
+    paddingHorizontal: wp('2%'),
+    marginRight:wp('30%')
+
   },
   message: {
-    fontSize: 14,
+    fontSize: wp('3.8%'),
     color: '#4A5B5A',
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: hp('2%'),
-    lineHeight: 20,
+    lineHeight: wp('5.5%'),
     paddingHorizontal: wp('2%'),
   },
   actionButton: {
     backgroundColor: '#295C59',
     paddingVertical: hp('1.8%'),
     paddingHorizontal: wp('10%'),
-    borderRadius: 30,
+    borderRadius: wp('8%'),
     width: '100%',
     alignItems: 'center',
     marginTop: hp('0.5%'),
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: wp('4.2%'),
     fontWeight: '700',
     textTransform: 'uppercase',
   },
