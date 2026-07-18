@@ -16,13 +16,13 @@ SplashScreen.preventAutoHideAsync().catch(() => { });
 export function syncPushUser(userId: string, role: 'admin' | 'career' | 'user') {
   try {
     const { OneSignal } = require('react-native-onesignal');
-    
+
     // Identifies the user in OneSignal and links their push token to this ID
     OneSignal.login(userId);
-    
+
     // Updates the role tag for targeted push segments
     OneSignal.User.addTag('role', role);
-    
+
     console.log(`[Push Channel] User ${userId} synchronized with role: ${role}`);
   } catch (e) {
     console.warn('OneSignal user sync skipped (Non-native environment)');
@@ -32,7 +32,7 @@ export function syncPushUser(userId: string, role: 'admin' | 'career' | 'user') 
 export default function RootLayout() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<any>(null);
-  
+
   const segments = useSegments();
   const router = useRouter();
 
@@ -41,9 +41,9 @@ export default function RootLayout() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setInitializing(false);
-      
+
       // Hide Splashscreen once state evaluates on app boot
-      SplashScreen.hideAsync().catch(() => {});
+      SplashScreen.hideAsync().catch(() => { });
     });
 
     return unsubscribe;
@@ -78,7 +78,7 @@ export default function RootLayout() {
 
       if (process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID) {
         OneSignal.initialize(process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID);
-        
+
         // Request OS-level push notification permissions
         OneSignal.Notifications.requestPermission(true);
 
@@ -124,7 +124,8 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+
+        <Stack screenOptions={{ headerShown: false }} />
     </SafeAreaProvider>
   );
 }

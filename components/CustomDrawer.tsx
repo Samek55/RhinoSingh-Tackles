@@ -209,12 +209,20 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
               {/* 🛑 Admin Exclusive Node */}
               {role === "admin" && (
+                <>
                 <MenuItem
                   icon={isActive('/admin/HelpboxHistory') ? "help-circle" : "help-circle-outline"}
                   label="View Helpbox History"
                   active={isActive('/admin/HelpboxHistory')}
                   onPress={() => navigateTo('/admin/HelpboxHistory')}
                 />
+                 <MenuItem
+                  icon={isActive('/admin/HelpboxHistory') ? "information-circle" : "information-circle-outline"}
+                  label="Push PopUp"
+                  active={isActive('/admin/AdminPopUpBanner')}
+                  onPress={() => navigateTo('/admin/AdminPopUpBanner')}
+                />
+                </>
               )}
 
               {/* 🛑 SuperAdmin Orchestration Nodes */}
