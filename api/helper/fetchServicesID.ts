@@ -1,4 +1,4 @@
-import { supabase } from '@/src/firebase/supabaseClient';
+import { supabase } from '@/src/lib/supabase';
 
 let servicesCache: Record<string, string> | null = null;
 let servicesPromise: Promise<Record<string, string>> | null = null;
