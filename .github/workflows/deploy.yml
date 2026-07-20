@@ -57,6 +57,10 @@ jobs:
 
       - name: Build Android App Bundle (AAB) via EAS
         run: eas build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Submit to Google Play Internal Testing
         run: eas submit --platform android --auto-submit --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
