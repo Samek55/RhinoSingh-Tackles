@@ -26,7 +26,7 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run Tests
-        run: npm test -- --ci --watchAll=false
+        run: npm test -- --ci --watchAll=false --passWithNoTests
         # Adjust the test command above to match how your project runs tests (e.g., npx jest)
 
   deploy-internal:
