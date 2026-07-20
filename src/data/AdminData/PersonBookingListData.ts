@@ -3,7 +3,7 @@ import { BookingItem } from "../../../components/admin/BookingCard";
 
 export const personBooking: BookingItem[] = [
     {
-        id: 1,
+        id: '1',
         name: 'Avash Tamang',
         service: 'Wallpaper Fixing, Wallpaper Fixing, Wallpaper Fixing, Wallpaper Fixing, ',
         date: '14 Aug 2026, Friday 14:34',
@@ -15,7 +15,7 @@ export const personBooking: BookingItem[] = [
         budget: '$ 500',
     },
     {
-        id: 2,
+        id: '2',
         name: 'John Cena',
         service: 'Deep Cleaning',
         date: '15 Aug 2026, Friday 14:34',
@@ -27,7 +27,7 @@ export const personBooking: BookingItem[] = [
         budget: '$ 600',
     },
     {
-        id: 3,
+        id: '3',
         name: 'Johnny Deep',
         service: 'Pressure Washing',
         date: '16 Aug 2026, Friday 14:34',
@@ -39,7 +39,7 @@ export const personBooking: BookingItem[] = [
         budget: '$ 800',
     },
     {
-        id: 4,
+        id: '4',
         name: 'The Rock',
         service: 'Carpentry',
         date: '17 Aug 2026, Friday 14:34',

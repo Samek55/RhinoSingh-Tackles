@@ -18,6 +18,12 @@ import { router } from 'expo-router';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 import { notifyAdminHelpbox } from '@/api/notifications';
 
+// Global Firebase Confirmation Store
+export let globalFirebaseConfirmation: any = null;
+export const setGlobalFirebaseConfirmation = (confirmation: any) => {
+  globalFirebaseConfirmation = confirmation;
+};
+
 const NumberBar = ({ onFocus = () => { } }) => {
   const [phone, setPhone] = useState('');
   const [overlayVisible, setOverlayVisible] = useState(false);

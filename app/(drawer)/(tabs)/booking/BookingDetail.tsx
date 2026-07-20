@@ -24,6 +24,12 @@ import { notifyProfessionals } from '../../../../api/notifications';
 import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 
+// Global Firebase Confirmation Store for Booking
+export let globalBookingFirebaseConfirmation: any = null;
+export const setGlobalBookingFirebaseConfirmation = (confirmation: any) => {
+  globalBookingFirebaseConfirmation = confirmation;
+};
+
 const { width } = Dimensions.get('window');
 
 const Row = ({ label, value }: { label: string; value: string }) => (
