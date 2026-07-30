@@ -61,7 +61,6 @@
     "react-native-element-dropdown": "^2.12.4",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
-    "react-native-keyboard-controller": "1.18.5",
     "react-native-maps": "1.20.1",
     "react-native-onesignal": "^5.4.7",
     "react-native-reanimated": "~4.1.1",
@@ -76,6 +75,9 @@
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
     "react-redux": "^9.3.0"
+  },
+  "overrides": {
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

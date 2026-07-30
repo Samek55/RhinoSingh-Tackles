@@ -15,7 +15,7 @@
     "android": {
       "versionCode": 18,
       "googleServicesFile": "./google-services.json",
-      "softwareKeyboardLayoutMode": "adjustResize",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#dcdcdc",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
