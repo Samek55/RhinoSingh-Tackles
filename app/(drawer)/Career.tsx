@@ -14,7 +14,7 @@ import {
 import { area, positionAppliedFor, services } from '../../src/data/Data';
 import TextArea from '../../components/bookings/TextArea';
 import SubmitOverlay from '../../components/bookings/SubmitOverlay';
-import countryLogo from '../../assets/header/right.png';
+import { useCountry } from '@/src/context/countryContext';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -45,6 +45,7 @@ const Button = ({ children, style, textStyle, onPress }: any) => {
 
 export default function CareerScreen() {
   const scrollRef = useRef<any>(null);
+  const { countryInfo } = useCountry();
 
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
@@ -237,11 +238,9 @@ export default function CareerScreen() {
           {/* Phone Number */}
           <Text style={styles.label}>Phone Number<Text style={{ color: 'red' }}>*</Text></Text>
           <View style={styles.phoneContainer}>
-            <Image
-              source={countryLogo}
-              style={styles.icon}
-              resizeMode="contain"
-            />
+            <View style={styles.icon}>
+              <Text style={styles.flagEmoji}>{countryInfo.flag}</Text>
+            </View>
             <TextInput
               placeholder="Enter your Phone Number"
               value={number}
@@ -346,11 +345,9 @@ export default function CareerScreen() {
           {/* Emergency Contact Number */}
           <Text style={styles.label}>Emergency Contact Number<Text style={{ color: 'red' }}>*</Text></Text>
           <View style={styles.phoneContainer}>
-            <Image
-              source={countryLogo}
-              style={styles.icon}
-              resizeMode="contain"
-            />
+            <View style={styles.icon}>
+              <Text style={styles.flagEmoji}>{countryInfo.flag}</Text>
+            </View>
             <TextInput
               placeholder="Contact number of Spouse/ family members"
               value={emergencyNumber}
@@ -484,6 +481,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 10,
     zIndex: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  flagEmoji: {
+    fontSize: wp('5%'),
   },
   clearIcon: {
     width: wp('6%'),

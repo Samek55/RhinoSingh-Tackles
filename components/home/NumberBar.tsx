@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  Image,
   TouchableOpacity,
   StyleSheet,
   TextInput,
@@ -17,6 +16,8 @@ import {
 import { router } from 'expo-router';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 import { notifyAdminHelpbox } from '@/api/notifications';
+import { useCountry } from '@/src/context/countryContext';
+import { formatLocalPhone } from '@/src/constants/countryData';
 
 // Global Firebase Confirmation Store
 export let globalFirebaseConfirmation: any = null;
@@ -25,10 +26,13 @@ export const setGlobalFirebaseConfirmation = (confirmation: any) => {
 };
 
 const NumberBar = ({ onFocus = () => { } }) => {
+  const { countryInfo } = useCountry();
   const [phone, setPhone] = useState('');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
   const fontSize = wp('4.2%');
+
+  const placeholder = countryInfo.phone ? formatLocalPhone(countryInfo.phone) : '819 007 4189';
 
   const handleContinue = async () => {
     // Force remove everything except digits
@@ -43,7 +47,7 @@ const NumberBar = ({ onFocus = () => { } }) => {
       setOverlayStatus('loading');
       setOverlayVisible(true);
 
-      const formattedPhone = '+91' + structuralClean;
+      const formattedPhone = countryInfo.dialCode + structuralClean;
 
       // 💾 Construct payload and write records directly to Supabase DB node
       const payload = {
@@ -79,11 +83,9 @@ const NumberBar = ({ onFocus = () => { } }) => {
         onClear={() => setOverlayVisible(false)}
       />
       <View style={styles.phoneContainer}>
-        <Image
-          source={require('../../assets/header/right.png')}
-          style={styles.icon}
-          resizeMode="contain"
-        />
+        <View style={styles.iconCircle}>
+          <Text style={styles.flagEmoji}>{countryInfo.flag}</Text>
+        </View>
         <View style={styles.inputContainer}>
           <TextInput
             onFocus={() => onFocus?.()}
@@ -98,7 +100,7 @@ const NumberBar = ({ onFocus = () => { } }) => {
               }
               setPhone(formatted);
             }}
-            placeholder="819 007 4189"
+            placeholder={placeholder}
             placeholderTextColor="#94A3B8"
             style={[styles.input, { fontSize }]}
             keyboardType="numeric"
@@ -149,11 +151,17 @@ const styles = StyleSheet.create({
     paddingRight: wp('2%'),
     height: '100%',
   },
-  icon: {
-    height: hp('3%'),
-    width: wp('6.3%'),
+  iconCircle: {
+    height: hp('3.6%'),
+    width: hp('3.6%'),
+    borderRadius: hp('1.8%'),
     marginRight: wp('3%'),
-    opacity: 0.75,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  flagEmoji: {
+    fontSize: hp('2.4%'),
   },
   inputContainer: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,12 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Dropdown from '../../../components/bookings/Dropdown';
-import { area, services, shifts, budget, priority, city } from '../../../src/data/Data';
+import { services, shifts, budget, priority } from '../../../src/data/Data';
+import { useCountry } from '@/src/context/countryContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CalenderIcon from '../../../assets/icons/booking/calendar.png';
 import TextArea from '../../../components/bookings/TextArea';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import countryLogo from '../../../assets/header/right.png';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -54,12 +54,13 @@ const Button = ({ children, style, textStyle, onPress, disabled }: any) => {
 
 export default function ServiceBookingScreen() {
   const scrollRef = useRef<any>(null);
+  const { country, countryInfo } = useCountry();
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [selectedService, setSelectedService] = useState('');
   const [selectedShift, setSelectedShift] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('Chennai');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
   const [selectedBudget, setSelectedBudget] = useState('');
   const [message, setMessage] = useState('');
@@ -68,6 +69,23 @@ export default function ServiceBookingScreen() {
   const [activeInput, setActiveInput] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectAddPhotos, setSelectAddPhotos] = useState<FileItem[]>([]);
+
+  // City/Area are tied to the active country's data set — switching the flag
+  // invalidates whatever was picked before, so both fields reset.
+  useEffect(() => {
+    setSelectedLocation('');
+    setSelectedArea('');
+  }, [country]);
+
+  // Area options are linked to whichever City is selected within the current country.
+  useEffect(() => {
+    setSelectedArea('');
+  }, [selectedLocation]);
+
+  const areaOptions = useMemo(
+    () => countryInfo.areasByCity[selectedLocation] ?? [],
+    [countryInfo, selectedLocation]
+  );
 
   const clearAllFields = () => {
     setName('');
@@ -219,7 +237,9 @@ export default function ServiceBookingScreen() {
             {/* Phone Number */}
             <Text style={styles.label}>Phone Number<Text style={styles.required}> *</Text></Text>
             <View style={styles.phoneContainer}>
-              <Image source={countryLogo} style={styles.countryIcon} resizeMode="contain" />
+              <View style={styles.countryIcon}>
+                <Text style={styles.flagEmoji}>{countryInfo.flag}</Text>
+              </View>
               <TextInput
                 placeholder="Enter your Phone Number"
                 value={number}
@@ -306,7 +326,7 @@ export default function ServiceBookingScreen() {
               {/* Your Location */}
             <Text style={styles.label}>City<Text style={styles.required}> *</Text></Text>
             <Dropdown
-              options={city}
+              options={countryInfo.cities}
               placeholder="Select your City"
               placeholderColor="#9CA3AF"
               onSelectOption={setSelectedLocation}
@@ -318,8 +338,8 @@ export default function ServiceBookingScreen() {
             {/* Your Area */}
             <Text style={styles.label}>Area<Text style={styles.required}> *</Text></Text>
             <Dropdown
-              options={area}
-              placeholder="Select your Area"
+              options={areaOptions}
+              placeholder={selectedLocation ? 'Select your Area' : 'Select a City first'}
               placeholderColor="#9CA3AF"
               onSelectOption={setSelectedArea}
               onOpen={() => setActiveInput('area')}
@@ -465,6 +485,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 14,
     zIndex: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  flagEmoji: {
+    fontSize: wp('5%'),
   },
   phoneInput: {
     borderWidth: 1.5,

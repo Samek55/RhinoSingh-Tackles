@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../src/firebase/firebaseConfig'; // verify this matching path relative to root layout
+import { CountryProvider } from '../src/context/countryContext';
 
 // Prevent splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync().catch(() => { });
@@ -124,8 +125,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-
+      <CountryProvider>
         <Stack screenOptions={{ headerShown: false }} />
+      </CountryProvider>
     </SafeAreaProvider>
   );
 }

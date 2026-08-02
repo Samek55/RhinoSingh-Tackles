@@ -13,16 +13,19 @@ import {
 import Email from '../../../assets/icons/contact/email_1.png';
 import Location from '../../../assets/icons/contact/location-pin.png';
 import Website from '../../../assets/icons/contact/globe.png';
+import Phone from '../../../assets/icons/admin/phone.png';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import Header2 from '@/components/Header2';
+import { useCountry } from '@/src/context/countryContext';
+import { formatLocalPhone } from '@/src/constants/countryData';
 
 const ICON_SIZE = hp('3.3%');
-const MAP_URL = 'https://maps.app.goo.gl/araE5tx5DdGJnA3u5';
 
 export default function ContactScreen() {
+  const { countryInfo } = useCountry();
 
   const openWebsite = useCallback(() => {
     Linking.openURL('https://RocketSingh.app');
@@ -33,8 +36,15 @@ export default function ContactScreen() {
   }, []);
 
   const handleMapPress = useCallback(() => {
-    Linking.openURL(MAP_URL);
-  }, []);
+    Linking.openURL(countryInfo.mapUrl);
+  }, [countryInfo.mapUrl]);
+
+  const handlePhonePress = useCallback(() => {
+    if (countryInfo.contactPhone) {
+      const digits = (countryInfo.dialCode + countryInfo.contactPhone).replace(/\D/g, '');
+      Linking.openURL(`https://wa.me/${digits}`);
+    }
+  }, [countryInfo.dialCode, countryInfo.contactPhone]);
 
   return (
     <View style={styles.screen}>
@@ -54,7 +64,7 @@ export default function ContactScreen() {
             style={styles.imageContainer}
           >
             <Image
-              source={require('../../../assets/images/chennai.jpg')}
+              source={countryInfo.mapImage}
               style={styles.mapImage}
               resizeMode="cover"
             />
@@ -66,7 +76,7 @@ export default function ContactScreen() {
           {/* COMPANY */}
           <Text style={styles.companyName}>RocketSingh | SuperFast Service</Text>
           <Text style={styles.companySubtitle}>
-            On Demand Home Service in Chennai
+            {countryInfo.cityTagline}
           </Text>
 
           {/* CARDS */}
@@ -84,10 +94,29 @@ export default function ContactScreen() {
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>Visit us</Text>
                 <Text style={styles.cardSubtitle} numberOfLines={2}>
-                  LLTM, Bartaprak, PIN-SPAN 2026, Chennai, India.
+                  {countryInfo.address}
                 </Text>
               </View>
             </TouchableOpacity>
+
+            {/* PHONE / WHATSAPP */}
+            {countryInfo.contactPhone && (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={handlePhonePress}
+                style={styles.card}
+              >
+                <View style={styles.iconContainer}>
+                  <Image source={Phone} style={styles.icon} />
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.cardTitle}>WhatsApp us</Text>
+                  <Text style={[styles.cardSubtitle, styles.linkText]}>
+                    {countryInfo.dialCode} {formatLocalPhone(countryInfo.contactPhone)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
 
             {/* EMAIL */}
             <TouchableOpacity 
