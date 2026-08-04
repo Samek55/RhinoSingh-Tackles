@@ -13,6 +13,7 @@ export interface CountryInfo {
   cityTagline: string;
   address: string;
   dialCode: string;
+  currency: string;
   phone?: string;
   contactPhone?: string;
   mapUrl: string;
@@ -28,6 +29,28 @@ export function formatLocalPhone(digits: string): string {
   return `${digits.slice(0, 5)} ${digits.slice(5, 7)} ${digits.slice(7)}`;
 }
 
+// Progressive grouping for phone number inputs as the user types — India uses the
+// usual 3-3-4 grouping, Nepal uses the 5-2-3 grouping from formatLocalPhone above.
+export function formatPhoneInput(cleaned: string, country: CountryCode): string {
+  if (country === 'nepal') {
+    if (cleaned.length > 7) {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5, 7)} ${cleaned.slice(7)}`;
+    }
+    if (cleaned.length > 5) {
+      return `${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    }
+    return cleaned;
+  }
+
+  if (cleaned.length > 6) {
+    return `${cleaned.slice(0, 3)} ${cleaned.slice(3, 6)} ${cleaned.slice(6)}`;
+  }
+  if (cleaned.length > 3) {
+    return `${cleaned.slice(0, 3)} ${cleaned.slice(3)}`;
+  }
+  return cleaned;
+}
+
 export const COUNTRIES: Record<CountryCode, CountryInfo> = {
   india: {
     code: 'india',
@@ -36,6 +59,7 @@ export const COUNTRIES: Record<CountryCode, CountryInfo> = {
     cityTagline: 'On Demand Home Service in Chennai',
     address: 'LLTM, Bartaprak, PIN-SPAN 2026, Chennai, India.',
     dialCode: '+91',
+    currency: 'INR',
     mapUrl: 'https://maps.app.goo.gl/araE5tx5DdGJnA3u5',
     mapImage: chennaiMapImage,
     cities: indiaCities,
@@ -51,6 +75,7 @@ export const COUNTRIES: Record<CountryCode, CountryInfo> = {
     cityTagline: 'On Demand Home Service in Kathmandu',
     address: 'Rem.Work, Kamalpokhari, Kathmandu, Nepal',
     dialCode: '+977',
+    currency: 'NPR',
     phone: '9852025735',
     contactPhone: '9852024365',
     mapUrl:

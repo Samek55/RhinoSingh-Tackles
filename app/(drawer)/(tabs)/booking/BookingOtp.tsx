@@ -21,9 +21,7 @@ import Header2 from '@/components/Header2';
 import { notifyProfessionals } from '../../../../api/notifications';
 import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
-
-// IMPORT THE GLOBAL FIREBASE AUTH CONFIRMATION INSTANCE
-import { globalBookingFirebaseConfirmation } from './BookingDetail';
+import { sparrowOtpService } from '@/src/services/sparrowOtpService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,7 +31,7 @@ const scaleFont = (size: number) => {
 };
 
 export default function BookingOtp() {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,17 +40,21 @@ export default function BookingOtp() {
     number,
     selectedService,
     selectedShift,
+    selectedLocation,
     selectedArea,
     selectedPriority,
     selectedBudget,
     message,
     date,
     role,
+    fileUrls,
   } = useLocalSearchParams();
+
+  const uploadedFiles = fileUrls ? JSON.parse(fileUrls as string) : [];
 
   useFocusEffect(
     React.useCallback(() => {
-      setOtp(['', '', '', '', '', '']);
+      setOtp(['', '', '', '']);
     }, []),
   );
 
@@ -84,14 +86,29 @@ export default function BookingOtp() {
     if (!dateValue) return new Date().toISOString().split('T')[0];
     const parsedDate = new Date(dateValue);
     // Fallback safe layer if string passing is corrupt or bad formatted
-    return isNaN(parsedDate.getTime()) 
-      ? new Date().toISOString().split('T')[0] 
+    return isNaN(parsedDate.getTime())
+      ? new Date().toISOString().split('T')[0]
       : parsedDate.toISOString().split('T')[0];
   };
 
   const handleResendCode = async () => {
-    if (!number) return;
-    Alert.alert('Resend', 'Resend functionality needs to be linked to your custom SMS gateway.');
+    const pending = sparrowOtpService.getPendingOtp('booking');
+    if (!pending) return;
+
+    try {
+      const newOtp = sparrowOtpService.generateOtp();
+      const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp, name ? String(name) : undefined);
+
+      if (!sent) {
+        Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again.');
+        return;
+      }
+
+      sparrowOtpService.setPendingOtp('booking', { otp: newOtp, phone: pending.phone });
+      Alert.alert('Success', 'A new code has been successfully sent.');
+    } catch (error: any) {
+      Alert.alert('Resend Failed', error.message || 'Unable to re-send verification code.');
+    }
   };
 
   const handleNavigate = async () => {
@@ -99,29 +116,29 @@ export default function BookingOtp() {
 
     if (isSubmitting) return;
 
-    if (enteredOtp.length < 6) {
-      Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
+    if (enteredOtp.length < 4) {
+      Alert.alert('Validation Error', 'Please enter the complete 4-digit verification code.');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // 1. Check if the orchestration object exists
-      if (!globalBookingFirebaseConfirmation) {
-        Alert.alert("Verification Error", "No active SMS session found. Please go back and try again.");
+      const pending = sparrowOtpService.getPendingOtp('booking');
+
+      if (!pending) {
+        Alert.alert('Verification Error', 'No active verification session found. Please go back and try again.');
         setIsSubmitting(false);
         return;
       }
 
-      console.log("Verifying code with Firebase...");
+      if (enteredOtp !== pending.otp) {
+        Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
+        setIsSubmitting(false);
+        return;
+      }
 
-      // 2. Invoke verification explicitly on the instance object returned by signInWithPhoneNumber
-      await globalBookingFirebaseConfirmation.confirm(enteredOtp);
-
-      console.log("SMS OTP Verified successfully!");
-
-      // 3. Complete your OneSignal push registration safely below...
+      // Complete your OneSignal push registration safely below...
       if (number) {
         try {
           const cleanNumber = String(number).replace(/[^\d]/g, '');
@@ -143,6 +160,7 @@ export default function BookingOtp() {
       const booking = {
         full_name: name ? String(name) : '',
         phone: number ? String(number) : '',
+        city: selectedLocation ? String(selectedLocation) : '',
         area: selectedArea ? [String(selectedArea)] : [],
         select_services: selectedService ? [String(selectedService)] : [], // Wrap this too if services is an array column
         priority: selectedPriority ? String(selectedPriority) : 'Normal',
@@ -150,13 +168,16 @@ export default function BookingOtp() {
         work_description: message ? String(message) : '',
         budget: selectedBudget ? String(selectedBudget) : '',
         service_booking_datetime: formatDate(date),
-        status: "New / Open"
+        status: "New / Open",
+        add_photos_picture: uploadedFiles,
       };
 
-      // 5. Safe insertion via public/secret-key insert policy
+      // Safe insertion via public/secret-key insert policy
       await createBookingSupabase(booking);
 
-      // 6. Alert downstream providers
+      sparrowOtpService.clearPendingOtp('booking');
+
+      // Alert downstream providers
       try {
         const targetService = Array.isArray(selectedService) ? selectedService[0] : selectedService;
         const targetArea = Array.isArray(selectedArea) ? selectedArea[0] : selectedArea;
@@ -172,7 +193,7 @@ export default function BookingOtp() {
         console.log("Notification background delivery failed contextually", e);
       }
 
-      setOtp(['', '', '', '', '', '']);
+      setOtp(['', '', '', '']);
       router.push('/booking/BookingVerify');
 
     } catch (error: any) {

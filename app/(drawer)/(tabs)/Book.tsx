@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Dropdown from '../../../components/bookings/Dropdown';
-import { services, shifts, budget, priority } from '../../../src/data/Data';
+import { services, shifts, getBudgetOptions, priority } from '../../../src/data/Data';
 import { useCountry } from '@/src/context/countryContext';
+import { formatPhoneInput } from '@/src/constants/countryData';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CalenderIcon from '../../../assets/icons/booking/calendar.png';
 import TextArea from '../../../components/bookings/TextArea';
@@ -70,11 +71,13 @@ export default function ServiceBookingScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectAddPhotos, setSelectAddPhotos] = useState<FileItem[]>([]);
 
-  // City/Area are tied to the active country's data set — switching the flag
-  // invalidates whatever was picked before, so both fields reset.
+  // City/Area/Budget are tied to the active country's data set (currency and
+  // city/area lists differ) — switching the flag invalidates whatever was picked
+  // before, so all three reset.
   useEffect(() => {
     setSelectedLocation('');
     setSelectedArea('');
+    setSelectedBudget('');
   }, [country]);
 
   // Area options are linked to whichever City is selected within the current country.
@@ -85,6 +88,11 @@ export default function ServiceBookingScreen() {
   const areaOptions = useMemo(
     () => countryInfo.areasByCity[selectedLocation] ?? [],
     [countryInfo, selectedLocation]
+  );
+
+  const budgetOptions = useMemo(
+    () => getBudgetOptions(countryInfo.currency),
+    [countryInfo]
   );
 
   const clearAllFields = () => {
@@ -246,16 +254,8 @@ export default function ServiceBookingScreen() {
                 onFocus={() => setActiveInput('phone')}
                 onBlur={() => setActiveInput(null)}
                 onChangeText={(value) => {
-                  let cleaned = value.replace(/[^0-9]/g, '');
-                  cleaned = cleaned.slice(0, 10);
-                  let formatted = cleaned;
-
-                  if (cleaned.length > 3 && cleaned.length <= 6) {
-                    formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                  } else if (cleaned.length > 6) {
-                    formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3, 6) + ' ' + cleaned.slice(6);
-                  }
-                  setNumber(formatted);
+                  const cleaned = value.replace(/[^0-9]/g, '').slice(0, 10);
+                  setNumber(formatPhoneInput(cleaned, country));
                 }}
                 keyboardType="number-pad"
                 style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}
@@ -363,7 +363,7 @@ export default function ServiceBookingScreen() {
             <Text style={styles.label}>Select Budget<Text style={styles.required}> *</Text></Text>
             <Dropdown
               value={selectedBudget}
-              options={budget}
+              options={budgetOptions}
               placeholder="Select Budget"
               placeholderColor="#9CA3AF"
               onSelectOption={setSelectedBudget}

@@ -16,6 +16,7 @@ import { businessType, city, howduhear, partnershipInterest, services } from '..
 import TextArea from '../../components/bookings/TextArea';
 import SubmitOverlay from '../../components/bookings/SubmitOverlay';
 import { useCountry } from '@/src/context/countryContext';
+import { formatPhoneInput } from '@/src/constants/countryData';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -59,7 +60,7 @@ export type FileItem = {
 
 export default function PartnershipScreen() {
   const scrollRef = useRef<any>(null);
-  const { countryInfo } = useCountry();
+  const { country, countryInfo } = useCountry();
 
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
@@ -228,16 +229,8 @@ export default function PartnershipScreen() {
               onFocus={() => setActiveInput('phone')}
               onBlur={() => setActiveInput(null)}
               onChangeText={(value) => {
-                let cleaned = value.replace(/[^0-9]/g, '');
-                cleaned = cleaned.slice(0, 10);
-                let formatted = cleaned;
-
-                if (cleaned.length > 3 && cleaned.length <= 6) {
-                  formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-                } else if (cleaned.length > 6) {
-                  formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3, 6) + ' ' + cleaned.slice(6);
-                }
-                setNumber(formatted);
+                const cleaned = value.replace(/[^0-9]/g, '').slice(0, 10);
+                setNumber(formatPhoneInput(cleaned, country));
               }}
               keyboardType="number-pad"
               style={[styles.phoneInput, activeInput === 'phone' && styles.inputActive]}

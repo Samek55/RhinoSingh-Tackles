@@ -12,16 +12,13 @@ import {
     TextInputKeyPressEventData
 } from 'react-native';
 import React, { useRef, useState } from 'react';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 const { width, height } = Dimensions.get('window');
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header3drawer';
-
-// 1. MODULAR SDK IMPORTS
-import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-import { globalFirebaseConfirmation, setGlobalFirebaseConfirmation } from '../../../../components/home/NumberBar';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
+import { sparrowOtpService } from '@/src/services/sparrowOtpService';
 
 const scaleFont = (size: number) => {
     const guidelineBaseWidth = 375;
@@ -29,11 +26,10 @@ const scaleFont = (size: number) => {
 };
 
 export default function HelpboxOTP() {
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [otp, setOtp] = useState(['', '', '', '']);
     const inputRefs = useRef<Array<TextInput | null>>([]);
-    const route = useRoute<any>();
+    const { phone } = useLocalSearchParams(); // Contains +977...
 
-    const phone = route.params?.phone; // Contains +977...
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Filter country code for visual UI readability
@@ -41,7 +37,7 @@ export default function HelpboxOTP() {
 
     useFocusEffect(
         React.useCallback(() => {
-            setOtp(['', '', '', '', '', '']);
+            setOtp(['', '', '', '']);
         }, []),
     );
 
@@ -71,28 +67,33 @@ export default function HelpboxOTP() {
     };
 
     const handleResendCode = async () => {
-        if (!phone) return;
+        const pending = sparrowOtpService.getPendingOtp('helpbox');
+        if (!pending) return;
+
         try {
             Alert.alert('Resending', 'Requesting a new verification code...');
 
-            // 2. FIX SYNC: Pass auth instance explicitly + strip bad extra parameter types
-            const authInstance = getAuth();
-            const newConfirmation = await signInWithPhoneNumber(authInstance, phone);
+            const newOtp = sparrowOtpService.generateOtp();
+            const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp);
 
-            // Re-bind the freshly instantiated instance back to global reference module container
-            setGlobalFirebaseConfirmation(newConfirmation);
+            if (!sent) {
+                Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again.');
+                return;
+            }
+
+            sparrowOtpService.setPendingOtp('helpbox', { otp: newOtp, phone: pending.phone });
 
             Alert.alert('Success', 'A new code has been successfully sent.');
         } catch (error: any) {
-            Alert.alert('Resend Failed', error.message || 'Unable to re-send token code.');
+            Alert.alert('Resend Failed', error.message || 'Unable to re-send verification code.');
         }
     };
 
     const handleNavigate = async () => {
         const enteredOtp = otp.join('');
 
-        if (enteredOtp.length < 6) {
-            Alert.alert('Validation Error', 'Please enter the complete 6-digit verification code.');
+        if (enteredOtp.length < 4) {
+            Alert.alert('Validation Error', 'Please enter the complete 4-digit verification code.');
             return;
         }
 
@@ -100,22 +101,28 @@ export default function HelpboxOTP() {
         setIsSubmitting(true);
 
         try {
-            console.log(`Verifying phone: ${phone} with Firebase code: ${enteredOtp}`);
+            const pending = sparrowOtpService.getPendingOtp('helpbox');
 
-            if (!globalFirebaseConfirmation || typeof globalFirebaseConfirmation.confirm !== 'function') {
-                Alert.alert('Session Expired', 'Authentication context missing or lost native prototype binding. Please go back and try again.');
+            if (!pending) {
+                Alert.alert('Session Expired', 'No active verification session found. Please go back and try again.');
                 setIsSubmitting(false);
                 return;
             }
 
-            // 3. Confirm directly invokes the confirmation session resolution handler
-            await globalFirebaseConfirmation.confirm(enteredOtp);
+            if (enteredOtp !== pending.otp) {
+                Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
+                setIsSubmitting(false);
+                return;
+            }
 
             const booking = {
                 "phone": phone,
             };
 
             await createHelpboxSB(booking);
+
+            sparrowOtpService.clearPendingOtp('helpbox');
+
             router.push('/helpbox/otpVerifiedHB');
 
         } catch (error: any) {
@@ -136,7 +143,7 @@ export default function HelpboxOTP() {
                     </Text>
 
                     <Text style={styles.bookingText}>
-                        Enter the 6 digits code sent to your customer number {displayPhone} below.
+                        Enter the 4 digit code sent to your customer number {displayPhone} below.
                     </Text>
 
                     <Text style={styles.otpPromptText}>Enter your OTP to continue.</Text>

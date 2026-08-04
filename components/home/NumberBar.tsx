@@ -17,16 +17,11 @@ import { router } from 'expo-router';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 import { notifyAdminHelpbox } from '@/api/notifications';
 import { useCountry } from '@/src/context/countryContext';
-import { formatLocalPhone } from '@/src/constants/countryData';
-
-// Global Firebase Confirmation Store
-export let globalFirebaseConfirmation: any = null;
-export const setGlobalFirebaseConfirmation = (confirmation: any) => {
-  globalFirebaseConfirmation = confirmation;
-};
+import { formatLocalPhone, formatPhoneInput } from '@/src/constants/countryData';
+import { sparrowOtpService } from '@/src/services/sparrowOtpService';
 
 const NumberBar = ({ onFocus = () => { } }) => {
-  const { countryInfo } = useCountry();
+  const { country, countryInfo } = useCountry();
   const [phone, setPhone] = useState('');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
@@ -48,6 +43,27 @@ const NumberBar = ({ onFocus = () => { } }) => {
       setOverlayVisible(true);
 
       const formattedPhone = countryInfo.dialCode + structuralClean;
+
+      if (country === 'nepal') {
+        const sparrowPhone = countryInfo.dialCode.replace('+', '') + structuralClean;
+        const otp = sparrowOtpService.generateOtp();
+        const sent = await sparrowOtpService.sendOtp(sparrowPhone, otp);
+
+        setOverlayVisible(false);
+
+        if (!sent) {
+          Alert.alert('Submission Failed', 'Could not send the verification code. Please try again.');
+          return;
+        }
+
+        sparrowOtpService.setPendingOtp('helpbox', { otp, phone: sparrowPhone });
+
+        router.push({
+          pathname: '/helpbox/helpboxOTP',
+          params: { phone: formattedPhone },
+        });
+        return;
+      }
 
       // 💾 Construct payload and write records directly to Supabase DB node
       const payload = {
@@ -91,14 +107,8 @@ const NumberBar = ({ onFocus = () => { } }) => {
             onFocus={() => onFocus?.()}
             value={phone}
             onChangeText={(text) => {
-              let cleaned = text.replace(/[^0-9]/g, '').slice(0, 10);
-              let formatted = cleaned;
-              if (cleaned.length > 3 && cleaned.length <= 6) {
-                formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3);
-              } else if (cleaned.length > 6) {
-                formatted = cleaned.slice(0, 3) + ' ' + cleaned.slice(3, 6) + ' ' + cleaned.slice(6);
-              }
-              setPhone(formatted);
+              const cleaned = text.replace(/[^0-9]/g, '').slice(0, 10);
+              setPhone(formatPhoneInput(cleaned, country));
             }}
             placeholder={placeholder}
             placeholderTextColor="#94A3B8"

@@ -67,13 +67,15 @@ export const positionAppliedFor = [
 
 export const shifts = ['Morning', 'Day', 'Afternoon', 'Night'];
 
-export const budget = [
-  "Below INR 5,000",
-  "Above INR 10,000",
-  "Above INR 25,000",
-  "Above INR 50,000",
-  "Above INR 1,00,000",
-  "Above INR 5,00,000"
+// Currency-agnostic amounts — INR and NPR both use lakh/crore-style comma grouping,
+// so only the currency code changes between countries.
+export const getBudgetOptions = (currency: string) => [
+  `Below ${currency} 5,000`,
+  `Above ${currency} 10,000`,
+  `Above ${currency} 25,000`,
+  `Above ${currency} 50,000`,
+  `Above ${currency} 1,00,000`,
+  `Above ${currency} 5,00,000`,
 ];
 
 export const priority = ['Normal', 'Urgent'];

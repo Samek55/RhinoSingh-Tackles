@@ -23,12 +23,8 @@ import SubmitOverlay from "@/components/bookings/SubmitOverlay";
 import { notifyProfessionals } from '../../../../api/notifications';
 import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
-
-// Global Firebase Confirmation Store for Booking
-export let globalBookingFirebaseConfirmation: any = null;
-export const setGlobalBookingFirebaseConfirmation = (confirmation: any) => {
-  globalBookingFirebaseConfirmation = confirmation;
-};
+import { useCountry } from '@/src/context/countryContext';
+import { sparrowOtpService } from '@/src/services/sparrowOtpService';
 
 const { width } = Dimensions.get('window');
 
@@ -42,7 +38,8 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export default function BookingDetails() {
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
-  
+  const { country, countryInfo } = useCountry();
+
   const {
     name,
     number,
@@ -83,6 +80,49 @@ export default function BookingDetails() {
 
     if (cleanNumber.length !== 10) {
       Alert.alert('Validation Error', 'The associated phone number must be exactly 10 digits.');
+      return;
+    }
+
+    if (country === 'nepal') {
+      try {
+        setOverlayStatus('loading');
+        setOverlayVisible(true);
+
+        const otp = sparrowOtpService.generateOtp();
+        const fullPhone = countryInfo.dialCode.replace('+', '') + cleanNumber;
+        const sent = await sparrowOtpService.sendOtp(fullPhone, otp, name ? String(name) : undefined);
+
+        setOverlayVisible(false);
+
+        if (!sent) {
+          Alert.alert('Submission Failed', 'Could not send the verification code. Please try again.');
+          return;
+        }
+
+        sparrowOtpService.setPendingOtp('booking', { otp, phone: fullPhone });
+
+        router.push({
+          pathname: '/booking/BookingOtp',
+          params: {
+            name,
+            number,
+            selectedService,
+            selectedShift,
+            selectedLocation,
+            selectedArea,
+            selectedPriority,
+            selectedBudget,
+            message,
+            date,
+            role,
+            fileUrls,
+          },
+        });
+      } catch (error: any) {
+        setOverlayVisible(false);
+        console.error('SPARROW OTP SEND ERROR:', error);
+        Alert.alert('Submission Failed', error.message || 'Could not send the verification code.');
+      }
       return;
     }
 
