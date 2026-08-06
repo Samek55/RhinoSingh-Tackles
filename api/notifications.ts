@@ -4,6 +4,14 @@ import { getAuth } from 'firebase/auth';
 const ONESIGNAL_APP_ID = process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID;
 const ONESIGNAL_REST_API_KEY = process.env.EXPO_PUBLIC_ONESIGNAL_REST_API_KEY;
 
+// OneSignal tag keys only reliably support exact-match filtering, not "value is one of
+// these" — so each service/area a professional covers is stored as its own boolean tag
+// (e.g. "service_Plumbing" = "true") rather than a single comma-joined tag. This turns
+// non-alphanumeric characters (spaces, "&", etc. in service/area names) into underscores
+// so the resulting key is safe to use as a OneSignal tag key.
+export const sanitizeTagKey = (value: string): string =>
+  value.trim().replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
 const sendNotification = async (payload: object) => {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) {
     console.log('Notification skipped: missing OneSignal config');
@@ -42,20 +50,32 @@ export async function notifyAdminHelpbox(notiPhone: string) {
   }
 }
 
-// Service booking for notifying careers → service providers who serve that specific area and service
+// Service booking for notifying careers → service providers who serve that specific area and service.
+// Relies on each professional carrying a `service_<name>`/`area_<name>` boolean tag for
+// every service/area on their profile — set at login in AdminLogin.tsx from their
+// Realtime DB record. Falls back to notifying every professional (old behavior) only if
+// the booking itself is missing a service or area to filter on.
 export async function notifyProfessionals(service: string, bookingArea: string) {
   try {
     const cleanService = service.trim();
     const cleanArea = bookingArea.trim();
 
+    const filters: any[] = [
+      { field: 'tag', key: 'role', relation: '=', value: 'career' },
+    ];
+    if (cleanService) {
+      filters.push({ operator: 'AND' }, { field: 'tag', key: `service_${sanitizeTagKey(cleanService)}`, relation: '=', value: 'true' });
+    }
+    if (cleanArea) {
+      filters.push({ operator: 'AND' }, { field: 'tag', key: `area_${sanitizeTagKey(cleanArea)}`, relation: '=', value: 'true' });
+    }
+
     await sendNotification({
-      filters: [
-        { field: 'tag', key: 'role', relation: '=', value: 'career' },
-      ],
+      filters,
       headings: { en: '🚀 New Job Available!' },
       contents: { en: `New "${cleanService}" booking in ${cleanArea}. Open RocketSingh to respond.` },
     });
-    
+
     console.log(`Booking notification successfully targeted for "${cleanService}" in ${cleanArea}`);
   } catch (error: any) {
     console.error('Booking notification error:', error?.response?.data || error.message);

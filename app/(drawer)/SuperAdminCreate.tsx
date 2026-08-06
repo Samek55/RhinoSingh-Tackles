@@ -15,21 +15,27 @@ import {
     signOut,
 } from "firebase/auth";
 
-import { auth } from "../../src/firebase/firebaseConfig";
+import { auth, getSecondaryAuth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header5 from "@/components/Header5Admin";
 import { getDatabase, ref, set } from "firebase/database";
 import { heightPercentageToDP as hp } from "react-native-responsive-screen";
+import { useRequireSuperAdmin } from "@/hooks/useRequireSuperAdmin";
 
 const db = getDatabase();
 
 export default function CreateSuperAdmin() {
+    const authorized = useRequireSuperAdmin();
     const [phoneNumber, setPhoneNumber] = useState("");
     const [pin, setPin] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     // 🔐 FORCED TO "superadmin" DEFAULT FOR HIGH-LEVEL ORCHESTRATION
     const [selectedRole] = useState<string>("superadmin");
+
+    if (!authorized) {
+        return null;
+    }
 
     const createUser = async () => {
         const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
@@ -48,11 +54,14 @@ export default function CreateSuperAdmin() {
         setIsLoading(true);
 
         try {
-            // 🔐 Firebase Setup
+            // 🔐 Firebase Setup — created on an isolated secondary auth instance so this
+            // doesn't sign the current superadmin out of their own session (see
+            // getSecondaryAuth's comment in firebaseConfig.js).
             const email = `${cleanPhone}@rocketsingh.app`;
+            const secondaryAuth = getSecondaryAuth();
 
             const userCredential = await createUserWithEmailAndPassword(
-                auth,
+                secondaryAuth,
                 email,
                 cleanPin
             );
@@ -72,6 +81,10 @@ export default function CreateSuperAdmin() {
                 area: [],
                 createdAt: Date.now(),
             });
+
+            // End the secondary session immediately — it only ever exists to run the
+            // createUserWithEmailAndPassword call above without touching the caller's own.
+            await signOut(secondaryAuth);
 
             // 🔥 Conditional OneSignal Registration with SuperAdmin Payload Mapping
             try {

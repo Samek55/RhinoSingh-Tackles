@@ -74,7 +74,7 @@ export default function HelpboxOTP() {
             Alert.alert('Resending', 'Requesting a new verification code...');
 
             const newOtp = sparrowOtpService.generateOtp();
-            const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp);
+            const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp, 'helpbox');
 
             if (!sent) {
                 Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again.');

@@ -97,7 +97,7 @@ export default function BookingOtp() {
 
     try {
       const newOtp = sparrowOtpService.generateOtp();
-      const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp, name ? String(name) : undefined);
+      const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp, 'booking', name ? String(name) : undefined);
 
       if (!sent) {
         Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again.');

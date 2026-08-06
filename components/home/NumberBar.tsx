@@ -47,7 +47,7 @@ const NumberBar = ({ onFocus = () => { } }) => {
       if (country === 'nepal') {
         const sparrowPhone = countryInfo.dialCode.replace('+', '') + structuralClean;
         const otp = sparrowOtpService.generateOtp();
-        const sent = await sparrowOtpService.sendOtp(sparrowPhone, otp);
+        const sent = await sparrowOtpService.sendOtp(sparrowPhone, otp, 'helpbox');
 
         setOverlayVisible(false);
 

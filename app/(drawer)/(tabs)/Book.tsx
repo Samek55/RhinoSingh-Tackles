@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Dropdown from '../../../components/bookings/Dropdown';
 import { services, shifts, getBudgetOptions, priority } from '../../../src/data/Data';
 import { useCountry } from '@/src/context/countryContext';
+import { useUser } from '@/src/context/userContext';
 import { formatPhoneInput } from '@/src/constants/countryData';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CalenderIcon from '../../../assets/icons/booking/calendar.png';
@@ -56,6 +57,7 @@ const Button = ({ children, style, textStyle, onPress, disabled }: any) => {
 export default function ServiceBookingScreen() {
   const scrollRef = useRef<any>(null);
   const { country, countryInfo } = useCountry();
+  const { setUserData } = useUser();
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [selectedService, setSelectedService] = useState('');
@@ -79,6 +81,16 @@ export default function ServiceBookingScreen() {
     setSelectedArea('');
     setSelectedBudget('');
   }, [country]);
+
+  // The city picked here is the only reliable "where is this visitor" signal the app
+  // has for an anonymous customer — feed it to UserContext so popup-banner city
+  // targeting (AdminPopUpBanner.tsx) has something real to filter on instead of
+  // silently falling back to "show every banner to everyone".
+  useEffect(() => {
+    if (selectedLocation) {
+      setUserData(selectedLocation, 'Public', '');
+    }
+  }, [selectedLocation, setUserData]);
 
   // Area options are linked to whichever City is selected within the current country.
   useEffect(() => {

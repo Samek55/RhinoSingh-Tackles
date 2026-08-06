@@ -19,7 +19,6 @@ import {
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { router, useLocalSearchParams } from 'expo-router';
-import { notifyUsers } from '@/api/notifications';
 import Header5 from '@/components/Header5Admin';
 import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 
@@ -68,26 +67,18 @@ export default function BookingDetails() {
     const goPrev = () => setSelectedIndex(i => (i - 1 + photos.length) % photos.length);
     const goNext = () => setSelectedIndex(i => (i + 1) % photos.length);
 
-    const handleAcceptOffer = async () => {
+    const handleAcceptOffer = () => {
         if (!booking) return;
 
-        try {
-            const customerPhone = booking?.phone || "";
-            console.log("Passing customer phone to notification:", customerPhone);
+        // The customer is notified from BookingDetails_2 instead, once the admin actually
+        // submits a real status there — sending it here fired "Booking Accepted" on every
+        // tap of this button, even if the admin then backed out or picked Cancelled next.
+        const routeId = booking?.id ? String(booking.id) : '';
 
-            // Trigger push notifications
-            await notifyUsers(booking?.service, booking?.area, customerPhone);
-        } catch (error) {
-            console.error("Failed to process order acceptance notifications:", error);
-        } finally {
-            // Hardened safe structural parameter typing
-            const routeId = booking?.id ? String(booking.id) : '';
-            
-            router.push({
-                pathname: '/admin/BookingDetails_2',
-                params: { id: routeId },
-            });
-        }
+        router.push({
+            pathname: '/admin/BookingDetails_2',
+            params: { id: routeId },
+        });
     };
 
     return (

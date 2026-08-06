@@ -6,7 +6,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Header3 from '@/components/Header3drawer';
-import { services, city } from '@/src/data/Data';
+import { services } from '@/src/data/Data';
+import { ALL_CITIES } from '@/src/constants/countryData';
 import { announcementService } from '@/src/services/supabaseService';
 import { Ionicons } from '@expo/vector-icons';
 import { uploadImageToSupabaseRoadBlock } from '@/src/utils/fileUploadRoadBlock';
@@ -401,8 +402,8 @@ const PopupBannerScreen = () => {
                   {item.start_date} → {item.end_date}
                 </Text>
                 <Text style={styles.bannerCardTargets}>
-                  {item.city.length > 0 && `📍 ${item.city.join(', ')}`}
-                  {item.user_selection.length > 0 && ` • 👥 ${item.user_selection.join(', ')}`}
+                  {(item.city || []).length > 0 && `📍 ${item.city.join(', ')}`}
+                  {(item.user_selection || []).length > 0 && ` • 👥 ${item.user_selection.join(', ')}`}
                 </Text>
               </View>
             </View>
@@ -457,7 +458,7 @@ const PopupBannerScreen = () => {
           <View style={styles.formSection}>
             <MultiSelectDropdown
               label="CITY"
-              options={city}
+              options={ALL_CITIES}
               selectedItems={selectedCities}
               onSelect={setSelectedCities}
               placeholder="Select cities..."

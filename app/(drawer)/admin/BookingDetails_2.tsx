@@ -24,6 +24,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Header5 from '@/components/Header5Admin';
 import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 import { updateBookingStatusSB } from '@/api/supabase/updateBookingStatusSB';
+import { inferDialCodeFromCity } from '@/src/constants/countryData';
+import { notifyUsers } from '@/api/notifications';
 
 type StatusType = 'Completed' | 'Pending' | 'Cancelled';
 
@@ -87,7 +89,18 @@ export default function BookingDetails() {
             }
 
             console.log(`🔄 Sending true identifier to Supabase: ${trueDatabaseId}`);
-            const response = await updateBookingStatusSB(trueDatabaseId, workStatus);
+            await updateBookingStatusSB(trueDatabaseId, workStatus);
+
+            // Only tell the customer their booking was "accepted" once a real, non-cancelled
+            // status has actually been persisted — previously this fired from a button tap
+            // on the previous screen regardless of what the admin did next.
+            if (workStatus !== 'Cancelled') {
+                try {
+                    await notifyUsers(booking?.service, booking?.area, booking?.phone || '');
+                } catch (notifyError) {
+                    console.warn('Failed to notify customer of status update:', notifyError);
+                }
+            }
 
             setBooking((prev: any) => ({ ...prev, status: workStatus }));
             alert("Status updated successfully!");
@@ -141,7 +154,7 @@ export default function BookingDetails() {
                                     source={phoneIcon}
                                     style={{ width: 14, height: 11.5, tintColor: '#555' }}
                                 />{' '}
-                                +977 {booking?.phone || ''}
+                                {[inferDialCodeFromCity(booking?.city), booking?.phone].filter(Boolean).join(' ')}
                             </Text>
 
                             <View style={styles.row}>

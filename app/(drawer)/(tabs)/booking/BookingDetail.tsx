@@ -90,7 +90,7 @@ export default function BookingDetails() {
 
         const otp = sparrowOtpService.generateOtp();
         const fullPhone = countryInfo.dialCode.replace('+', '') + cleanNumber;
-        const sent = await sparrowOtpService.sendOtp(fullPhone, otp, name ? String(name) : undefined);
+        const sent = await sparrowOtpService.sendOtp(fullPhone, otp, 'booking', name ? String(name) : undefined);
 
         setOverlayVisible(false);
 

@@ -143,7 +143,7 @@ export default function HelpboxDetails() {
                                     source={phoneIcon}
                                     style={{ width: 14, height: 11.5, tintColor: '#555' }}
                                 />{' '}
-                                +977 {helpboxData?.phone || ''}
+                                {helpboxData?.phone || ''}
                             </Text>
 
 

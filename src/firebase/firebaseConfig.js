@@ -19,3 +19,21 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
+
+// Secondary, unpersisted app instance used only when an already-signed-in admin
+// creates *another* account. createUserWithEmailAndPassword() on the primary
+// `auth` above would sign the caller in as the brand-new account, silently
+// ending their own session — this isolated instance takes that side effect
+// away from the caller's session entirely.
+let secondaryAuth = null;
+export function getSecondaryAuth() {
+  if (!secondaryAuth) {
+    const secondaryApp = getApps().some((a) => a.name === "Secondary")
+      ? getApp("Secondary")
+      : initializeApp(firebaseConfig, "Secondary");
+    secondaryAuth = initializeAuth(secondaryApp, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  }
+  return secondaryAuth;
+}

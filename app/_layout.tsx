@@ -6,6 +6,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../src/firebase/firebaseConfig'; // verify this matching path relative to root layout
 import { CountryProvider } from '../src/context/countryContext';
+import { UserProvider } from '../src/context/userContext';
 
 // Prevent splash screen from hiding automatically
 SplashScreen.preventAutoHideAsync().catch(() => { });
@@ -54,8 +55,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (initializing) return;
 
-    // Evaluates if the current directory route segment matches your protected folder path
-    const inAdminGroup = segments[0] === 'admin';
+    // Evaluates if the current directory route segment matches your protected folder path.
+    // AdminLogin itself lives inside this same 'admin' folder, so it's excluded here —
+    // otherwise a logged-out user visiting the login screen gets bounced straight back
+    // out of it by this guard, in an infinite loop with Admin.tsx's own redirect.
+    const inAdminGroup = segments[0] === 'admin' && segments[1] !== 'AdminLogin';
 
     if (!user && inAdminGroup) {
       // Drop session context found while browsing protected assets: Redirect out
@@ -126,7 +130,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <CountryProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <UserProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </UserProvider>
       </CountryProvider>
     </SafeAreaProvider>
   );

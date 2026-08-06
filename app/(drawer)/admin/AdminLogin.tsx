@@ -27,6 +27,7 @@ import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../../src/firebase/firebaseConfig";
+import { sanitizeTagKey } from "@/api/notifications";
 
 // 🛢️ Realtime Database Core Hooks
 import { getDatabase, ref, get } from "firebase/database";
@@ -127,6 +128,28 @@ export default function AdminLogin() {
                     const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
                     if (OneSignal && typeof OneSignal.login === 'function') {
                         OneSignal.login(user.uid);
+                        // Cold starts reset this tag to '' (see app/_layout.tsx), and account
+                        // creation only sets it once at signup time — without re-setting it here
+                        // on every login, admins/professionals stop receiving role-targeted
+                        // pushes (new bookings, helpbox requests) after their first session.
+                        if (userRole && OneSignal.User?.addTag) {
+                            OneSignal.User.addTag('role', userRole);
+                        }
+
+                        // Professionals only get job-alert pushes for services/areas they
+                        // actually cover (see notifyProfessionals in api/notifications.ts) —
+                        // one boolean tag per service/area, rebuilt on every login so it stays
+                        // correct even if their profile is edited later.
+                        if (userRole === 'career' && OneSignal.User?.addTags) {
+                            const tags: Record<string, string> = {};
+                            const services: string[] = Array.isArray(userData?.services) ? userData.services : [];
+                            const areas: string[] = Array.isArray(userData?.area) ? userData.area : [];
+                            services.filter(Boolean).forEach((s) => { tags[`service_${sanitizeTagKey(s)}`] = 'true'; });
+                            areas.filter(Boolean).forEach((a) => { tags[`area_${sanitizeTagKey(a)}`] = 'true'; });
+                            if (Object.keys(tags).length > 0) {
+                                OneSignal.User.addTags(tags);
+                            }
+                        }
                     }
                 } catch (e) {
                     console.warn('OneSignal registration linkage bypassed safely:', e);

@@ -91,3 +91,20 @@ export const COUNTRIES: Record<CountryCode, CountryInfo> = {
     },
   },
 };
+
+// Neither the `booking` nor `helpbox` Supabase tables store which country a record
+// belongs to — only the city the customer picked. 'Other' is shared by both
+// countries' city lists, so it can't be resolved and intentionally returns null
+// rather than guessing (showing no dial code beats showing the wrong one).
+export function inferDialCodeFromCity(city?: string | null): string | null {
+  if (!city) return null;
+  if (COUNTRIES.india.cities.includes(city) && city !== 'Other') return COUNTRIES.india.dialCode;
+  if (COUNTRIES.nepal.cities.includes(city) && city !== 'Other') return COUNTRIES.nepal.dialCode;
+  return null;
+}
+
+// Combined city list across both markets, for admin tools (e.g. banner targeting) that
+// need to pick from every city bookings can come from, not just one country's.
+export const ALL_CITIES: string[] = Array.from(
+  new Set([...COUNTRIES.india.cities, ...COUNTRIES.nepal.cities])
+);

@@ -12,11 +12,12 @@ const pendingOtps: Record<OtpFlow, PendingOtp | null> = {
   helpbox: null,
 };
 
-function buildOtpMessage(otp: string, greetingName?: string): string {
-  const firstName = greetingName ? String(greetingName).split(' ')[0] : '';
-  return firstName
-    ? `Dear ${firstName}, your RocketSingh OTP code is ${otp}\n\nThanks for using RocketSingh.`
-    : `Your RocketSingh OTP code is ${otp}\n\nThanks for using RocketSingh.`;
+function buildOtpMessage(flow: OtpFlow, otp: string, greetingName?: string): string {
+  if (flow === 'booking') {
+    const firstName = greetingName ? String(greetingName).split(' ')[0] : 'Customer';
+    return `Dear ${firstName}, Your Service Booking OTP code is ${otp}.\n\nThank You for using RocketSingh\n( https://RocketSingh.app )`;
+  }
+  return `Hi, Thank you for submitting help request. Your OTP code is ${otp}.\n\nThank You for using RocketSingh\n( https://RocketSingh.app )`;
 }
 
 export const sparrowOtpService = {
@@ -24,7 +25,7 @@ export const sparrowOtpService = {
   generateOtp: (): string => String(Math.floor(1000 + Math.random() * 9000)),
 
   // fullPhone must be digits only with country code, e.g. 9779843624971 (no '+')
-  sendOtp: async (fullPhone: string, otp: string, greetingName?: string): Promise<boolean> => {
+  sendOtp: async (fullPhone: string, otp: string, flow: OtpFlow, greetingName?: string): Promise<boolean> => {
     const token = process.env.EXPO_PUBLIC_SPARROW_TOKEN;
     const from = process.env.EXPO_PUBLIC_SPARROW_FROM;
 
@@ -32,7 +33,7 @@ export const sparrowOtpService = {
       token: token || '',
       from: from || '',
       to: fullPhone,
-      text: buildOtpMessage(otp, greetingName),
+      text: buildOtpMessage(flow, otp, greetingName),
     });
 
     const response = await fetch(SPARROW_SMS_URL, {

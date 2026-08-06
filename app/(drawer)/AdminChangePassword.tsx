@@ -20,8 +20,9 @@ import {
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
-import Header4 from '@/components/Header4Admin';
 import Header5 from '@/components/Header5Admin';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
+import { auth } from '@/src/firebase/firebaseConfig';
 
 // Get screen dimensions for responsive layout
 const { width, height } = Dimensions.get('window');
@@ -41,6 +42,7 @@ export default function AdminChangePassword() {
     const [oldPassword, setOldPassword] = useState<any>('');
     const [newPassword, setNewPassword] = useState<any>('');
     const [confirmNewpassword, setConfirmNewPassword] = useState<any>('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const togglePasswordVisibilityOLD = () => {
         setPasswordVisibleOLD(!passwordVisibleOLD);
@@ -54,22 +56,45 @@ export default function AdminChangePassword() {
         setPasswordVisibleCONFIRM(!passwordVisibleCONFIRM);
     }
 
-    const handleSubmit = () => {
-        if (!oldPassword || oldPassword.length !== 4) {
-            Alert.alert('Validation Error', 'Please enter your current 4-digit PIN');
+    const handleSubmit = async () => {
+        if (!oldPassword || oldPassword.length !== 6) {
+            Alert.alert('Validation Error', 'Please enter your current 6-digit PIN');
             return;
         }
-        if (!newPassword || newPassword.length !== 4) {
-            Alert.alert('Validation Error', 'Please enter a new 4-digit PIN');
+        if (!newPassword || newPassword.length !== 6) {
+            Alert.alert('Validation Error', 'Please enter a new 6-digit PIN');
             return;
         }
         if (newPassword !== confirmNewpassword) {
             Alert.alert('Validation Error', 'New PIN and confirmation do not match');
             return;
         }
-        Alert.alert('Success', 'PIN updated successfully', [
-            { text: 'OK', onPress: () => router.push('/Admin') },
-        ]);
+
+        const user = auth.currentUser;
+        if (!user || !user.email) {
+            Alert.alert('Session Expired', 'Please log in again before changing your PIN.');
+            router.replace('/admin/AdminLogin');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const credential = EmailAuthProvider.credential(user.email, oldPassword);
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, newPassword);
+
+            Alert.alert('Success', 'PIN updated successfully', [
+                { text: 'OK', onPress: () => router.push('/Admin') },
+            ]);
+        } catch (error: any) {
+            const message =
+                error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password'
+                    ? 'Your current PIN is incorrect.'
+                    : error?.message || 'Failed to update PIN. Please try again.';
+            Alert.alert('Error', message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -100,9 +125,9 @@ export default function AdminChangePassword() {
                                 secureTextEntry={!passwordVisibleOLD}
                                 style={styles.textInput}
                                 value={oldPassword}
-                                maxLength={4}
+                                maxLength={6}
                                 onChangeText={(text) =>
-                                    setOldPassword(text.replace(/[^0-9]/g, '').slice(0, 4))
+                                    setOldPassword(text.replace(/[^0-9]/g, '').slice(0, 6))
                                 }
                             />
                             <TouchableOpacity onPress={togglePasswordVisibilityOLD}>
@@ -124,9 +149,9 @@ export default function AdminChangePassword() {
                                 secureTextEntry={!passwordVisibleNEW}
                                 style={styles.textInput}
                                 value={newPassword}
-                                maxLength={4}
+                                maxLength={6}
                                 onChangeText={(text) =>
-                                    setNewPassword(text.replace(/[^0-9]/g, '').slice(0, 4))
+                                    setNewPassword(text.replace(/[^0-9]/g, '').slice(0, 6))
                                 }
                             />
                             <TouchableOpacity onPress={togglePasswordVisibilityNEW}>
@@ -148,9 +173,9 @@ export default function AdminChangePassword() {
                                 secureTextEntry={!passwordVisibleCONFIRM}
                                 style={styles.textInput}
                                 value={confirmNewpassword}
-                                maxLength={4}
+                                maxLength={6}
                                 onChangeText={(text) =>
-                                    setConfirmNewPassword(text.replace(/[^0-9]/g, '').slice(0, 4))
+                                    setConfirmNewPassword(text.replace(/[^0-9]/g, '').slice(0, 6))
                                 }
                             />
                             <TouchableOpacity onPress={togglePasswordVisibilityCONFIRM}>
@@ -167,8 +192,12 @@ export default function AdminChangePassword() {
                             <TouchableOpacity style={styles.CancelButton} onPress={() => router.push('/(drawer)/admin/UpdateProfile')}>
                                 <Text style={styles.CancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.loginButton} onPress={handleSubmit}>
-                                <Text style={styles.loginButtonText}>Save</Text>
+                            <TouchableOpacity
+                                style={[styles.loginButton, isSubmitting && { opacity: 0.6 }]}
+                                onPress={handleSubmit}
+                                disabled={isSubmitting}
+                            >
+                                <Text style={styles.loginButtonText}>{isSubmitting ? 'Saving...' : 'Save'}</Text>
                             </TouchableOpacity>
                         </View>
 
