@@ -38,6 +38,7 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export default function BookingDetails() {
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { country, countryInfo } = useCountry();
 
   const {
@@ -76,12 +77,16 @@ export default function BookingDetails() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     const cleanNumber = String(number || '').replace(/[^0-9]/g, '');
 
     if (cleanNumber.length !== 10) {
       Alert.alert('Validation Error', 'The associated phone number must be exactly 10 digits.');
       return;
     }
+
+    setIsSubmitting(true);
 
     if (country === 'nepal') {
       try {
@@ -122,6 +127,8 @@ export default function BookingDetails() {
         setOverlayVisible(false);
         console.error('SPARROW OTP SEND ERROR:', error);
         Alert.alert('Submission Failed', error.message || 'Could not send the verification code.');
+      } finally {
+        setIsSubmitting(false);
       }
       return;
     }
@@ -192,9 +199,11 @@ export default function BookingDetails() {
       setOverlayVisible(false);
       console.error("CRITICAL DIRECT BOOKING INTERACTION ERROR:", error);
       Alert.alert(
-        'Submission Failed', 
+        'Submission Failed',
         error.message || 'An unhandled asset pipeline error blocked processing.'
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -280,10 +289,11 @@ export default function BookingDetails() {
         </View>
 
         <View style={styles.buttonGroup}>
-          <TouchableOpacity 
-            onPress={handleSubmit} 
-            style={styles.confirmBtn} 
+          <TouchableOpacity
+            onPress={handleSubmit}
+            style={[styles.confirmBtn, isSubmitting && { opacity: 0.6 }]}
             activeOpacity={0.9}
+            disabled={isSubmitting}
           >
             <Text style={styles.confirmBtnText}>Confirm Booking</Text>
           </TouchableOpacity>

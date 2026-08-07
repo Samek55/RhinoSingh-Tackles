@@ -26,10 +26,12 @@ import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 import { updateBookingStatusSB } from '@/api/supabase/updateBookingStatusSB';
 import { inferDialCodeFromCity } from '@/src/constants/countryData';
 import { notifyUsers } from '@/api/notifications';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 type StatusType = 'Completed' | 'Pending' | 'Cancelled';
 
 export default function BookingDetails() {
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const scrollRef = useRef<ScrollView>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -113,6 +115,10 @@ export default function BookingDetails() {
             setSubmitting(false);
         }
     };
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f6f7fb' }}>

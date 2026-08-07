@@ -3,12 +3,18 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, useWindowDimensio
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header4 from "@/components/Header4Admin";
+import { useRequireRole } from "@/hooks/useRequireRole";
 
 const FILTERS = ["All", "Today", "Earlier"];
 
 export default function ViewNotification() {
+  const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
   const [selectedFilter, setSelectedFilter] = useState("All");
   const { width } = useWindowDimensions();
+
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <View style={styles.screen}>

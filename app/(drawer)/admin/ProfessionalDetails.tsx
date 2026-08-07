@@ -25,11 +25,13 @@ import Header5 from '@/components/Header5Admin';
 import { fetchWorkforceFromSupabase } from '@/api/supabase/fetchWorkforceSB';
 import { useWorkforceUpdateProfile } from '@/api/hooks/superadmin/useWorkforceUpdateProfile';
 import { updateWorkforceStatusSA } from '@/api/hooks/superadmin/updateWorkforceStatusSA';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 type StatusType = 'Accepted' | 'Pending' | 'Rejected' | 'Pending-Update';
 
 export default function ProfessionalDetails() {
+    const { authorized } = useRequireRole(['superadmin']);
     const scrollRef = useRef<ScrollView>(null);
     const lightboxScrollRef = useRef<ScrollView>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -78,6 +80,10 @@ export default function ProfessionalDetails() {
     const { updateData, loading: updateLoading, hasPendingUpdate } = useWorkforceUpdateProfile(
         applicant?.workforce_uin || applicant?.uin || ''
     );
+
+    if (!authorized) {
+        return null;
+    }
 
     const handleStatusChange = (newStatus: StatusType) => {
         setWorkStatus(newStatus);

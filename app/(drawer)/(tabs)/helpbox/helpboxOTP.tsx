@@ -11,7 +11,7 @@ import {
     NativeSyntheticEvent,
     TextInputKeyPressEventData
 } from 'react-native';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 const { width, height } = Dimensions.get('window');
@@ -31,6 +31,7 @@ export default function HelpboxOTP() {
     const { phone } = useLocalSearchParams(); // Contains +977...
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(() => sparrowOtpService.getResendCooldownSeconds('helpbox'));
 
     // Filter country code for visual UI readability
     const displayPhone = phone ? String(phone).replace('+977', '') : '98*****011';
@@ -40,6 +41,14 @@ export default function HelpboxOTP() {
             setOtp(['', '', '', '']);
         }, []),
     );
+
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const interval = setInterval(() => {
+            setResendCooldown(sparrowOtpService.getResendCooldownSeconds('helpbox'));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [resendCooldown]);
 
     const handleChange = (text: string, index: number) => {
         // Only allow numbers
@@ -67,21 +76,29 @@ export default function HelpboxOTP() {
     };
 
     const handleResendCode = async () => {
-        const pending = sparrowOtpService.getPendingOtp('helpbox');
-        if (!pending) return;
+        const cooldown = sparrowOtpService.getResendCooldownSeconds('helpbox');
+        if (cooldown > 0) {
+            Alert.alert('Please Wait', `You can request a new code in ${cooldown}s.`);
+            setResendCooldown(cooldown);
+            return;
+        }
+
+        const targetPhone = sparrowOtpService.getLastPhone('helpbox');
+        if (!targetPhone) return;
 
         try {
             Alert.alert('Resending', 'Requesting a new verification code...');
 
             const newOtp = sparrowOtpService.generateOtp();
-            const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp, 'helpbox');
+            const sent = await sparrowOtpService.sendOtp(targetPhone, newOtp, 'helpbox');
 
             if (!sent) {
                 Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again.');
                 return;
             }
 
-            sparrowOtpService.setPendingOtp('helpbox', { otp: newOtp, phone: pending.phone });
+            sparrowOtpService.setPendingOtp('helpbox', { otp: newOtp, phone: targetPhone });
+            setResendCooldown(sparrowOtpService.getResendCooldownSeconds('helpbox'));
 
             Alert.alert('Success', 'A new code has been successfully sent.');
         } catch (error: any) {
@@ -165,9 +182,12 @@ export default function HelpboxOTP() {
                         ))}
                     </View>
 
-                    <TouchableOpacity onPress={handleResendCode}>
+                    <TouchableOpacity onPress={handleResendCode} disabled={resendCooldown > 0}>
                         <Text style={styles.resendcode}>
-                            {`Didn't get code?`} <Text style={{ color: 'blue', fontWeight: 'bold' }}>Resend Code</Text>
+                            {`Didn't get code?`}{' '}
+                            <Text style={{ color: resendCooldown > 0 ? 'gray' : 'blue', fontWeight: 'bold' }}>
+                                {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
+                            </Text>
                         </Text>
                     </TouchableOpacity>
 

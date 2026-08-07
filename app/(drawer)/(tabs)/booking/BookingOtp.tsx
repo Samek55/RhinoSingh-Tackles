@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ export default function BookingOtp() {
   const [otp, setOtp] = useState(['', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(() => sparrowOtpService.getResendCooldownSeconds('booking'));
 
   const {
     name,
@@ -57,6 +58,14 @@ export default function BookingOtp() {
       setOtp(['', '', '', '']);
     }, []),
   );
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown(sparrowOtpService.getResendCooldownSeconds('booking'));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
 
   const handleChange = (text: string, index: number) => {
     const cleanedText = text.replace(/[^0-9]/g, '');
@@ -92,19 +101,27 @@ export default function BookingOtp() {
   };
 
   const handleResendCode = async () => {
-    const pending = sparrowOtpService.getPendingOtp('booking');
-    if (!pending) return;
+    const cooldown = sparrowOtpService.getResendCooldownSeconds('booking');
+    if (cooldown > 0) {
+      Alert.alert('Please Wait', `You can request a new code in ${cooldown}s.`);
+      setResendCooldown(cooldown);
+      return;
+    }
+
+    const phone = sparrowOtpService.getLastPhone('booking');
+    if (!phone) return;
 
     try {
       const newOtp = sparrowOtpService.generateOtp();
-      const sent = await sparrowOtpService.sendOtp(pending.phone, newOtp, 'booking', name ? String(name) : undefined);
+      const sent = await sparrowOtpService.sendOtp(phone, newOtp, 'booking', name ? String(name) : undefined);
 
       if (!sent) {
         Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again.');
         return;
       }
 
-      sparrowOtpService.setPendingOtp('booking', { otp: newOtp, phone: pending.phone });
+      sparrowOtpService.setPendingOtp('booking', { otp: newOtp, phone });
+      setResendCooldown(sparrowOtpService.getResendCooldownSeconds('booking'));
       Alert.alert('Success', 'A new code has been successfully sent.');
     } catch (error: any) {
       Alert.alert('Resend Failed', error.message || 'Unable to re-send verification code.');
@@ -239,9 +256,12 @@ export default function BookingOtp() {
             ))}
           </View>
 
-          <TouchableOpacity onPress={handleResendCode}>
+          <TouchableOpacity onPress={handleResendCode} disabled={resendCooldown > 0}>
             <Text style={styles.resendcode}>
-              {`Didn't get code?`} <Text style={{ color: 'blue', fontWeight: 'bold' }}>Resend Code</Text>
+              {`Didn't get code?`}{' '}
+              <Text style={{ color: resendCooldown > 0 ? 'gray' : 'blue', fontWeight: 'bold' }}>
+                {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
+              </Text>
             </Text>
           </TouchableOpacity>
 

@@ -26,10 +26,12 @@ import Header5 from '@/components/Header5Admin';
 // Updated API imports to track helpbox data instead of generic bookings
 import { fetchHelpboxFromSupabase } from '@/api/supabase/fetchHelpboxSB';
 import { updateHelpboxStatusSB } from '@/api/supabase/updateHelpboxStatusSB';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 type StatusType = 'Completed' | 'Pending' | 'Cancelled';
 
 export default function HelpboxDetails() {
+    const { authorized } = useRequireRole(['admin', 'superadmin']);
     const scrollRef = useRef<ScrollView>(null);
     const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -102,6 +104,10 @@ export default function HelpboxDetails() {
             setSubmitting(false);
         }
     };
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f6f7fb' }}>

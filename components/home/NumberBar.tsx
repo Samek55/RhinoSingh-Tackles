@@ -25,11 +25,14 @@ const NumberBar = ({ onFocus = () => { } }) => {
   const [phone, setPhone] = useState('');
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fontSize = wp('4.2%');
 
   const placeholder = countryInfo.phone ? formatLocalPhone(countryInfo.phone) : '819 007 4189';
 
   const handleContinue = async () => {
+    if (isSubmitting) return;
+
     // Force remove everything except digits
     const structuralClean = phone.replace(/[^0-9]/g, '');
 
@@ -38,6 +41,7 @@ const NumberBar = ({ onFocus = () => { } }) => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       setOverlayStatus('loading');
       setOverlayVisible(true);
@@ -87,6 +91,8 @@ const NumberBar = ({ onFocus = () => { } }) => {
         'Database Write Error',
         error.message || 'An unhandled exception blocked the database update pipeline.'
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,8 +127,9 @@ const NumberBar = ({ onFocus = () => { } }) => {
 
       <TouchableOpacity
         onPress={handleContinue}
-        style={styles.helpButton}
+        style={[styles.helpButton, isSubmitting && { opacity: 0.6 }]}
         activeOpacity={0.82}
+        disabled={isSubmitting}
       >
         <Text style={styles.helpText}>Help</Text>
       </TouchableOpacity>

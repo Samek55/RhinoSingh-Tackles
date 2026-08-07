@@ -17,6 +17,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { supabase } from '@/src/lib/supabase';
 import Header4 from '@/components/Header4Admin';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -37,6 +38,7 @@ interface UpdateProfileData {
 }
 
 export default function ViewUpdatedProfile() {
+    const { authorized } = useRequireRole(['career']);
     const params = useLocalSearchParams();
     const uin = params.uin as string;
     
@@ -57,6 +59,10 @@ export default function ViewUpdatedProfile() {
             setLoading(false);
         }
     }, [uin]);
+
+    if (!authorized) {
+        return null;
+    }
 
     const fetchProfileData = async () => {
         try {

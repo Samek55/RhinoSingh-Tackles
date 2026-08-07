@@ -245,10 +245,10 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
 
               {/* Common Trailing Items across all authenticated profiles */}
               <MenuItem
-                icon={isActive('/admin/ViewNotification') ? "notifications" : "notifications-outline"}
+                icon={isActive('/admin/ViewNotifications') ? "notifications" : "notifications-outline"}
                 label="Notifications"
-                active={isActive('/admin/ViewNotification')}
-                onPress={() => navigateTo('/admin/ViewNotification')}
+                active={isActive('/admin/ViewNotifications')}
+                onPress={() => navigateTo('/admin/ViewNotifications')}
               />
 
               {/* 🛑 Hide Update Profile for Admin and SuperAdmin Roles */}

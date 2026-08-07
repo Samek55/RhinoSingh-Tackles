@@ -26,6 +26,7 @@ import { supabase } from '@/src/lib/supabase';
 import { services, area } from '@/src/data/Data';
 import Header4 from '@/components/Header4Admin';
 import { uploadDocumentOnly } from '@/src/utils/uploadWorkforceUpdate';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -326,6 +327,7 @@ const ImageGallerySection = React.memo(({
 });
 
 export default function ModernUpdateProfile() {
+    const { authorized } = useRequireRole(['career']);
     const {
         fetching = false,
         loading = false,
@@ -725,6 +727,10 @@ export default function ModernUpdateProfile() {
     const handleEmergencyContactChange = useCallback((v: string) => {
         setEmergencyContact?.(v.replace(/[^0-9]/g, '').slice(0, 10));
     }, [setEmergencyContact]);
+
+    if (!authorized) {
+        return null;
+    }
 
     // Show loading overlay during reset
     if (isResetting) {

@@ -13,6 +13,7 @@ import {
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
@@ -23,7 +24,12 @@ const scaleFont = (size: number) => {
 };
 
 export default function PaymentDetails() {
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const { id } = useLocalSearchParams<{ id: string }>();
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={styles.mainContainer}>

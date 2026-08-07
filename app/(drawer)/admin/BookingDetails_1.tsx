@@ -21,8 +21,10 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import Header5 from '@/components/Header5Admin';
 import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 export default function BookingDetails() {
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const [booking, setBooking] = useState<any>(null);
@@ -80,6 +82,10 @@ export default function BookingDetails() {
             params: { id: routeId },
         });
     };
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: '#f6f7fb' }}>

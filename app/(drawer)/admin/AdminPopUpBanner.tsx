@@ -18,6 +18,7 @@ import MultiSelectDropdown from '@/components/admin/MultiSelectDropdown';
 import SingleSelectDropdown from '@/components/admin/SingleSelectDropdown';
 import CustomTabBar from '@/components/admin/CustomTabBar';
 import RoadBlockCard from '@/components/RoadBlockCard';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 interface Banner {
   id: string;
@@ -38,6 +39,7 @@ interface Banner {
 }
 
 const PopupBannerScreen = () => {
+  const { authorized } = useRequireRole(['admin', 'superadmin']);
   const [activeTab, setActiveTab] = useState('Compose');
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -84,6 +86,10 @@ const PopupBannerScreen = () => {
       fetchBanners();
     }
   }, [activeTab]);
+
+  if (!authorized) {
+    return null;
+  }
 
   const fetchBanners = async () => {
     try {

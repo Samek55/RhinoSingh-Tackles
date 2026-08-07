@@ -17,6 +17,7 @@ import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
 import { personBooking } from '../../../src/data/AdminData/PersonBookingListData';
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
@@ -27,7 +28,7 @@ const scaleFont = (size: number) => {
 };
 
 export default function BookingConfirmation() {
-
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const booking = React.useMemo(() => {
@@ -115,6 +116,10 @@ export default function BookingConfirmation() {
     //         }
     //     }
     // };
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={styles.mainContainer}>

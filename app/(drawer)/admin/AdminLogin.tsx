@@ -179,6 +179,7 @@ export default function AdminLogin() {
                                 } else if (userRole === "superadmin") {
                                     router.push('/admin/ProfessionalHistory');
                                 } else {
+                                    signOut(auth);
                                     Alert.alert("Error", "Unauthorized account categorization mapping configuration.");
                                 }
                             }

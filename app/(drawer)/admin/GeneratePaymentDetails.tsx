@@ -17,6 +17,7 @@ import { personBooking } from '../../../src/data/AdminData/PersonBookingListData
 import Header4 from '@/components/Header4Admin';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo } from 'react';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 const { width, height } = Dimensions.get('window'); // Get screen dimensions
 
@@ -27,12 +28,16 @@ const scaleFont = (size: number) => {
 };
 
 export default function GeneratePaymentDetails() {
-
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const { id } = useLocalSearchParams<{ id: string }>();
 
     const booking = useMemo(() => {
         return personBooking.find(item => item.id.toString() === id);
     }, [id]);
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={styles.mainContainer}>

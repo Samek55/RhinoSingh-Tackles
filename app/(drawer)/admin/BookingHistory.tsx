@@ -26,8 +26,10 @@ import {
 
 import { signOut } from "firebase/auth";
 import { auth } from '@/src/firebase/firebaseConfig';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 export default function BookingHistory() {
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [openId, setOpenId] = useState<string | null>(null);
@@ -139,6 +141,10 @@ export default function BookingHistory() {
             />
         );
     }, [openId, toggleCard, handlePress]);
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: '#fff' }}>

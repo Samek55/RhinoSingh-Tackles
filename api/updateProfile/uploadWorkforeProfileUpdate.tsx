@@ -6,9 +6,7 @@ export const insertWorkforceUpdateProfileSB = async (applicantData: any, newStat
     .from('workforce_update_profile')
     .insert([
       {
-        // Assuming your table uses a reference field to link back to the applicant
-        // Replace 'applicant_id' with your actual column name if it differs (e.g., 'id')
-        uin: applicantData.uin || applicantData.id, 
+        id_uin: applicantData.uin || applicantData.id,
         full_name: applicantData.fullName,
         email: applicantData.email,
         emergency_contact_number: applicantData.emergencyContactNo,

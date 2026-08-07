@@ -23,6 +23,7 @@ import { router } from 'expo-router';
 import Header5 from '@/components/Header5Admin';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth } from '@/src/firebase/firebaseConfig';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 // Get screen dimensions for responsive layout
 const { width, height } = Dimensions.get('window');
@@ -34,6 +35,7 @@ const scaleFont = (size: number) => {
 };
 
 export default function AdminChangePassword() {
+    const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
     const [passwordVisibleOLD, setPasswordVisibleOLD] = useState(false);
     const [passwordVisibleNEW, setPasswordVisibleNEW] = useState(false);
     const [passwordVisibleCONFIRM, setPasswordVisibleCONFIRM] = useState(false);
@@ -96,6 +98,10 @@ export default function AdminChangePassword() {
             setIsSubmitting(false);
         }
     };
+
+    if (!authorized) {
+        return null;
+    }
 
     return (
         <View style={{ flex: 1 }} >

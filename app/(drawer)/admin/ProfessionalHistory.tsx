@@ -23,8 +23,10 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import { useRequireRole } from '@/hooks/useRequireRole';
 
 export default function ProfessionalHistory() {
+  const { authorized } = useRequireRole(['superadmin']);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -138,6 +140,10 @@ export default function ProfessionalHistory() {
     },
     [openId, toggleCard, handlePress]
   );
+
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
