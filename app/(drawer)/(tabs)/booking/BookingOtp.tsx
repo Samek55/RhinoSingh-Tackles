@@ -150,7 +150,12 @@ export default function BookingOtp() {
       }
 
       if (enteredOtp !== pending.otp) {
-        Alert.alert('Verification Failed', 'The code entered is invalid or has expired.');
+        const { remainingAttempts, lockedOut } = sparrowOtpService.registerFailedAttempt('booking');
+        if (lockedOut) {
+          Alert.alert('Too Many Attempts', 'You have entered the wrong code too many times. Please request a new code.');
+        } else {
+          Alert.alert('Verification Failed', `The code entered is invalid. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`);
+        }
         setIsSubmitting(false);
         return;
       }

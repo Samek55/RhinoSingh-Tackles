@@ -217,7 +217,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
                   onPress={() => navigateTo('/admin/HelpboxHistory')}
                 />
                  <MenuItem
-                  icon={isActive('/admin/HelpboxHistory') ? "information-circle" : "information-circle-outline"}
+                  icon={isActive('/admin/AdminPopUpBanner') ? "information-circle" : "information-circle-outline"}
                   label="Push PopUp"
                   active={isActive('/admin/AdminPopUpBanner')}
                   onPress={() => navigateTo('/admin/AdminPopUpBanner')}

@@ -51,7 +51,7 @@ export default function RootLayout() {
     return unsubscribe;
   }, []);
 
-  // --- FEATURE 2: CENTRALIZED SECURITY BOUNCER ---
+  // --- FEATURE 2: SECURITY BOUNCER FOR /admin/* ROUTES ---
   useEffect(() => {
     if (initializing) return;
 
@@ -59,6 +59,9 @@ export default function RootLayout() {
     // AdminLogin itself lives inside this same 'admin' folder, so it's excluded here —
     // otherwise a logged-out user visiting the login screen gets bounced straight back
     // out of it by this guard, in an infinite loop with Admin.tsx's own redirect.
+    // NOTE: this only covers routes under app/(drawer)/admin/. AdminChangePassword,
+    // AdminCreate, and SuperAdminCreate live directly under app/(drawer)/ and are NOT
+    // covered here — they each call useRequireRole/useRequireSuperAdmin themselves instead.
     const inAdminGroup = segments[0] === 'admin' && segments[1] !== 'AdminLogin';
 
     if (!user && inAdminGroup) {

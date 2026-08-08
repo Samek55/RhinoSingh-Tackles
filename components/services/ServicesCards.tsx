@@ -22,9 +22,9 @@ type Props = {
 };
 
 const truncateDescription = (description: string) => {
-  const words = description.split(' '); 
-  if (words.length > 7) {
-    return words.slice(0, 8).join(' ') + '...'; 
+  const words = description.split(' ');
+  if (words.length > 8) {
+    return words.slice(0, 8).join(' ') + '...';
   }
   return description; 
 };

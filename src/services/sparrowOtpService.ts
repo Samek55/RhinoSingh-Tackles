@@ -10,10 +10,19 @@ interface PendingOtp {
 
 export const OTP_TTL_MS = 5 * 60 * 1000; // codes are valid for 5 minutes
 export const RESEND_COOLDOWN_SECONDS = 30;
+export const MAX_OTP_ATTEMPTS = 5;
 
 const pendingOtps: Record<OtpFlow, PendingOtp | null> = {
   booking: null,
   helpbox: null,
+};
+
+// Wrong-code guesses against the current pending OTP, per flow. A 4-digit code
+// only has 10,000 possibilities, so without a cap this is brute-forceable
+// within the 5-minute expiry window.
+const failedAttempts: Record<OtpFlow, number> = {
+  booking: 0,
+  helpbox: 0,
 };
 
 // Tracks when a code was last (re)sent per flow so the UI can enforce a resend
@@ -71,6 +80,7 @@ export const sparrowOtpService = {
     pendingOtps[flow] = { ...pending, expiresAt: Date.now() + OTP_TTL_MS };
     lastSentAt[flow] = Date.now();
     lastPhone[flow] = pending.phone;
+    failedAttempts[flow] = 0;
   },
 
   // Survives OTP expiry, unlike getPendingOtp — lets "Resend Code" still target
@@ -93,6 +103,20 @@ export const sparrowOtpService = {
 
   clearPendingOtp: (flow: OtpFlow) => {
     pendingOtps[flow] = null;
+    failedAttempts[flow] = 0;
+  },
+
+  // Call after a wrong-code comparison. Once MAX_OTP_ATTEMPTS is reached, the
+  // pending code is invalidated so the caller can no longer verify against it
+  // and must request a new one.
+  registerFailedAttempt: (flow: OtpFlow): { remainingAttempts: number; lockedOut: boolean } => {
+    failedAttempts[flow] += 1;
+    const remainingAttempts = Math.max(0, MAX_OTP_ATTEMPTS - failedAttempts[flow]);
+    const lockedOut = remainingAttempts === 0;
+    if (lockedOut) {
+      pendingOtps[flow] = null;
+    }
+    return { remainingAttempts, lockedOut };
   },
 
   // Seconds remaining before "Resend Code" may be used again for this flow (0 = ready).
