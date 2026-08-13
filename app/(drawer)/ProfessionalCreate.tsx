@@ -15,54 +15,16 @@ import {
   signOut,
 } from "firebase/auth";
 
-import { auth } from "../../src/firebase/firebaseConfig";
+import { auth, getSecondaryAuth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header5 from "@/components/Header5Admin";
 import { getDatabase, ref, set } from "firebase/database";
 import { supabase } from "@/src/lib/supabase";
+import { fetchServicesMap } from "@/api/helper/fetchServicesID";
 import { heightPercentageToDP as hp } from "react-native-responsive-screen";
 
 type Role = "admin" | "career" | "user";
 const db = getDatabase();
-
-let servicesCache: Record<string, string> | null = null;
-let servicesPromise: Promise<Record<string, string>> | null = null;
-
-const fetchServicesMap = async (): Promise<Record<string, string>> => {
-  try {
-    if (servicesCache) return servicesCache;
-    if (servicesPromise) return servicesPromise;
-
-    servicesPromise = (async () => {
-      const { data, error } = await supabase
-        .from("services")
-        .select("id, name");
-
-      if (error) {
-        console.error("Supabase services fetch error:", error);
-        // Return an empty object instead of throwing to prevent application crash
-        return {};
-      }
-
-      const map: Record<string, string> = {};
-      data?.forEach((item: any) => {
-        const id = item?.id;
-        const name = item?.name;
-        if (id && name) {
-          map[id] = name;
-        }
-      });
-
-      servicesCache = map;
-      return map;
-    })();
-
-    return await servicesPromise;
-  } catch (error) {
-    console.log("Services map fetch error:", error);
-    return {};
-  }
-};
 
 export default function CreateProfessional() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -137,11 +99,14 @@ export default function CreateProfessional() {
           .filter(Boolean);
       }
 
-      // 🔐 Firebase Setup
+      // 🔐 Firebase Setup — created on an isolated secondary auth instance so this
+      // doesn't sign the current admin out of their own session (see
+      // getSecondaryAuth's comment in firebaseConfig.js).
       const email = `${cleanPhone}@rocketsingh.app`;
+      const secondaryAuth = getSecondaryAuth();
 
       const userCredential = await createUserWithEmailAndPassword(
-        auth,
+        secondaryAuth,
         email,
         cleanPin
       );
@@ -160,6 +125,10 @@ export default function CreateProfessional() {
         area: preferredAreaValues,
         createdAt: Date.now(),
       });
+
+      // End the secondary session immediately — it only ever exists to run the
+      // createUserWithEmailAndPassword call above without touching the caller's own.
+      await signOut(secondaryAuth);
 
       // 🔥 Conditional OneSignal Registration with Native Guard
       try {

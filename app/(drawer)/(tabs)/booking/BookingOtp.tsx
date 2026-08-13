@@ -22,6 +22,7 @@ import { notifyProfessionals } from '../../../../api/notifications';
 import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 import { sparrowOtpService } from '@/src/services/sparrowOtpService';
+import { toLocalDateString } from '@/src/utils/dateFormat';
 
 const { width, height } = Dimensions.get('window');
 
@@ -91,13 +92,15 @@ export default function BookingOtp() {
     }
   };
 
+  // Uses the local calendar day rather than UTC (India/Nepal are both
+  // UTC+5:30/+5:45, so converting to UTC first can roll the date back a day).
   const formatDate = (dateValue: any) => {
-    if (!dateValue) return new Date().toISOString().split('T')[0];
+    if (!dateValue) return toLocalDateString(new Date());
     const parsedDate = new Date(dateValue);
     // Fallback safe layer if string passing is corrupt or bad formatted
     return isNaN(parsedDate.getTime())
-      ? new Date().toISOString().split('T')[0]
-      : parsedDate.toISOString().split('T')[0];
+      ? toLocalDateString(new Date())
+      : toLocalDateString(parsedDate);
   };
 
   const handleResendCode = async () => {

@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { getContentTypeForExt } from "./fileContentType";
 
 export type FileItem = {
   uri: string;
@@ -30,7 +31,7 @@ export const uploadImageToSupabaseRoadBlockUpdated = async (
     const { error } = await supabase.storage
       .from("uploads")
       .upload(fileName, arrayBuffer, {
-        contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+        contentType: getContentTypeForExt(fileExt),
       });
 
     if (error) throw error;

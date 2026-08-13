@@ -18,6 +18,7 @@ const { width, height } = Dimensions.get('window');
 import { router, useLocalSearchParams } from 'expo-router';
 import Header2 from '@/components/Header3drawer';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
+import { notifyAdminHelpbox } from '@/api/notifications';
 import { sparrowOtpService } from '@/src/services/sparrowOtpService';
 
 const scaleFont = (size: number) => {
@@ -138,10 +139,13 @@ export default function HelpboxOTP() {
             }
 
             const booking = {
-                "phone": phone,
+                phone: phone,
+                date_created: new Date().toISOString(),
             };
 
             await createHelpboxSB(booking);
+
+            notifyAdminHelpbox(String(phone));
 
             sparrowOtpService.clearPendingOtp('helpbox');
 

@@ -25,6 +25,7 @@ import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 import { useCountry } from '@/src/context/countryContext';
 import { sparrowOtpService } from '@/src/services/sparrowOtpService';
+import { toLocalDateString } from '@/src/utils/dateFormat';
 
 const { width } = Dimensions.get('window');
 
@@ -67,13 +68,15 @@ export default function BookingDetails() {
       })
     : '';
 
-  // Helper function to format timestamp records cleanly
+  // Helper function to format timestamp records cleanly, using the local
+  // calendar day rather than UTC (India/Nepal are both UTC+5:30/+5:45, so
+  // converting to UTC first can roll the date back by one day).
   const formatDate = (dateValue: any) => {
-    if (!dateValue) return new Date().toISOString().split('T')[0];
+    if (!dateValue) return toLocalDateString(new Date());
     const parsedDate = new Date(dateValue);
-    return isNaN(parsedDate.getTime()) 
-      ? new Date().toISOString().split('T')[0] 
-      : parsedDate.toISOString().split('T')[0];
+    return isNaN(parsedDate.getTime())
+      ? toLocalDateString(new Date())
+      : toLocalDateString(parsedDate);
   };
 
   const handleSubmit = async () => {

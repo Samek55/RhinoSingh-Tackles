@@ -1,0 +1,4 @@
+project_id = "vwbpalyxbvzaczcqdqcm"
+
+[functions.send-otp]
+verify_jwt = true

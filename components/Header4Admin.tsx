@@ -3,9 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useCountry } from '@/src/context/countryContext';
 
 export default function Header4() {
   const navigation = useNavigation<any>();
+  const { countryInfo, toggleCountry } = useCountry();
 
   return (
     <>
@@ -31,16 +33,14 @@ export default function Header4() {
           </View>
 
           <View style={styles.right}>
-            <TouchableOpacity 
-              style={styles.notificationButton}
+            <TouchableOpacity
+              style={styles.flagButton}
               activeOpacity={0.7}
+              onPress={toggleCountry}
             >
-              <Image
-                source={require('../assets/header/right.png')}
-                style={styles.rightIcon}
-              />
+              <Text style={styles.flagEmoji}>{countryInfo.flag}</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.menuButton}
               onPress={() =>
@@ -130,42 +130,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginTop: -2,
   },
-  notificationButton: {
-    position: 'relative',
-    padding: 8,
+  flagButton: {
+    width: 41,
+    height: 41,
     borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
-  notificationBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#FF6B6B',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#064E3B',
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 4,
-  },
-  rightIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
+  flagEmoji: {
+    fontSize: 20,
   },
   menuButton: {
     padding: 4,

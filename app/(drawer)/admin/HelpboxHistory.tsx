@@ -180,7 +180,7 @@ export default function HelpboxHistory() {
                     <FlatList
                         data={filteredData}
                         renderItem={renderItem}
-                        keyExtractor={(item) => item.helpbox_uin}
+                        keyExtractor={(item, index) => item?.helpbox_uin ? item.helpbox_uin.toString() : index.toString()}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         contentContainerStyle={{ paddingBottom: hp('15%'), paddingHorizontal: wp('4%') }}

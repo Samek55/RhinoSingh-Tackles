@@ -12,7 +12,6 @@ import {
     StyleSheet,
     Alert,
 } from 'react-native';
-import PhoneIcon from '../../../assets/header/right.png';
 import EyeOffIcon from '../../../assets/icons/admin/eyeOff.png';
 import EyeOnIcon from '../../../assets/icons/admin/eyeOn.png';
 import AdminIcon from '../../../assets/icons/admin/admin2.png';
@@ -28,6 +27,7 @@ import Header4 from '@/components/Header4Admin';
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../../src/firebase/firebaseConfig";
 import { sanitizeTagKey } from "@/api/notifications";
+import { useCountry } from '@/src/context/countryContext';
 
 // 🛢️ Realtime Database Core Hooks
 import { getDatabase, ref, get } from "firebase/database";
@@ -40,6 +40,7 @@ const scaleFont = (size: number) => {
 };
 
 export default function AdminLogin() {
+    const { countryInfo } = useCountry();
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [phoneNumber, setphoneNumber] = useState<string>('');
 
@@ -217,7 +218,7 @@ export default function AdminLogin() {
 
                         {/* Phone Number Input */}
                         <View style={styles.inputContainer}>
-                            <Image source={PhoneIcon} style={styles.phoneIcon} />
+                            <Text style={styles.flagEmoji}>{countryInfo.flag}</Text>
                             <TextInput
                                 placeholder="Phone Number"
                                 placeholderTextColor={'rgba(108, 117, 125, 0.6)'}
@@ -423,9 +424,8 @@ const styles = StyleSheet.create({
         shadowRadius: 2,
         elevation: 1,
     },
-    phoneIcon: {
-        width: 25,
-        height: 25,
+    flagEmoji: {
+        fontSize: 22,
     },
     textInput: {
         fontSize: scaleFont(17),

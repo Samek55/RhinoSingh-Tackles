@@ -24,7 +24,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 
   const toggleItem = (item: string) => {
     if (item === 'All') {
-      onSelect(['All', ...options]);
+      onSelect(selectedItems.includes('All') ? [] : ['All', ...options]);
     } else {
       let newSelection = [...selectedItems];
       

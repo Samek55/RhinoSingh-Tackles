@@ -1,4 +1,5 @@
 import { supabase } from "@/src/lib/supabase";
+import { getContentTypeForExt } from "./fileContentType";
 
 export type FileItem = {
   uri: string;
@@ -30,7 +31,7 @@ export const uploadDocumentOnly = async (
     const { error: uploadError } = await supabase.storage
       .from("uploads")
       .upload(filePath, arrayBuffer, {
-        contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+        contentType: getContentTypeForExt(fileExt),
       });
 
     if (uploadError) throw uploadError;

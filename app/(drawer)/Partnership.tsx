@@ -37,14 +37,16 @@ interface ButtonProps {
   style?: any;
   textStyle?: any;
   onPress: () => void;
+  disabled?: boolean;
 }
 
-const Button = ({ children, style, textStyle, onPress }: ButtonProps) => {
+const Button = ({ children, style, textStyle, onPress, disabled }: ButtonProps) => {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
       style={style}
+      disabled={disabled}
     >
       <Text style={[styles.text, textStyle]}>
         {children}
@@ -82,6 +84,7 @@ export default function PartnershipScreen() {
 
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeInput, setActiveInput] = useState<string | null>(null);
 
   const clearAllFields = () => {
@@ -113,6 +116,8 @@ export default function PartnershipScreen() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     const cleanNumber = number.replace(/\s/g, '');
 
     if (!name.trim()) return Alert.alert('Validation Error', 'Full Name is required');
@@ -132,6 +137,7 @@ export default function PartnershipScreen() {
     if (selectCRCphotos.length === 0) return Alert.alert('Validation Error', 'Please upload CRC photos');
     if (!message.trim()) return Alert.alert('Validation Error', 'Message cannot be empty');
 
+    setIsSubmitting(true);
     setOverlayStatus('loading');
     setOverlayVisible(true);
 
@@ -163,6 +169,8 @@ export default function PartnershipScreen() {
     } catch (error) {
       setOverlayVisible(false);
       Alert.alert('Error', 'Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -360,6 +368,7 @@ export default function PartnershipScreen() {
               style={styles.buttonSubmit}
               textStyle={{ color: 'white', textAlign: 'center' }}
               onPress={handleSubmit}
+              disabled={isSubmitting}
             >
               Submit
             </Button>

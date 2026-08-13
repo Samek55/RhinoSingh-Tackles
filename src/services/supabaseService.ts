@@ -1,11 +1,5 @@
 // src/services/supabaseService.ts
-import { createClient } from '@supabase/supabase-js';
-
-// Replace with your actual Supabase credentials
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'your-supabase-url';
-const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-supabase-key';
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from '@/src/lib/supabase';
 
 export interface AnnouncementData {
   name: string;

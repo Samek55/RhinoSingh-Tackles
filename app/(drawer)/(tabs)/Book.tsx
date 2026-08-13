@@ -32,6 +32,7 @@ import ClearFormIcon from '../../../assets/icons/booking/clear.png';
 import FileUploadBox from '@/components/bookings/FileUploadBox';
 import { FileItem } from '../Partnership';
 import { uploadMultipleImagesForBooking } from '@/src/utils/fileUploadBooking';
+import { toLocalDateTimeString } from '@/src/utils/dateFormat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
@@ -207,7 +208,7 @@ export default function ServiceBookingScreen() {
         selectedPriority,
         selectedBudget,
         message: message.trim(),
-        date: date.toISOString(),
+        date: toLocalDateTimeString(date),
         fileUrls: JSON.stringify(fileUrls),
         bookingId: bookingId,
       },

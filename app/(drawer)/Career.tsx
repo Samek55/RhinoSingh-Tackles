@@ -30,12 +30,13 @@ import { uploadImageToSupabaseCareer } from '@/src/utils/uploadImageToSBCareer';
 
 const { width, height } = Dimensions.get('window');
 
-const Button = ({ children, style, textStyle, onPress }: any) => {
+const Button = ({ children, style, textStyle, onPress, disabled }: any) => {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.85}
       style={style}
+      disabled={disabled}
     >
       <Text style={[styles.text, textStyle]}>
         {children}
@@ -72,6 +73,7 @@ export default function CareerScreen() {
 
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<'loading' | 'success'>('loading');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Shared active focus state system mapping layout changes
   const [activeInput, setActiveInput] = useState<string | null>(null);
@@ -110,6 +112,8 @@ export default function CareerScreen() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     const cleanNumber = number.replace(/\s/g, '');
     const cleanEmergencyNumber = emergencyNumber.replace(/\s/g, '');
 
@@ -158,6 +162,7 @@ export default function CareerScreen() {
       return Alert.alert('Validation Error', 'Message is required');
     }
 
+    setIsSubmitting(true);
     setOverlayStatus('loading');
     setOverlayVisible(true);
 
@@ -192,6 +197,8 @@ export default function CareerScreen() {
       console.log(error);
       setOverlayVisible(false);
       Alert.alert('Error', 'Submission failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -400,6 +407,7 @@ export default function CareerScreen() {
               style={styles.buttonSubmit}
               textStyle={{ color: 'white', textAlign: 'center' }}
               onPress={handleSubmit}
+              disabled={isSubmitting}
             >
               Submit
             </Button>

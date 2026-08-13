@@ -15,6 +15,8 @@ export const fetchServicesMap = async (): Promise<Record<string, string>> => {
 
       if (error) {
         console.error("Supabase services fetch error:", error);
+        // Allow the next call to retry instead of caching this failure forever
+        servicesPromise = null;
         // Return an empty object instead of throwing to prevent application crash
         return {};
       }
@@ -35,6 +37,8 @@ export const fetchServicesMap = async (): Promise<Record<string, string>> => {
     return await servicesPromise;
   } catch (error) {
     console.log("Services map fetch error:", error);
+    // Allow the next call to retry instead of caching this failure forever
+    servicesPromise = null;
     return {};
   }
 };
