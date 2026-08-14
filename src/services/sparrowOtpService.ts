@@ -49,7 +49,7 @@ export const sparrowOtpService = {
   // calls Sparrow from a fixed server IP instead of the user's phone's carrier IP.
   sendOtp: async (fullPhone: string, otp: string, flow: OtpFlow, greetingName?: string): Promise<boolean> => {
     const { data, error } = await supabase.functions.invoke('send-otp', {
-      body: { to: fullPhone, otp, flow, greetingName },
+      body: { to: fullPhone, otp, purpose: flow, greetingName },
     });
 
     if (error) {

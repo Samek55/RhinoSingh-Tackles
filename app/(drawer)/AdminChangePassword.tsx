@@ -21,8 +21,8 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header5 from '@/components/Header5Admin';
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
-import { auth } from '@/src/firebase/firebaseConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { changeAdminPin } from '@/api/supabase/adminAuth';
 import { useRequireRole } from '@/hooks/useRequireRole';
 
 // Get screen dimensions for responsive layout
@@ -72,8 +72,8 @@ export default function AdminChangePassword() {
             return;
         }
 
-        const user = auth.currentUser;
-        if (!user || !user.email) {
+        const phone = await AsyncStorage.getItem('adminPhone');
+        if (!phone) {
             Alert.alert('Session Expired', 'Please log in again before changing your PIN.');
             router.replace('/admin/AdminLogin');
             return;
@@ -81,19 +81,24 @@ export default function AdminChangePassword() {
 
         setIsSubmitting(true);
         try {
-            const credential = EmailAuthProvider.credential(user.email, oldPassword);
-            await reauthenticateWithCredential(user, credential);
-            await updatePassword(user, newPassword);
+            const result = await changeAdminPin(phone, oldPassword, newPassword);
 
-            Alert.alert('Success', 'PIN updated successfully', [
-                { text: 'OK', onPress: () => router.push('/Admin') },
+            if (!result.success) {
+                Alert.alert('Error', result.message || 'Your current PIN is incorrect.');
+                return;
+            }
+
+            // A successful change invalidates every session for this account
+            // server-side, including this device's own — clear the now-stale
+            // local session too, rather than bouncing back into the app on a
+            // token that will 401 on the next real request.
+            await AsyncStorage.multiRemove(['adminPhone', 'adminRole', 'adminSessionToken']);
+
+            Alert.alert('Success', 'PIN updated successfully. Please log in again.', [
+                { text: 'OK', onPress: () => router.replace('/admin/AdminLogin') },
             ]);
         } catch (error: any) {
-            const message =
-                error?.code === 'auth/invalid-credential' || error?.code === 'auth/wrong-password'
-                    ? 'Your current PIN is incorrect.'
-                    : error?.message || 'Failed to update PIN. Please try again.';
-            Alert.alert('Error', message);
+            Alert.alert('Error', error?.message || 'Failed to update PIN. Please try again.');
         } finally {
             setIsSubmitting(false);
         }

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { router } from 'expo-router';
-import { getDatabase, ref, get } from 'firebase/database';
-import { auth } from '@/src/firebase/firebaseConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type AdminRole = 'career' | 'admin' | 'superadmin';
 
@@ -16,6 +15,13 @@ const DEFAULT_LANDING = {
 // any authenticated account (including a self-service "career" signup) can reach
 // every admin screen. Call this at the top of any screen that should be restricted
 // to a subset of roles, and don't render real content until `authorized` is true.
+//
+// This is a presence/UX check against locally-stored session state (set at
+// login by adminLogin() in api/supabase/adminAuth.ts), not a cryptographic
+// verification — the real enforcement for any privileged action happens
+// server-side, in each edge function's own verifyAdminSession() call. A
+// session deleted server-side (PIN reset elsewhere, deactivation, natural
+// expiry) won't be caught here until the first server call after it 401s.
 export function useRequireRole(allowedRoles: AdminRole[]) {
   const [authorized, setAuthorized] = useState(false);
   const [role, setRole] = useState<AdminRole | null>(null);
@@ -24,27 +30,25 @@ export function useRequireRole(allowedRoles: AdminRole[]) {
     let cancelled = false;
 
     const check = async () => {
-      const user = auth.currentUser;
-      if (!user) {
+      const [token, fetchedRole] = await Promise.all([
+        AsyncStorage.getItem('adminSessionToken'),
+        AsyncStorage.getItem('adminRole'),
+      ]);
+
+      if (cancelled) return;
+
+      if (!token) {
         router.replace('/admin/AdminLogin');
         return;
       }
 
-      try {
-        const db = getDatabase();
-        const snapshot = await get(ref(db, `users/${user.uid}`));
-        const fetchedRole: AdminRole | null = snapshot.exists() ? snapshot.val()?.role : null;
-
-        if (cancelled) return;
-
-        if (fetchedRole && allowedRoles.includes(fetchedRole)) {
-          setRole(fetchedRole);
-          setAuthorized(true);
-        } else {
-          router.replace(fetchedRole ? DEFAULT_LANDING[fetchedRole] : '/admin/AdminLogin');
-        }
-      } catch {
-        if (!cancelled) router.replace('/admin/AdminLogin');
+      if (fetchedRole && allowedRoles.includes(fetchedRole as AdminRole)) {
+        setRole(fetchedRole as AdminRole);
+        setAuthorized(true);
+      } else {
+        router.replace(fetchedRole && fetchedRole in DEFAULT_LANDING
+          ? DEFAULT_LANDING[fetchedRole as AdminRole]
+          : '/admin/AdminLogin');
       }
     };
 

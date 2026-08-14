@@ -11,6 +11,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import { router } from 'expo-router';
 import { area, positionAppliedFor, services } from '../../src/data/Data';
 import TextArea from '../../components/bookings/TextArea';
 import SubmitOverlay from '../../components/bookings/SubmitOverlay';
@@ -27,6 +28,7 @@ import Header3 from '@/components/Header3drawer';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { createCareerSupabase } from '@/api/supabase/createCareerSupabase';
 import { uploadImageToSupabaseCareer } from '@/src/utils/uploadImageToSBCareer';
+import { supabase } from '@/src/lib/supabase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -190,7 +192,20 @@ export default function CareerScreen() {
         status: 'Accepted'
       };
 
-      await createCareerSupabase(career);
+      const created = await createCareerSupabase(career);
+
+      // Only Nepal gets professional-login accounts (Lead Fee/Khalti marketplace
+      // is Nepal-only) — a failure here shouldn't block the career application
+      // itself from succeeding, so it's fire-and-forget rather than awaited into
+      // the try/catch's error path.
+      if (country === 'nepal' && created?.uin) {
+        supabase.functions
+          .invoke('create-professional-login', {
+            body: { fullName: name, phone: cleanNumber, workforceUin: created.uin },
+          })
+          .catch((err) => console.log('create-professional-login failed:', err));
+      }
+
       setOverlayStatus('success');
 
     } catch (error) {
@@ -224,6 +239,14 @@ export default function CareerScreen() {
       >
         <View style={[styles.formContainer, { marginBottom: hp('5%') }]}>
           <Text style={styles.title}>Join Now</Text>
+
+          {country === 'nepal' && (
+            <Pressable onPress={() => router.push('/professional/ProfessionalLogin' as any)}>
+              <Text style={styles.professionalLoginLink}>
+                Already applied? <Text style={{ fontWeight: '900' }}>Login here</Text>
+              </Text>
+            </Pressable>
+          )}
 
           <View style={styles.spacerGap} />
 
@@ -436,6 +459,12 @@ const styles = StyleSheet.create({
   },
   spacerGap: {
     marginVertical: 20
+  },
+  professionalLoginLink: {
+    marginTop: 8,
+    paddingLeft: 3,
+    fontSize: 13,
+    color: '#064E3B',
   },
   input: {
     borderWidth: 1.5, // Standard premium design blueprint thickness

@@ -1,7 +1,4 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { initializeAuth, getReactNativePersistence } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 
 export const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -10,30 +7,11 @@ export const firebaseConfig = {
   storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-    databaseURL:process.env.EXPO_PUBLIC_DATABASE_URL,
+  databaseURL: process.env.EXPO_PUBLIC_DATABASE_URL,
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-// ✅ Explicit type fix
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
-
-// Secondary, unpersisted app instance used only when an already-signed-in admin
-// creates *another* account. createUserWithEmailAndPassword() on the primary
-// `auth` above would sign the caller in as the brand-new account, silently
-// ending their own session — this isolated instance takes that side effect
-// away from the caller's session entirely.
-let secondaryAuth = null;
-export function getSecondaryAuth() {
-  if (!secondaryAuth) {
-    const secondaryApp = getApps().some((a) => a.name === "Secondary")
-      ? getApp("Secondary")
-      : initializeApp(firebaseConfig, "Secondary");
-    secondaryAuth = initializeAuth(secondaryApp, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
-  }
-  return secondaryAuth;
-}
+// Staff auth (career/admin/superadmin) moved to a Postgres phone+PIN system
+// (api/supabase/adminAuth.ts) — this module used to also export `auth` and
+// `getSecondaryAuth` for Firebase Auth, both now unused. Realtime Database,
+// Crashlytics, Messaging, etc. still sit on top of the default app below.
+export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);

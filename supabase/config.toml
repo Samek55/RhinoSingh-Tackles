@@ -2,3 +2,68 @@ project_id = "vwbpalyxbvzaczcqdqcm"
 
 [functions.send-otp]
 verify_jwt = true
+
+[functions.verify-otp]
+verify_jwt = true
+
+[functions.create-professional-login]
+verify_jwt = true
+
+[functions.professional-login]
+verify_jwt = true
+
+[functions.set-pin]
+verify_jwt = true
+
+# These moved from Firebase-token auth (verify_jwt=false workaround) to the
+# admin_sessions x-admin-session-token header — Authorization is free again
+# for Supabase's own anon-key check, so verify_jwt must be explicitly forced
+# back to true (omitting the entry does not reset a previously-deployed
+# override).
+[functions.approve-professional]
+verify_jwt = true
+
+[functions.reject-professional]
+verify_jwt = true
+
+[functions.toggle-professional-status]
+verify_jwt = true
+
+[functions.list-professionals]
+verify_jwt = true
+
+[functions.list-customers]
+verify_jwt = true
+
+[functions.toggle-customer-block]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
+
+[functions.list-staff]
+verify_jwt = true
+
+[functions.update-staff-role]
+verify_jwt = true
+
+# Professional-session-token-gated (not a Supabase JWT), same pattern as the
+# professional-login family.
+[functions.khalti-initiate-lead-payment]
+verify_jwt = true
+
+[functions.khalti-confirm-lead-unlock]
+verify_jwt = true
+
+[functions.list-leads]
+verify_jwt = true
+
+# Called by a Supabase Database Webhook (its own x-zoho-sync-secret header is
+# the real gate) and by manual retry with a staff session token — the webhook
+# path's own JWT behavior hasn't been independently confirmed, so this stays
+# off rather than risk a regression there. Everything else that moved from
+# Firebase-token auth to the admin_sessions x-admin-session-token header no
+# longer needs this override, since Authorization is free again for
+# Supabase's own anon-key check.
+[functions.zoho-invoice-sync]
+verify_jwt = false

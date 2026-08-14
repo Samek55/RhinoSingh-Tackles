@@ -9,6 +9,7 @@ import {
     Platform,
     StyleSheet,
     ActivityIndicator,
+    TextInput,
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
@@ -40,6 +41,8 @@ export default function BookingDetails() {
     const [submitting, setSubmitting] = useState(false); 
     const [openDropdown, setOpenDropdown] = useState(false);
     const [workStatus, setWorkStatus] = useState<StatusType>('Pending');
+    const [dealAmount, setDealAmount] = useState('');
+    const [dealNote, setDealNote] = useState('');
 
     const STATUS_OPTIONS: StatusType[] = ['Completed', 'Pending', 'Cancelled'];
 
@@ -90,8 +93,24 @@ export default function BookingDetails() {
                 return;
             }
 
+            // "Completed" requires customer OTP confirmation + completion photos
+            // (WorkCompletionOTP) rather than a plain status write — routes there
+            // instead of updating directly.
+            if (workStatus === 'Completed') {
+                router.push({ pathname: '/admin/WorkCompletionOTP', params: { id: String(id) } });
+                return;
+            }
+
+            // Recording a deal amount here is what triggers the Zoho invoice sync
+            // (webhook fires on deal_amount transitioning from null to a value) —
+            // only sent when the staff member actually entered one, so a plain
+            // status change with no deal terms never accidentally fires a sync.
+            const extra = dealAmount.trim()
+                ? { deal_amount: Number(dealAmount), deal_note: dealNote.trim() || undefined }
+                : undefined;
+
             console.log(`🔄 Sending true identifier to Supabase: ${trueDatabaseId}`);
-            await updateBookingStatusSB(trueDatabaseId, workStatus);
+            await updateBookingStatusSB(trueDatabaseId, workStatus, extra);
 
             // Only tell the customer their booking was "accepted" once a real, non-cancelled
             // status has actually been persisted — previously this fired from a button tap
@@ -249,6 +268,27 @@ export default function BookingDetails() {
                                     </View>
                                 )}
                             </View>
+
+                            {workStatus === 'Completed' && (
+                                <View style={{ marginTop: hp('2%') }}>
+                                    <Text style={styles.statusLabel}>Deal Amount (optional)</Text>
+                                    <TextInput
+                                        placeholder="e.g. 15000"
+                                        placeholderTextColor="rgba(0,0,0,0.35)"
+                                        style={styles.dealInput}
+                                        keyboardType="number-pad"
+                                        value={dealAmount}
+                                        onChangeText={(v) => setDealAmount(v.replace(/[^0-9.]/g, ''))}
+                                    />
+                                    <TextInput
+                                        placeholder="Deal note (optional)"
+                                        placeholderTextColor="rgba(0,0,0,0.35)"
+                                        style={[styles.dealInput, { marginTop: hp('1%') }]}
+                                        value={dealNote}
+                                        onChangeText={setDealNote}
+                                    />
+                                </View>
+                            )}
 
                             {/* ButtonContainer */}
                             <View style={styles.ButtonContainer}>
@@ -424,6 +464,16 @@ const styles = StyleSheet.create({
         marginTop: hp('3%'),
         fontWeight: '700',
         color: '#111',
+    },
+    dealInput: {
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.15)',
+        borderRadius: 10,
+        paddingHorizontal: wp('3%'),
+        paddingVertical: hp('1.2%'),
+        fontSize: hp('1.7%'),
+        color: '#000',
+        marginTop: hp('1%'),
     },
     ButtonContainer: {
         marginTop: hp('4%'),

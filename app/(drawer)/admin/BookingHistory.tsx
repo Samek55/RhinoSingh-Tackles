@@ -24,8 +24,6 @@ import {
     heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 
-import { signOut } from "firebase/auth";
-import { auth } from '@/src/firebase/firebaseConfig';
 import { useRequireRole } from '@/hooks/useRequireRole';
 
 export default function BookingHistory() {

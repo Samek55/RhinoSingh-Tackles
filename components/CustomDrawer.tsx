@@ -14,14 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
-import { auth } from '@/src/firebase/firebaseConfig';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { User } from 'firebase/auth';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// 🛢️ Realtime Database Core Hooks
-import { getDatabase, ref, get } from 'firebase/database';
+import { DeviceEventEmitter } from 'react-native';
+import { logoutAdmin } from '@/api/supabase/adminAuth';
 
 // Safe try/catch static import for OneSignal to avoid runtime crashes if not configured
 let OneSignal: any = null;
@@ -41,7 +37,7 @@ const FIXED_FONT_10_5 = Platform.OS === 'ios' ? Math.round(10.5 * SCALE_FACTOR) 
 export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [fbUser, setFbUser] = useState<User | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null); // ✨ Track DB Security Role Configuration
 
   const isActive = (route: string) => pathname === route;
@@ -65,45 +61,29 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+    const checkSession = async () => {
+      const [token, storedPhone, storedRole] = await AsyncStorage.multiGet(['adminSessionToken', 'adminPhone', 'adminRole']);
+      if (token[1]) {
         setIsLoggedIn(true);
-        setFbUser(user);
-
-        // 🔍 Fetch user record node from Realtime Database asynchronously
-        try {
-          const db = getDatabase();
-          const userSnapshot = await get(ref(db, `users/${user.uid}`));
-          if (userSnapshot.exists()) {
-            const userData = userSnapshot.val();
-            setRole(userData?.role || null);
-          } else {
-            setRole(null);
-          }
-        } catch (dbError) {
-          console.warn("Failed to reconcile user role payload snapshot:", dbError);
-          setRole(null);
-        }
+        setPhone(storedPhone[1]);
+        setRole(storedRole[1] || null);
       } else {
         setIsLoggedIn(false);
-        setFbUser(null);
+        setPhone(null);
         setRole(null);
       }
-    });
-    return unsubscribe;
+    };
+
+    checkSession();
+    const subscription = DeviceEventEmitter.addListener('authChanged', checkSession);
+    return () => subscription.remove();
   }, []);
 
   const handleLogout = async () => {
     try {
       _props.navigation.closeDrawer();
-      await signOut(auth);
-
-      // Clear local cache/flags
-      try {
-        await AsyncStorage.removeItem('userProfileSetupCompleted');
-      } catch (e) {
-        console.warn('Failed to clear storage flag:', e);
-      }
+      await logoutAdmin();
+      DeviceEventEmitter.emit('authChanged');
 
       // Handle OneSignal cleanup
       if (OneSignal) {
@@ -148,9 +128,9 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             style={styles.avatar}
           />
           <Text style={styles.name} numberOfLines={1}>RocketSingh</Text>
-          {fbUser && (
+          {phone && (
             <Text style={styles.firebaseAuthText} numberOfLines={1} ellipsizeMode="tail">
-              {fbUser.email || fbUser.phoneNumber || "Authenticated User"}
+              {phone}
             </Text>
           )}
         </View>

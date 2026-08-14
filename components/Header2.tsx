@@ -1,4 +1,4 @@
-import { TouchableOpacity, StyleSheet, View, Image, Text, StatusBar } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Image, Text, StatusBar, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
@@ -8,6 +8,12 @@ import { useCountry } from '@/src/context/countryContext';
 export default function Header2() {
   const navigation = useNavigation<any>();
   const { countryInfo, toggleCountry } = useCountry();
+
+  const openWhatsApp = () => {
+    if (!countryInfo.contactPhone) return;
+    const digits = (countryInfo.dialCode + countryInfo.contactPhone).replace(/\D/g, '');
+    Linking.openURL(`https://wa.me/${digits}`);
+  };
 
   return (
     <>
@@ -34,7 +40,15 @@ export default function Header2() {
 
           <View style={styles.right}>
             <TouchableOpacity
-              style={styles.flagButton}
+              style={styles.iconButton}
+              activeOpacity={0.7}
+              onPress={openWhatsApp}
+            >
+              <Ionicons name="logo-whatsapp" size={24} color="#fff" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.iconButton}
               activeOpacity={0.7}
               onPress={toggleCountry}
             >
@@ -42,15 +56,13 @@ export default function Header2() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.menuButton}
+              style={styles.iconButton}
               onPress={() =>
                 navigation.getParent()?.dispatch(DrawerActions.openDrawer())
               }
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <View style={styles.menuIconContainer}>
-                <Ionicons name="menu-outline" size={28} color='#fff' />
-              </View>
+              <Ionicons name="menu-outline" size={24} color='#fff' />
             </TouchableOpacity>
           </View>
         </View>
@@ -88,7 +100,7 @@ const styles = StyleSheet.create({
   right: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 0,
   },
   iconContainer: {
     position: 'relative',
@@ -130,34 +142,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginTop: -2,
   },
-  flagButton: {
-    width: 41,
-    height: 41,
-    borderRadius: 20,
+  iconButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
   },
   flagEmoji: {
     fontSize: 20,
-  },
-  menuButton: {
-    padding: 4,
-  },
-  menuIconContainer: {
-    width: 41,
-    height: 41,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    shadowColor: 'rgba(255,255,255,0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    lineHeight: 24,
+    textAlign: 'center',
   },
 });

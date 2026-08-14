@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
-import { getAuth, User } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase';
 
 export function useWorkforceProfile() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    const [fbUser, setFbUser] = useState<User | null>(null);
     const [idUin, setIdUin] = useState('');
     const [idProof, setIdProof] = useState<string[]>([]);
     const [resumeCv, setResumeCv] = useState<string[]>([]);
@@ -32,17 +31,7 @@ export function useWorkforceProfile() {
     useEffect(() => {
         const fetchWorkforceData = async () => {
             try {
-                const auth = getAuth();
-                const currentUser = auth.currentUser;
-
-                if (!currentUser) {
-                    setFetching(false);
-                    return;
-                }
-
-                setFbUser(currentUser);
-                const identifier = currentUser.email || currentUser.phoneNumber || '';
-                const matchToken = identifier.substring(0, 10);
+                const matchToken = await AsyncStorage.getItem('adminPhone');
 
                 if (!matchToken) {
                     setFetching(false);
@@ -57,8 +46,7 @@ export function useWorkforceProfile() {
                     .single();
 
                 if (error) {
-                    if (currentUser.email) setEmail(currentUser.email);
-                    if (currentUser.phoneNumber) setPhone(currentUser.phoneNumber);
+                    setPhone(matchToken);
                     console.log('Supabase match fallback:', error.message);
                 } else if (data) {
                     const newIdUin = data.uin || '';

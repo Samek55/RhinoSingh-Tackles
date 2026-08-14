@@ -10,34 +10,21 @@ import {
   ActivityIndicator,
 } from "react-native";
 
-import {
-  createUserWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-
-import { auth, getSecondaryAuth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header5 from "@/components/Header5Admin";
-import { getDatabase, ref, set } from "firebase/database";
 import { supabase } from "@/src/lib/supabase";
-import { fetchServicesMap } from "@/api/helper/fetchServicesID";
+import { invokeEdgeFunction } from "@/api/adminFunctionsClient";
+import { logoutAdmin } from "@/api/supabase/adminAuth";
 import { heightPercentageToDP as hp } from "react-native-responsive-screen";
-
-type Role = "admin" | "career" | "user";
-const db = getDatabase();
 
 export default function CreateProfessional() {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [pin, setPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  // 🔐 FORCED TO "career" DEFAULT BUT LOGICS REMAIN INTACT
-  const [selectedRole] = useState<Role>("career");
 
   const fetchCareerData = async (phone: string) => {
     const { data, error } = await supabase
       .from("workforce")
-      .select("*")
+      .select("full_name")
       .eq("phone", phone)
       .maybeSingle();
 
@@ -51,117 +38,40 @@ export default function CreateProfessional() {
 
   const createUser = async () => {
     const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
-    const cleanPin = pin.replace(/[^0-9]/g, "");
 
     if (cleanPhone.length !== 10) {
       Alert.alert("Error", "Phone number must be exactly 10 digits");
       return;
     }
 
-    if (cleanPin.length !== 6) {
-      Alert.alert("Error", "PIN must be exactly 6 digits");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      let localizedServiceNames: string[] = [];
-      let preferredAreaValues: string[] = [];
+      const careerRecord = await fetchCareerData(cleanPhone);
 
-      // 🔍 STRICT CHECK: Only check Supabase if role is exactly "career"
-      if (selectedRole === "career") {
-        const careerRecord = await fetchCareerData(cleanPhone);
-
-        if (!careerRecord) {
-          Alert.alert("Access Denied", "Please fill up the career form first.");
-          setIsLoading(false);
-          return;
-        }
-
-        // Always fallback to empty object if services map fails
-        const servicesMap = (await fetchServicesMap()) || {};
-
-        const expertiseIds: string[] = Array.isArray(careerRecord["area_of_expertise"])
-          ? careerRecord["area_of_expertise"]
-          : careerRecord["area_of_expertise"]
-            ? [careerRecord["area_of_expertise"]]
-            : [];
-
-        preferredAreaValues = Array.isArray(careerRecord["preferred_working_area"])
-          ? careerRecord["preferred_working_area"]
-          : careerRecord["preferred_working_area"]
-            ? [careerRecord["preferred_working_area"]]
-            : [];
-
-        localizedServiceNames = expertiseIds
-          .map((id) => servicesMap[id] || id)
-          .filter(Boolean);
+      if (!careerRecord) {
+        Alert.alert("Access Denied", "Please fill up the career form first.");
+        return;
       }
 
-      // 🔐 Firebase Setup — created on an isolated secondary auth instance so this
-      // doesn't sign the current admin out of their own session (see
-      // getSecondaryAuth's comment in firebaseConfig.js).
-      const email = `${cleanPhone}@rocketsingh.app`;
-      const secondaryAuth = getSecondaryAuth();
-
-      const userCredential = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        email,
-        cleanPin
+      // No PIN collected here — a superadmin approves the application
+      // (UserManagement's Professionals... err, Admins tab), which is what
+      // actually generates and SMS's the login PIN. A Pending applicant
+      // can't be trusted with a PIN nobody's told them yet.
+      const result = await invokeEdgeFunction<{ success: boolean; message?: string; status?: string }>(
+        'admin-create',
+        { phone: cleanPhone, fullName: careerRecord.full_name },
+        'Could not submit application'
       );
 
-      const user = userCredential.user;
-
-      if (!user?.uid) {
-        throw new Error("Auth failed - no UID generated");
+      if (!result.success) {
+        Alert.alert("Error", result.message || "Could not submit application");
+        return;
       }
 
-      await set(ref(db, `users/${user.uid}`), {
-        uid: user.uid,
-        phone: cleanPhone,
-        role: selectedRole,
-        services: localizedServiceNames,   // mapped via services table
-        area: preferredAreaValues,
-        createdAt: Date.now(),
-      });
-
-      // End the secondary session immediately — it only ever exists to run the
-      // createUserWithEmailAndPassword call above without touching the caller's own.
-      await signOut(secondaryAuth);
-
-      // 🔥 Conditional OneSignal Registration with Native Guard
-      try {
-        const OneSignalModule = require("react-native-onesignal");
-        const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
-
-        if (OneSignal && typeof OneSignal.login === "function") {
-          OneSignal.login(user.uid);
-
-          if (selectedRole === "user" && OneSignal.User?.addTags) {
-            OneSignal.User.addTags({
-              phone: cleanPhone,
-              role: "user",
-            });
-          } else if (selectedRole === "admin" && OneSignal.User?.addTags) {
-            OneSignal.User.addTags({
-              role: "admin",
-            });
-          } else if (selectedRole === "career" && OneSignal.User?.addTags) {
-            OneSignal.User.addTags({
-              role: "career",
-              phone: cleanPhone,
-            });
-          }
-        }
-      } catch (e) {
-        console.warn("OneSignal tag setup error bypassed safely:", e);
-      }
-
-      Alert.alert("Success", `${selectedRole} created successfully`);
+      Alert.alert("Application Submitted", "Your account is awaiting superadmin approval. You'll receive an SMS with your login PIN once approved.");
 
       setPhoneNumber("");
-      setPin("");
     } catch (error: any) {
       Alert.alert("Error", error.message);
     } finally {
@@ -171,7 +81,7 @@ export default function CreateProfessional() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logoutAdmin();
 
       // Safe Native Guard for Dynamic Logout Module
       try {
@@ -204,7 +114,7 @@ export default function CreateProfessional() {
             <View style={styles.headerTextContainer}>
               <Text style={styles.titleText}>Create Professional Account</Text>
               <Text style={styles.subtitleText}>
-                Register a new professional portal credential with a phone number and secure PIN.
+                Enter the phone number you used on the career application. A superadmin will approve your account and text you a login PIN.
               </Text>
             </View>
 
@@ -225,24 +135,6 @@ export default function CreateProfessional() {
               />
             </View>
 
-            {/* PIN INPUT */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Security PIN</Text>
-              <TextInput
-                placeholder="Enter 6-digit PIN"
-                placeholderTextColor="#94a3b8"
-                value={pin}
-                secureTextEntry
-                keyboardType="number-pad"
-                onChangeText={(v) => {
-                  const cleaned = v.replace(/[^0-9]/g, "");
-                  setPin(cleaned.slice(0, 6));
-                }}
-                style={styles.input}
-                maxLength={6}
-              />
-            </View>
-
             {/* ACTIONS */}
             <TouchableOpacity
               style={[styles.primaryButton, isLoading && styles.disabledButton]}
@@ -252,7 +144,7 @@ export default function CreateProfessional() {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.primaryButtonText}>Create Professional Account</Text>
+                <Text style={styles.primaryButtonText}>Submit Application</Text>
               )}
             </TouchableOpacity>
 
@@ -261,7 +153,7 @@ export default function CreateProfessional() {
             </TouchableOpacity>
           </View>
 
-        
+
         </View>
       </TouchableOpacity>
     </View>

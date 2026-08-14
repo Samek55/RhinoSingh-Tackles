@@ -2,9 +2,8 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../src/firebase/firebaseConfig'; // verify this matching path relative to root layout
+import { ActivityIndicator, View, DeviceEventEmitter } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CountryProvider } from '../src/context/countryContext';
 import { UserProvider } from '../src/context/userContext';
 
@@ -38,17 +37,23 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  // --- FEATURE 1: FIREBASE AUTH PERSISTENCE TRACKER ---
+  // --- FEATURE 1: STAFF SESSION PRESENCE TRACKER ---
+  // Not a live listener like Firebase's onAuthStateChanged — AsyncStorage has
+  // no such API, so login/logout screens emit 'authChanged' (DeviceEventEmitter)
+  // to trigger a re-check here instead of waiting for a remount.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
+    const checkSession = async () => {
+      const token = await AsyncStorage.getItem('adminSessionToken');
+      setUser(token ? { token } : null);
       setInitializing(false);
 
       // Hide Splashscreen once state evaluates on app boot
       SplashScreen.hideAsync().catch(() => { });
-    });
+    };
 
-    return unsubscribe;
+    checkSession();
+    const subscription = DeviceEventEmitter.addListener('authChanged', checkSession);
+    return () => subscription.remove();
   }, []);
 
   // --- FEATURE 2: SECURITY BOUNCER FOR /admin/* ROUTES ---

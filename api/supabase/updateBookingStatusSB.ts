@@ -2,14 +2,15 @@ import { supabase } from '@/src/lib/supabase';
 
 export const updateBookingStatusSB = async (
   bookingId: string | number,
-  status: string
+  status: string,
+  extra?: { deal_amount?: number; deal_note?: string }
 ) => {
   try {
     console.log(`🚀 Sending update to Supabase - Column: bookingid, Value: ${bookingId}, Status: ${status}`);
 
     const { data, error } = await supabase
-      .from('booking') 
-      .update({ status: status }) 
+      .from('booking')
+      .update({ status: status, ...extra })
       .eq('bookingid', bookingId) // Lowercase primary key column name
       .select();
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     Dimensions,
     StyleSheet,
     Alert,
+    DeviceEventEmitter,
 } from 'react-native';
 import EyeOffIcon from '../../../assets/icons/admin/eyeOff.png';
 import EyeOnIcon from '../../../assets/icons/admin/eyeOn.png';
@@ -24,13 +25,10 @@ import {
 } from 'react-native-responsive-screen';
 import { router } from 'expo-router';
 import Header4 from '@/components/Header4Admin';
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
-import { auth } from "../../../src/firebase/firebaseConfig";
+import { adminLogin } from '@/api/supabase/adminAuth';
+import { supabase } from '@/src/lib/supabase';
 import { sanitizeTagKey } from "@/api/notifications";
 import { useCountry } from '@/src/context/countryContext';
-
-// 🛢️ Realtime Database Core Hooks
-import { getDatabase, ref, get } from "firebase/database";
 
 const { width, height } = Dimensions.get('window');
 
@@ -88,106 +86,102 @@ export default function AdminLogin() {
     const handleSubmit = async () => {
         const pinPassword = otp.join(""); // Gather the 6-digit PIN here
 
+        if (!phoneNumber || pinPassword.length < 6) {
+            Alert.alert("Error", "Please enter phone and a valid 6-digit PIN");
+            return;
+        }
+
         try {
-            if (!phoneNumber || pinPassword.length < 6) {
-                Alert.alert("Error", "Please enter phone and a valid 6-digit PIN");
+            const result = await adminLogin(phoneNumber, pinPassword);
+
+            if (!result.success) {
+                if (result.status === 'Pending') {
+                    Alert.alert("Approval Pending", "Your account is awaiting superadmin approval.");
+                } else if (result.status === 'Rejected') {
+                    Alert.alert("Access Denied", "Your account application was not approved.");
+                } else if (result.status === 'Inactive') {
+                    Alert.alert("Account Disabled", "Your account has been deactivated. Contact a superadmin.");
+                } else {
+                    Alert.alert("Login Failed", result.message || "Invalid phone or PIN");
+                }
                 return;
             }
 
-            const email = `${phoneNumber}@rocketsingh.app`;
-            const userCredential = await signInWithEmailAndPassword(auth, email, pinPassword);
-            const user = userCredential.user;
+            const userRole = result.role;
 
-            if (user) {
-                // 🔍 Fetch user record node from Firebase Realtime Database
-                const db = getDatabase();
-                const userSnapshot = await get(ref(db, `users/${user.uid}`));
-
-                if (!userSnapshot.exists()) {
-                    await signOut(auth);
-                    Alert.alert("Access Denied", "No matching user profiles found in the local cloud directories.");
-                    return;
-                }
-
-                const userData = userSnapshot.val();
-                const userRole = userData?.role;
-
-                // 🟩 SET FLAG TO TRUE SAFELY WITH SOLID NATIVE GUARD
-                try {
-                    const AsyncStorageModule = require('@react-native-async-storage/async-storage');
-                    const AsyncStorage = AsyncStorageModule.default || AsyncStorageModule;
-                    if (AsyncStorage && typeof AsyncStorage.setItem === 'function') {
-                        await AsyncStorage.setItem('userProfileSetupCompleted', 'true');
+            // 🔥 Clean session link with safe Native module initialization check
+            try {
+                const OneSignalModule = require('react-native-onesignal');
+                const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
+                if (OneSignal && typeof OneSignal.login === 'function') {
+                    OneSignal.login(phoneNumber);
+                    // Cold starts reset this tag to '' (see app/_layout.tsx), and account
+                    // creation only sets it once at signup time — without re-setting it here
+                    // on every login, admins/professionals stop receiving role-targeted
+                    // pushes (new bookings, helpbox requests) after their first session.
+                    if (userRole && OneSignal.User?.addTag) {
+                        OneSignal.User.addTag('role', userRole);
                     }
-                } catch (storageError) {
-                    console.warn('Failed to save profile setup flag safely:', storageError);
-                }
 
-                // 🔥 Clean session link with safe Native module initialization check
-                try {
-                    const OneSignalModule = require('react-native-onesignal');
-                    const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
-                    if (OneSignal && typeof OneSignal.login === 'function') {
-                        OneSignal.login(user.uid);
-                        // Cold starts reset this tag to '' (see app/_layout.tsx), and account
-                        // creation only sets it once at signup time — without re-setting it here
-                        // on every login, admins/professionals stop receiving role-targeted
-                        // pushes (new bookings, helpbox requests) after their first session.
-                        if (userRole && OneSignal.User?.addTag) {
-                            OneSignal.User.addTag('role', userRole);
-                        }
+                    // Career accounts only get job-alert pushes for services/areas they
+                    // actually cover — rebuilt from their workforce application on every
+                    // login so it stays correct even if their profile is edited later.
+                    // (The old Firebase flow read these off the users/{uid} node, which
+                    // this table has no equivalent of — workforce is the real source.)
+                    if (userRole === 'career' && OneSignal.User?.addTags) {
+                        const { data: workforceRow } = await supabase
+                            .from('workforce')
+                            .select('area_of_expertise, preferred_working_area')
+                            .eq('phone', phoneNumber)
+                            .maybeSingle();
 
-                        // Professionals only get job-alert pushes for services/areas they
-                        // actually cover (see notifyProfessionals in api/notifications.ts) —
-                        // one boolean tag per service/area, rebuilt on every login so it stays
-                        // correct even if their profile is edited later.
-                        if (userRole === 'career' && OneSignal.User?.addTags) {
-                            const tags: Record<string, string> = {};
-                            const services: string[] = Array.isArray(userData?.services) ? userData.services : [];
-                            const areas: string[] = Array.isArray(userData?.area) ? userData.area : [];
-                            services.filter(Boolean).forEach((s) => { tags[`service_${sanitizeTagKey(s)}`] = 'true'; });
-                            areas.filter(Boolean).forEach((a) => { tags[`area_${sanitizeTagKey(a)}`] = 'true'; });
-                            if (Object.keys(tags).length > 0) {
-                                OneSignal.User.addTags(tags);
-                            }
+                        const tags: Record<string, string> = {};
+                        const services: string[] = Array.isArray(workforceRow?.area_of_expertise) ? workforceRow.area_of_expertise : [];
+                        const areas: string[] = Array.isArray(workforceRow?.preferred_working_area) ? workforceRow.preferred_working_area : [];
+                        services.filter(Boolean).forEach((s) => { tags[`service_${sanitizeTagKey(s)}`] = 'true'; });
+                        areas.filter(Boolean).forEach((a) => { tags[`area_${sanitizeTagKey(a)}`] = 'true'; });
+                        if (Object.keys(tags).length > 0) {
+                            OneSignal.User.addTags(tags);
                         }
                     }
-                } catch (e) {
-                    console.warn('OneSignal registration linkage bypassed safely:', e);
                 }
-
-                // 1. Determine the message based on the role
-                const roleLabels: { [key: string]: string } = {
-                    career: "🚀 Welcome back, Professional! Let's get to work.",
-                    admin: "🛡️ Welcome, Admin! System dashboard ready.",
-                    superadmin: "👑 Welcome, SuperAdmin! Orchestration mode enabled."
-                };
-
-                const welcomeMessage = roleLabels[userRole] || "Welcome back!";
-
-                Alert.alert(
-                    "Login Successful",
-                    welcomeMessage,
-                    [
-                        {
-                            text: "Let's Go",
-                            onPress: () => {
-                                // 🔀 DYNAMIC SECURITY ROLE ROUTING MATRIX
-                                if (userRole === "career") {
-                                    router.push('/admin/BookingHistory');
-                                } else if (userRole === "admin") {
-                                    router.push('/admin/HelpboxHistory');
-                                } else if (userRole === "superadmin") {
-                                    router.push('/admin/ProfessionalHistory');
-                                } else {
-                                    signOut(auth);
-                                    Alert.alert("Error", "Unauthorized account categorization mapping configuration.");
-                                }
-                            }
-                        }
-                    ]
-                );
+            } catch (e) {
+                console.warn('OneSignal registration linkage bypassed safely:', e);
             }
+
+            // Tells app/_layout.tsx and CustomDrawer.tsx to re-read the new session
+            // state — there's no live AsyncStorage listener like Firebase's
+            // onAuthStateChanged, so this is the equivalent signal.
+            DeviceEventEmitter.emit('authChanged');
+
+            // 1. Determine the message based on the role
+            const roleLabels: { [key: string]: string } = {
+                career: "🚀 Welcome back, Professional! Let's get to work.",
+                admin: "🛡️ Welcome, Admin! System dashboard ready.",
+                superadmin: "👑 Welcome, SuperAdmin! Orchestration mode enabled."
+            };
+
+            const welcomeMessage = roleLabels[userRole || ''] || "Welcome back!";
+
+            Alert.alert(
+                "Login Successful",
+                welcomeMessage,
+                [
+                    {
+                        text: "Let's Go",
+                        onPress: () => {
+                            // 🔀 DYNAMIC SECURITY ROLE ROUTING MATRIX
+                            if (userRole === "career") {
+                                router.push('/admin/BookingHistory');
+                            } else if (userRole === "admin") {
+                                router.push('/admin/HelpboxHistory');
+                            } else if (userRole === "superadmin") {
+                                router.push('/admin/ProfessionalHistory');
+                            }
+                        }
+                    }
+                ]
+            );
 
         } catch (error: any) {
             console.log("Login error:", error.message);
@@ -276,7 +270,7 @@ export default function AdminLogin() {
                             <TouchableOpacity>
                                 <CustomCheckbox />
                             </TouchableOpacity>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push('/admin/AdminForgotPin' as any)}>
                                 <Text style={styles.btnText}>Forgot PIN?</Text>
                             </TouchableOpacity>
                         </View>

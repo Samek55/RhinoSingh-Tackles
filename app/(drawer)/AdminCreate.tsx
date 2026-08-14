@@ -10,23 +10,18 @@ import {
     ActivityIndicator,
 } from "react-native";
 
-import {
-    createUserWithEmailAndPassword,
-    signOut,
-} from "firebase/auth";
-
-import { auth, getSecondaryAuth } from "../../src/firebase/firebaseConfig";
 import { router } from "expo-router";
 import Header5 from "@/components/Header5Admin";
-import { getDatabase, ref, set } from "firebase/database";
 import { heightPercentageToDP as hp } from "react-native-responsive-screen";
 import { useRequireSuperAdmin } from "@/hooks/useRequireSuperAdmin";
+import { invokeEdgeFunction } from "@/api/adminFunctionsClient";
+import { logoutAdmin } from "@/api/supabase/adminAuth";
 
-type Role = "admin" | "career" | "user";
-const db = getDatabase();
+type Role = "admin" | "career" | "superadmin";
 
 export default function CreateAdmin() {
     const authorized = useRequireSuperAdmin();
+    const [fullName, setFullName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [pin, setPin] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -42,6 +37,11 @@ export default function CreateAdmin() {
         const cleanPhone = phoneNumber.replace(/[^0-9]/g, "");
         const cleanPin = pin.replace(/[^0-9]/g, "");
 
+        if (!fullName.trim()) {
+            Alert.alert("Error", "Full name is required");
+            return;
+        }
+
         if (cleanPhone.length !== 10) {
             Alert.alert("Error", "Phone number must be exactly 10 digits");
             return;
@@ -55,59 +55,21 @@ export default function CreateAdmin() {
         setIsLoading(true);
 
         try {
-            // 🔐 Firebase Setup — created on an isolated secondary auth instance so this
-            // doesn't sign the current superadmin out of their own session (see
-            // getSecondaryAuth's comment in firebaseConfig.js).
-            const email = `${cleanPhone}@rocketsingh.app`;
-            const secondaryAuth = getSecondaryAuth();
-
-            const userCredential = await createUserWithEmailAndPassword(
-                secondaryAuth,
-                email,
-                cleanPin
+            const result = await invokeEdgeFunction<{ success: boolean; message?: string }>(
+                'admin-create',
+                { phone: cleanPhone, fullName: fullName.trim(), pin: cleanPin, role: selectedRole },
+                'Could not create account',
+                { requireSession: true }
             );
 
-            const user = userCredential.user;
-
-            if (!user?.uid) {
-                throw new Error("Auth failed - no UID generated");
-            }
-
-            // Save direct to database without waiting for career lookups
-            await set(ref(db, `users/${user.uid}`), {
-                uid: user.uid,
-                phone: cleanPhone,
-                role: selectedRole,
-                services: [],
-                area: [],
-                createdAt: Date.now(),
-            });
-
-            // End the secondary session immediately — it only ever exists to run the
-            // createUserWithEmailAndPassword call above without touching the caller's own.
-            await signOut(secondaryAuth);
-
-            // 🔥 Conditional OneSignal Registration with Admin Payload Mapping
-            try {
-                const OneSignalModule = require("react-native-onesignal");
-                const OneSignal = OneSignalModule.OneSignal || OneSignalModule.default;
-
-                if (OneSignal && typeof OneSignal.login === "function") {
-                    OneSignal.login(user.uid);
-
-                    if (OneSignal.User?.addTags) {
-                        OneSignal.User.addTags({
-                            role: "admin",
-                            phone: cleanPhone,
-                        });
-                    }
-                }
-            } catch (e) {
-                console.warn("OneSignal tag setup error bypassed safely:", e);
+            if (!result.success) {
+                Alert.alert("Error", result.message || "Could not create account");
+                return;
             }
 
             Alert.alert("Success", `${selectedRole} account created successfully`);
 
+            setFullName("");
             setPhoneNumber("");
             setPin("");
         } catch (error: any) {
@@ -119,7 +81,7 @@ export default function CreateAdmin() {
 
     const handleLogout = async () => {
         try {
-            await signOut(auth);
+            await logoutAdmin();
 
             // Safe Native Guard for Dynamic Logout Module
             try {
@@ -154,6 +116,18 @@ export default function CreateAdmin() {
                             <Text style={styles.subtitleText}>
                                 Register a new admin portal credential instantly with a phone number and secure PIN.
                             </Text>
+                        </View>
+
+                        {/* FULL NAME INPUT */}
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Full Name</Text>
+                            <TextInput
+                                placeholder="Enter full name"
+                                placeholderTextColor="#94a3b8"
+                                value={fullName}
+                                onChangeText={setFullName}
+                                style={styles.input}
+                            />
                         </View>
 
                         {/* PHONE INPUT */}
