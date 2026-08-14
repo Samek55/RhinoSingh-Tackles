@@ -5,16 +5,15 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  ScrollView,
   Alert,
   Platform,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DeviceEventEmitter } from 'react-native';
 import { logoutAdmin } from '@/api/supabase/adminAuth';
@@ -27,27 +26,18 @@ try {
   console.warn('OneSignal module not available dynamically');
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SCALE_FACTOR = SCREEN_WIDTH / 375;
-const FIXED_FONT_19 = Platform.OS === 'ios' ? Math.round(19 * SCALE_FACTOR) : Math.round(19 * SCALE_FACTOR) - 1;
-const FIXED_FONT_18 = Platform.OS === 'ios' ? Math.round(18 * SCALE_FACTOR) : Math.round(18 * SCALE_FACTOR) - 1;
-const FIXED_FONT_13_5 = Platform.OS === 'ios' ? Math.round(13.5 * SCALE_FACTOR) : Math.round(13.5 * SCALE_FACTOR) - 1;
-const FIXED_FONT_10_5 = Platform.OS === 'ios' ? Math.round(10.5 * SCALE_FACTOR) : Math.round(10.5 * SCALE_FACTOR) - 1;
+const { height: SCREEN_H } = Dimensions.get('window');
 
 export default function CustomDrawer(_props: DrawerContentComponentProps) {
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [phone, setPhone] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null); // ✨ Track DB Security Role Configuration
+  const [role, setRole] = useState<string | null>(null); // Tracks DB security role
 
   const isActive = (route: string) => pathname === route;
 
   const navigateTo = (route: any) => {
-    // Close drawer
     _props.navigation.closeDrawer();
-
-    // Use requestAnimationFrame to ensure the state update 
-    // or navigation occurs after the current frame/animation
     requestAnimationFrame(() => {
       setTimeout(() => {
         try {
@@ -56,7 +46,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
           console.error('Navigation error:', error);
           router.replace(route);
         }
-      }, 0); // Keep the delay if you need to wait for the drawer animation
+      }, 0);
     });
   };
 
@@ -85,7 +75,6 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
       await logoutAdmin();
       DeviceEventEmitter.emit('authChanged');
 
-      // Handle OneSignal cleanup
       if (OneSignal) {
         try {
           OneSignal.logout();
@@ -94,7 +83,6 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
         }
       }
 
-      // Catchy Logout Alert
       Alert.alert(
         "Session Ended",
         "You have been securely signed out. See you again soon! 👋",
@@ -102,9 +90,6 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
           {
             text: "OK",
             onPress: () => {
-              // Use requestAnimationFrame to ensure the navigation 
-              // happens immediately after the UI finishes processing 
-              // the alert dismissal.
               requestAnimationFrame(() => {
                 router.replace('/Home');
               });
@@ -117,41 +102,41 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
       Alert.alert("Logout Failed", "We encountered an issue signing you out. Please try again.");
     }
   };
+
   return (
     <SafeAreaView style={styles.wrapper} edges={['top', 'bottom']}>
       <View style={styles.card}>
 
-        {/* PROFILE SECTION */}
-        <View style={styles.profileBox}>
-          <Image
-            source={require('../assets/images/icon.png')}
-            style={styles.avatar}
-          />
-          <Text style={styles.name} numberOfLines={1}>RocketSingh</Text>
-          {phone && (
-            <Text style={styles.firebaseAuthText} numberOfLines={1} ellipsizeMode="tail">
-              {phone}
-            </Text>
-          )}
-        </View>
+        {/* PROFILE HEADER */}
+        <LinearGradient colors={['#0B6B4F', '#064E3B']} style={styles.profileHeader}>
+          <View style={styles.avatarWrapper}>
+            <Image
+              source={require('../assets/images/icon.png')}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          </View>
+          <Text style={styles.brandName} numberOfLines={1}>RocketSingh</Text>
+          <Text style={styles.brandTagline} numberOfLines={1} ellipsizeMode="tail">
+            {phone || 'Express Home Service'}
+          </Text>
+        </LinearGradient>
 
         {/* MENU */}
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.menu}
-        >
-          {/* TOP SECTION */}
+        <View style={styles.menu}>
           <MenuItem
             icon={isActive('/Home') ? "home" : "home-outline"}
             label="Home"
             active={isActive('/Home')}
             onPress={() => navigateTo('/Home')}
+            compact={!isLoggedIn}
           />
           <MenuItem
             icon={isActive('/Service') ? "construct" : "construct-outline"}
             label="Services"
             active={isActive('/Service')}
             onPress={() => navigateTo('/Service')}
+            compact={!isLoggedIn}
           />
           {!isLoggedIn && (
             <MenuItem
@@ -159,6 +144,7 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
               label="Book a Service"
               active={isActive('/Book')}
               onPress={() => navigateTo('/Book')}
+              compact
             />
           )}
           <MenuItem
@@ -166,20 +152,18 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
             label="About"
             active={isActive('/About')}
             onPress={() => navigateTo('/About')}
+            compact={!isLoggedIn}
           />
           <MenuItem
             icon={isActive('/Contact') ? "call" : "call-outline"}
             label="Contact"
             active={isActive('/Contact')}
             onPress={() => navigateTo('/Contact')}
+            compact={!isLoggedIn}
           />
 
-          <View style={styles.divider} />
-
-          {/* 🔀 MIDDLE SECTION: CONDITIONAL STRUCTURAL SECURITY ROLE LAYOUTS */}
           {isLoggedIn ? (
             <>
-              {/* Common Base Item across all authenticated entities */}
               <MenuItem
                 icon={isActive('/admin/BookingHistory') ? "calendar" : "calendar-outline"}
                 label="View Booking"
@@ -187,43 +171,44 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
                 onPress={() => navigateTo('/admin/BookingHistory')}
               />
 
-              {/* 🛑 Admin Exclusive Node */}
               {role === "admin" && (
                 <>
-                <MenuItem
-                  icon={isActive('/admin/HelpboxHistory') ? "help-circle" : "help-circle-outline"}
-                  label="View Helpbox History"
-                  active={isActive('/admin/HelpboxHistory')}
-                  onPress={() => navigateTo('/admin/HelpboxHistory')}
-                />
-                 <MenuItem
-                  icon={isActive('/admin/AdminPopUpBanner') ? "information-circle" : "information-circle-outline"}
-                  label="Push PopUp"
-                  active={isActive('/admin/AdminPopUpBanner')}
-                  onPress={() => navigateTo('/admin/AdminPopUpBanner')}
-                />
+                  <MenuItem
+                    icon={isActive('/admin/HelpboxHistory') ? "help-circle" : "help-circle-outline"}
+                    label="Helpbox History"
+                    active={isActive('/admin/HelpboxHistory')}
+                    onPress={() => navigateTo('/admin/HelpboxHistory')}
+                    compact
+                  />
+                  <MenuItem
+                    icon={isActive('/admin/AdminPopUpBanner') ? "information-circle" : "information-circle-outline"}
+                    label="Push PopUp"
+                    active={isActive('/admin/AdminPopUpBanner')}
+                    onPress={() => navigateTo('/admin/AdminPopUpBanner')}
+                    compact
+                  />
                 </>
               )}
 
-              {/* 🛑 SuperAdmin Orchestration Nodes */}
               {role === "superadmin" && (
                 <>
                   <MenuItem
                     icon={isActive('/admin/HelpboxHistory') ? "help-circle" : "help-circle-outline"}
-                    label="View Helpbox History"
+                    label="Helpbox History"
                     active={isActive('/admin/HelpboxHistory')}
                     onPress={() => navigateTo('/admin/HelpboxHistory')}
+                    compact
                   />
                   <MenuItem
                     icon={isActive('/admin/ProfessionalHistory') ? "people" : "people-outline"}
-                    label="View Professional History"
+                    label="Professional History"
                     active={isActive('/admin/ProfessionalHistory')}
                     onPress={() => navigateTo('/admin/ProfessionalHistory')}
+                    compact
                   />
                 </>
               )}
 
-              {/* Common Trailing Items across all authenticated profiles */}
               <MenuItem
                 icon={isActive('/admin/ViewNotifications') ? "notifications" : "notifications-outline"}
                 label="Notifications"
@@ -231,7 +216,6 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
                 onPress={() => navigateTo('/admin/ViewNotifications')}
               />
 
-              {/* 🛑 Hide Update Profile for Admin and SuperAdmin Roles */}
               {role !== "admin" && role !== "superadmin" && (
                 <MenuItem
                   icon={isActive('/admin/UpdateProfile') ? "person-circle" : "person-circle-outline"}
@@ -248,48 +232,47 @@ export default function CustomDrawer(_props: DrawerContentComponentProps) {
                 label="Become a Partner"
                 active={isActive('/Partnership')}
                 onPress={() => navigateTo('/Partnership')}
+                compact
               />
               <MenuItem
                 icon={isActive('/Career') ? "briefcase" : "briefcase-outline"}
                 label="Join as a Professional"
                 active={isActive('/Career')}
                 onPress={() => navigateTo('/Career')}
+                compact
               />
               <MenuItem
                 icon={isActive('/FAQs') ? "help-circle" : "help-circle-outline"}
                 label="FAQs"
                 active={isActive('/FAQs')}
                 onPress={() => navigateTo('/FAQs')}
+                compact
               />
               <MenuItem
                 icon={isActive('/Glossary') ? "book" : "book-outline"}
                 label="Glossary"
                 active={isActive('/Glossary')}
                 onPress={() => navigateTo('/Glossary')}
+                compact
               />
             </>
           )}
+        </View>
 
-          <View style={styles.dividerAdmin} />
-
-          {/* BOTTOM AUTH BUTTON */}
+        {/* BOTTOM AUTH BUTTON */}
+        <View style={styles.authWrapper}>
           {isLoggedIn ? (
-            <MenuItem
-              icon="log-out-outline"
-              label="Log Out"
-              active={false}
-              onPress={handleLogout}
-              isLogout={true}
-            />
+            <TouchableOpacity style={styles.authBtn} onPress={handleLogout} activeOpacity={0.85}>
+              <Ionicons name="log-out-outline" size={16} color="#fff" />
+              <Text style={styles.authBtnText}>Log Out</Text>
+            </TouchableOpacity>
           ) : (
-            <MenuItem
-              icon={isActive('/admin/AdminLogin') ? "shield-checkmark-outline" : "shield-checkmark-outline"}
-              label="Admin Login"
-              active={false}
-              onPress={() => navigateTo('/admin/AdminLogin')}
-            />
+            <TouchableOpacity style={styles.authBtn} onPress={() => navigateTo('/admin/AdminLogin')} activeOpacity={0.85}>
+              <Ionicons name="shield-checkmark-outline" size={16} color="#fff" />
+              <Text style={styles.authBtnText}>Admin Login</Text>
+            </TouchableOpacity>
           )}
-        </ScrollView>
+        </View>
 
       </View>
     </SafeAreaView>
@@ -302,177 +285,157 @@ type MenuItemProps = {
   label: string;
   onPress: () => void;
   active: boolean;
-  isLogout?: boolean;
+  compact?: boolean;
 };
 
-/* MENU ITEM SUB-COMPONENT */
-const MenuItem = React.memo(({ icon, label, onPress, active, isLogout }: MenuItemProps) => {
-  const isAdminButton = label === "Admin Login";
-
-  const getIconColor = () => {
-    if (active) return '#059669';
-    if (isLogout) return '#EF4444';
-    if (isAdminButton) return '#FFFFFF'; // White icon for admin button
-    return '#6B7280';
-  };
-
+const MenuItem = React.memo(({ icon, label, onPress, active, compact }: MenuItemProps) => {
   return (
     <TouchableOpacity
-      style={[
-        styles.item,
-        active && styles.itemActive,
-        isAdminButton && styles.adminButton
-      ]}
+      style={[styles.item, active && styles.itemActive, compact && styles.itemCompact]}
       onPress={onPress}
-      activeOpacity={0.65}
+      activeOpacity={0.7}
     >
-      {active && <View style={styles.activeIndicator} />}
-      <Ionicons
-        name={icon}
-        size={FIXED_FONT_19}
-        color={getIconColor()}
-        style={[
-          active ? styles.iconActive : null,
-          isAdminButton && { marginRight: -wp('1%') } // Pulls icon slightly closer to text
-        ]}
-      />
-      <Text style={[
-        styles.label,
-        active && styles.labelActive,
-        isLogout && styles.labelLogout,
-        isAdminButton && styles.adminButtonText // White text for button
-      ]}>
+      <View style={[styles.iconBox, active && styles.iconBoxActive, compact && styles.iconBoxCompact]}>
+        <Ionicons name={icon} size={compact ? 17 : 20} color={active ? '#059669' : '#6B7280'} />
+      </View>
+      <Text style={[styles.label, active && styles.labelActive, compact && styles.labelCompact]} numberOfLines={1}>
         {label}
       </Text>
+      {active && <View style={styles.activeBar} />}
     </TouchableOpacity>
   );
 });
+
 /* STYLES */
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: 'transparent'
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
   },
   card: {
-    flex: 1,
+    height: SCREEN_H * 0.90,
     backgroundColor: '#fff',
-    borderRadius: wp('6%'),
-    margin: wp('2.5%'),
+    borderRadius: 30,
+    marginHorizontal: 10,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.15,
         shadowRadius: 12,
       },
       android: {
-        elevation: 5,
+        elevation: 10,
       }
     })
   },
-  profileBox: {
-    backgroundColor: '#064E3B',
-    paddingVertical: hp('2%'),
-    paddingHorizontal: wp('5%'),
+  profileHeader: {
+    paddingTop: 14,
+    paddingBottom: 12,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: hp('1.5%')
+  },
+  avatarWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.6)',
+    overflow: 'hidden',
+    marginBottom: 6,
+    backgroundColor: '#fff',
   },
   avatar: {
-    width: Math.min(hp('7.5%'), 70),
-    height: Math.min(hp('7.5%'), 70),
-    borderRadius: Math.min(hp('7.5%'), 70) / 2,
-    marginBottom: 10
+    width: '100%',
+    height: '100%',
   },
-  name: {
-    fontSize: FIXED_FONT_18,
-    fontWeight: '700',
+  brandName: {
+    fontSize: 17,
+    fontWeight: '800',
     color: '#fff',
-    textAlign: 'center',
-    marginBottom: 8
+    letterSpacing: 0.3,
+  },
+  brandTagline: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 2,
+    marginBottom: 4,
   },
   menu: {
-    paddingHorizontal: wp('3.5%'),
-    paddingBottom: hp('3%')
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    justifyContent: 'space-evenly',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: hp('1.2%'),
-    paddingHorizontal: wp('4%'),
-    borderRadius: 12,
-    marginBottom: 6,
-    position: 'relative',
-    backgroundColor: 'transparent',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 14,
   },
   itemActive: {
     backgroundColor: '#ECFDF5',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#059669',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 1,
-      }
-    })
   },
-  activeIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: '25%',
-    bottom: '25%',
-    width: 4,
-    backgroundColor: '#059669',
-    borderTopRightRadius: 4,
-    borderBottomRightRadius: 4,
+  itemCompact: {
+    paddingVertical: 3,
   },
-  iconActive: {
-    transform: [{ scale: 1.05 }],
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 13,
+  },
+  iconBoxActive: {
+    backgroundColor: '#C9E8DE',
+  },
+  iconBoxCompact: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    marginRight: 9,
   },
   label: {
-    marginLeft: wp('4%'),
-    fontSize: FIXED_FONT_13_5,
+    fontSize: 15,
     fontWeight: '500',
-    color: '#4B5563'
+    color: '#4B5563',
+    flex: 1,
   },
   labelActive: {
     color: '#047857',
-    fontWeight: '700'
+    fontWeight: '700',
   },
-  labelLogout: {
-    color: '#EF4444',
-    fontWeight: '600'
+  labelCompact: {
+    fontSize: 13.5,
   },
-  divider: {
+  activeBar: {
+    width: 3,
+    height: 20,
+    borderRadius: 2,
+    backgroundColor: '#059669',
+  },
+  authWrapper: {
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderColor: '#ddd',
-    marginVertical: hp('1.5%'),
-    marginHorizontal: wp('2%'),
+    borderTopColor: '#eee',
   },
-    dividerAdmin: {
-    borderColor: '#ddd',
-    marginVertical: hp('1%'),
-    marginHorizontal: wp('2%'),
-  },
-  firebaseAuthText: {
-    fontSize: FIXED_FONT_10_5,
-    color: '#A7F3D0',
-    fontWeight: '600',
-    textAlign: 'center'
-  },
-
-  adminButton: {
-    backgroundColor: '#064E3B',
-    borderRadius: 12,
-    flexDirection: 'row', // Ensure items are aligned in a row
-    justifyContent: 'center', // Centers the content block
+  authBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: hp('1.5%'), // Slightly reduced vertical padding
-    marginTop: hp('0.5%'),
+    justifyContent: 'center',
+    gap: 7,
+    backgroundColor: '#064E3B',
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 20,
     ...Platform.select({
       ios: {
         shadowColor: '#064E3B',
@@ -485,9 +448,10 @@ const styles = StyleSheet.create({
       }
     })
   },
-  adminButtonText: {
-    color: '#FFFFFF',
+  authBtnText: {
+    fontSize: 13.5,
     fontWeight: '700',
-    marginLeft: wp('2%'), // Reduced margin specifically for Admin Login text
+    color: '#fff',
+    letterSpacing: 0.3,
   },
 });

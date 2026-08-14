@@ -31,8 +31,8 @@ export default function Header3() {
           </View>
 
           <View style={styles.right}>
-            <TouchableOpacity 
-              style={styles.notificationButton}
+            <TouchableOpacity
+              style={styles.iconButton}
               activeOpacity={0.7}
             >
               <Image
@@ -40,17 +40,15 @@ export default function Header3() {
                 style={styles.rightIcon}
               />
             </TouchableOpacity>
-            
+
             <TouchableOpacity
-              style={styles.menuButton}
+              style={styles.iconButton}
               onPress={() =>
                 navigation.dispatch(DrawerActions.openDrawer())
               }
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <View style={styles.menuIconContainer}>
-                <Ionicons name="menu-outline" size={28} color='#fff' />
-              </View>
+              <Ionicons name="menu-outline" size={24} color='#fff' />
             </TouchableOpacity>
           </View>
         </View>
@@ -88,7 +86,7 @@ const styles = StyleSheet.create({
   right: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 0,
   },
   iconContainer: {
     position: 'relative',
@@ -130,58 +128,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginTop: -2,
   },
-  notificationButton: {
-    position: 'relative',
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#FF6B6B',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+  iconButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#064E3B',
-    shadowColor: '#FF6B6B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 4,
   },
   rightIcon: {
     width: 24,
     height: 24,
     resizeMode: 'contain',
-  },
-  menuButton: {
-    padding: 4,
-  },
-  menuIconContainer: {
-    width: 41,
-    height: 41,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    shadowColor: 'rgba(255,255,255,0.1)',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
   },
 });
