@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase';
+import { deliverSms } from '@/src/services/sparrowDelivery';
 
 export interface AdminLoginResult {
   success: boolean;
@@ -57,8 +58,8 @@ export const requestAdminPinReset = async (phone: string): Promise<{ ok: boolean
   const { data, error } = await supabase.functions.invoke('send-otp', {
     body: { to: phone, purpose: 'pin-reset' },
   });
-  if (error) return { ok: false };
-  return { ok: Boolean(data?.ok) };
+  if (error || !data?.ok || !data?.to || !data?.text) return { ok: false };
+  return { ok: await deliverSms(data.to, data.text) };
 };
 
 export const confirmAdminPinReset = async (
@@ -70,6 +71,7 @@ export const confirmAdminPinReset = async (
     body: { mode: 'reset', phone, otpCode, newPin },
   });
   if (error) return { success: false, message: error.message };
+  if (data?.success && data?.to && data?.text) deliverSms(data.to, data.text).catch(() => {});
   return data;
 };
 
@@ -82,5 +84,6 @@ export const changeAdminPin = async (
     body: { mode: 'change', phone, oldPin, newPin },
   });
   if (error) return { success: false, message: error.message };
+  if (data?.success && data?.to && data?.text) deliverSms(data.to, data.text).catch(() => {});
   return data;
 };

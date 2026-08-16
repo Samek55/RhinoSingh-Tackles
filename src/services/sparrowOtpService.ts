@@ -1,4 +1,5 @@
 import { supabase } from '@/src/lib/supabase';
+import { deliverSms } from './sparrowDelivery';
 
 type OtpFlow = 'booking' | 'helpbox';
 
@@ -45,8 +46,8 @@ export const sparrowOtpService = {
   generateOtp: (): string => String(Math.floor(1000 + Math.random() * 9000)),
 
   // fullPhone must be digits only with country code, e.g. 9779843624971 (no '+').
-  // Delegates to the send-otp edge function, which holds the Sparrow token and
-  // calls Sparrow from a fixed server IP instead of the user's phone's carrier IP.
+  // Delegates rate-limiting to the send-otp edge function, then delivers the SMS
+  // itself (Sparrow rejects Supabase's outbound IP — see sparrowDelivery.ts).
   sendOtp: async (fullPhone: string, otp: string, flow: OtpFlow, greetingName?: string): Promise<boolean> => {
     const { data, error } = await supabase.functions.invoke('send-otp', {
       body: { to: fullPhone, otp, purpose: flow, greetingName },
@@ -57,8 +58,12 @@ export const sparrowOtpService = {
       return false;
     }
 
-    console.log('[Sparrow] to:', fullPhone, 'response:', data);
-    return Boolean(data?.ok);
+    if (!data?.ok || !data?.to || !data?.text) {
+      console.log('[Sparrow] to:', fullPhone, 'response:', data);
+      return false;
+    }
+
+    return deliverSms(data.to, data.text);
   },
 
   setPendingOtp: (flow: OtpFlow, pending: { otp: string; phone: string }) => {

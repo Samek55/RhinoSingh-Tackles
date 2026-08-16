@@ -5,7 +5,7 @@ import bcrypt from 'npm:bcryptjs@2';
 import { supabaseAdmin } from '../_shared/supabaseAdmin.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { verifyAdminSession } from '../_shared/adminSession.ts';
-import { sendSms } from '../_shared/sparrow.ts';
+import { buildSms } from '../_shared/sparrow.ts';
 
 function generatePin(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -61,10 +61,10 @@ Deno.serve(async (req) => {
   }
 
   const firstName = (account.full_name || 'Staff').split(' ')[0];
-  await sendSms(
+  const sms = buildSms(
     account.phone,
     `Dear ${firstName}, your RocketSingh staff account has been approved. Your login PIN is ${pin}. Keep it safe.\n\n( https://RocketSingh.app )`
   );
 
-  return json({ success: true }, 200);
+  return json({ success: true, ...sms }, 200);
 });

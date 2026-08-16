@@ -11,6 +11,7 @@ import Header4 from '@/components/Header4Admin';
 import { router } from 'expo-router';
 import { useRequireSuperAdmin } from '@/hooks/useRequireSuperAdmin';
 import { invokeEdgeFunction } from '@/api/adminFunctionsClient';
+import { deliverSms } from '@/src/services/sparrowDelivery';
 import {
     widthPercentageToDP as wp,
     heightPercentageToDP as hp,
@@ -56,6 +57,7 @@ export default function UserManagement() {
             Alert.alert('Error', data?.error || 'Could not approve professional');
             return;
         }
+        if (data?.to && data?.text) deliverSms(data.to, data.text).catch(() => {});
         loadTab('Professionals');
     };
 
@@ -104,6 +106,7 @@ export default function UserManagement() {
             Alert.alert('Error', data?.message || 'Could not approve account');
             return;
         }
+        if (data?.to && data?.text) deliverSms(data.to, data.text).catch(() => {});
         loadTab('Admins');
     };
 

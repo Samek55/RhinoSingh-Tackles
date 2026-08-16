@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase';
+import { deliverSms } from '@/src/services/sparrowDelivery';
 
 const SESSION_TOKEN_KEY = 'professionalSessionToken';
 const SESSION_PHONE_KEY = 'professionalSessionPhone';
@@ -46,8 +47,8 @@ export const requestPinReset = async (phone: string): Promise<{ ok: boolean }> =
   const { data, error } = await supabase.functions.invoke('send-otp', {
     body: { to: phone, purpose: 'pin-reset' },
   });
-  if (error) return { ok: false };
-  return { ok: Boolean(data?.ok) };
+  if (error || !data?.ok || !data?.to || !data?.text) return { ok: false };
+  return { ok: await deliverSms(data.to, data.text) };
 };
 
 export const confirmPinReset = async (

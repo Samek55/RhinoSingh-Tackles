@@ -17,6 +17,7 @@ import FileUploadBox from '@/components/bookings/FileUploadBox';
 import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 import { uploadMultipleImagesForBooking } from '@/src/utils/fileUploadBooking';
 import { supabase } from '@/src/lib/supabase';
+import { deliverSms } from '@/src/services/sparrowDelivery';
 import { notifyJobCompleted } from '@/api/notifications';
 import { useRequireRole } from '@/hooks/useRequireRole';
 import {
@@ -66,7 +67,7 @@ export default function WorkCompletionOTP() {
             const { data, error } = await supabase.functions.invoke('send-otp', {
                 body: { to: booking.phone, purpose: 'work-completion', greetingName: booking.fullName },
             });
-            if (error || !data?.ok) {
+            if (error || !data?.ok || !data?.to || !data?.text || !(await deliverSms(data.to, data.text))) {
                 Alert.alert('Error', 'Could not send the completion code to the customer. Please try again.');
                 return;
             }

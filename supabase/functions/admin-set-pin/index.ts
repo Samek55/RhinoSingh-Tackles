@@ -7,7 +7,7 @@ import bcrypt from 'npm:bcryptjs@2';
 import { supabaseAdmin, cleanPhone } from '../_shared/supabaseAdmin.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { verifyServerOtp } from '../_shared/otp.ts';
-import { sendSms } from '../_shared/sparrow.ts';
+import { buildSms } from '../_shared/sparrow.ts';
 
 function isValidPin(pin: unknown): pin is string {
   return typeof pin === 'string' && /^\d{6}$/.test(pin);
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
   await supabaseAdmin.from('admin_sessions').delete().eq('phone', cleaned);
 
   const firstName = (account.full_name || 'Staff').split(' ')[0];
-  await sendSms(cleaned, `Dear ${firstName}, your RocketSingh staff PIN was just changed. If this wasn't you, contact your admin immediately.\n\n( https://RocketSingh.app )`);
+  const sms = buildSms(cleaned, `Dear ${firstName}, your RocketSingh staff PIN was just changed. If this wasn't you, contact your admin immediately.\n\n( https://RocketSingh.app )`);
 
-  return json({ success: true, fullName: account.full_name || 'Staff' }, 200);
+  return json({ success: true, fullName: account.full_name || 'Staff', ...sms }, 200);
 });
