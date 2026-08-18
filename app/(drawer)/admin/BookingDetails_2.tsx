@@ -95,9 +95,20 @@ export default function BookingDetails() {
 
             // "Completed" requires customer OTP confirmation + completion photos
             // (WorkCompletionOTP) rather than a plain status write — routes there
-            // instead of updating directly.
+            // instead of updating directly. Deal Amount/Note are only ever entered
+            // on this screen when workStatus is already 'Completed' (they're
+            // rendered conditionally on that), so they must be carried along as
+            // params — WorkCompletionOTP is what actually persists them, since this
+            // function never reaches its own deal_amount-reading code below on this path.
             if (workStatus === 'Completed') {
-                router.push({ pathname: '/admin/WorkCompletionOTP', params: { id: String(id) } });
+                router.push({
+                    pathname: '/admin/WorkCompletionOTP',
+                    params: {
+                        id: String(id),
+                        dealAmount: dealAmount.trim() || undefined,
+                        dealNote: dealNote.trim() || undefined,
+                    },
+                });
                 return;
             }
 

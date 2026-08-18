@@ -44,6 +44,9 @@ verify_jwt = true
 [functions.list-staff]
 verify_jwt = true
 
+[functions.list-notifications]
+verify_jwt = true
+
 [functions.update-staff-role]
 verify_jwt = true
 

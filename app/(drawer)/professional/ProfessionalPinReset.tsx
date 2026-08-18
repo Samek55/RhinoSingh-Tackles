@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -17,6 +17,7 @@ import { useRequireNepal } from '@/hooks/useRequireNepal';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
 type Stage = 'phone' | 'verify';
+const RESEND_COOLDOWN_SECONDS = 30;
 
 export default function ProfessionalPinReset() {
     const isNepal = useRequireNepal();
@@ -25,6 +26,16 @@ export default function ProfessionalPinReset() {
     const [otpCode, setOtpCode] = useState('');
     const [newPin, setNewPin] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [resendCooldown, setResendCooldown] = useState(0);
+
+    // The 'verify' stage previously had no way out short of the OS back
+    // gesture if the code expired or attempts ran out — no resend, no way to
+    // re-enter a different phone number.
+    useEffect(() => {
+        if (resendCooldown <= 0) return;
+        const timer = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+        return () => clearInterval(timer);
+    }, [resendCooldown]);
 
     const handleRequestCode = async () => {
         if (phoneNumber.length !== 10) {
@@ -36,12 +47,37 @@ export default function ProfessionalPinReset() {
             const result = await requestPinReset(phoneNumber);
             if (result.ok) {
                 setStage('verify');
+                setResendCooldown(RESEND_COOLDOWN_SECONDS);
             } else {
                 Alert.alert('Error', 'Could not send the verification code. Please try again.');
             }
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const handleResendCode = async () => {
+        if (resendCooldown > 0 || submitting) return;
+        setSubmitting(true);
+        try {
+            const result = await requestPinReset(phoneNumber);
+            if (result.ok) {
+                setOtpCode('');
+                setResendCooldown(RESEND_COOLDOWN_SECONDS);
+                Alert.alert('Code Sent', 'A new verification code has been sent.');
+            } else {
+                Alert.alert('Error', 'Could not resend the verification code. Please try again.');
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleChangePhone = () => {
+        setStage('phone');
+        setOtpCode('');
+        setNewPin('');
+        setResendCooldown(0);
     };
 
     const handleConfirm = async () => {
@@ -117,6 +153,16 @@ export default function ProfessionalPinReset() {
                                 >
                                     <Text style={styles.buttonText}>{submitting ? 'Resetting...' : 'Reset PIN'}</Text>
                                 </TouchableOpacity>
+                                <View style={styles.linkRow}>
+                                    <TouchableOpacity onPress={handleResendCode} disabled={submitting || resendCooldown > 0}>
+                                        <Text style={[styles.linkText, (submitting || resendCooldown > 0) && styles.linkTextDisabled]}>
+                                            {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleChangePhone} disabled={submitting}>
+                                        <Text style={styles.linkText}>Change Number</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </>
                         )}
                     </View>
@@ -171,5 +217,18 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#fff',
         letterSpacing: 1.5,
+    },
+    linkRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: hp('2%'),
+    },
+    linkText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#064E3B',
+    },
+    linkTextDisabled: {
+        color: '#9ca3af',
     },
 });

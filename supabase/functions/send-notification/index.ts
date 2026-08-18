@@ -46,7 +46,23 @@ Deno.serve(async (req) => {
     return json({ success: false, error: 'payload is required' }, 400);
   }
 
-  if (body.requireSession) {
+  // requireSession is caller-supplied and not real authorization on its own —
+  // a request holding just the app's public anon key can set it to false (or
+  // omit it) and reach OneSignal directly. Force a session for any payload
+  // shape that can reach an unbounded audience, regardless of what the caller
+  // claims: `included_segments` (e.g. ['All']) is never used by any of the
+  // narrow, system-triggered call sites in api/notifications.ts — only
+  // notifyAll, which already sets requireSession — so gating on its mere
+  // presence can't break a legitimate no-session caller. Same for a
+  // `not_exists` filter (every install with no role tag at all), used only by
+  // notifyPublic, which also already sets requireSession.
+  const payload = (body.payload ?? {}) as Record<string, unknown>;
+  const filters = Array.isArray(payload.filters) ? payload.filters : [];
+  const hasUnboundedReach =
+    'included_segments' in payload ||
+    filters.some((f: any) => f?.relation === 'not_exists');
+
+  if (body.requireSession || hasUnboundedReach) {
     const session = await verifyAdminSession(req);
     if (!session || session.role !== 'superadmin') {
       return json({ success: false, error: 'Superadmin session required' }, 401);
@@ -67,7 +83,9 @@ Deno.serve(async (req) => {
       Authorization: `Key ${restApiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ app_id: appId, ...body.payload }),
+    // app_id spread last so a caller-supplied app_id in payload can never
+    // override the real one.
+    body: JSON.stringify({ ...payload, app_id: appId }),
   });
 
   const responseBody = await response.text();

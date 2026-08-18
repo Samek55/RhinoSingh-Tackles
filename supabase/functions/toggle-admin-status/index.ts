@@ -44,11 +44,19 @@ Deno.serve(async (req) => {
     return json({ success: false, message: `Cannot toggle a ${account.status} account` }, 409);
   }
 
-  const { error: updateError } = await supabaseAdmin.from('admin').update({ status: payload.status }).eq('id', account.id);
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('admin')
+    .update({ status: payload.status })
+    .eq('id', account.id)
+    .eq('status', account.status)
+    .select('id');
 
   if (updateError) {
     console.error('[toggle-admin-status] update failed:', updateError);
     return json({ success: false, message: 'Internal error' }, 500);
+  }
+  if (!updated || updated.length === 0) {
+    return json({ success: false, message: 'This account was already updated by someone else.' }, 409);
   }
 
   if (payload.status === 'Inactive') {

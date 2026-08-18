@@ -298,11 +298,8 @@ const PopupBannerScreen = () => {
       };
 
       if (editingId) {
-        // For update, we need to handle it differently since the service only has toggle
-        // We'll use toggle to deactivate old and create new, or you can add update method
-        Alert.alert('Info', 'Update functionality coming soon. Please create a new banner.');
-        setLoading(false);
-        return;
+        await announcementService.updateAnnouncement(editingId, announcementData);
+        Alert.alert('Success! 🎉', 'Banner updated successfully!');
       } else {
         await announcementService.createAnnouncement(announcementData);
         Alert.alert('Success! 🎉', 'Banner published successfully!');

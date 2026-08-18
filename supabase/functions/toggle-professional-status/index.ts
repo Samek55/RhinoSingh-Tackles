@@ -43,14 +43,19 @@ Deno.serve(async (req) => {
     return json({ success: false, error: `Cannot toggle a ${professional.status} account` }, 409);
   }
 
-  const { error: updateError } = await supabaseAdmin
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from('professional')
     .update({ status: payload.status })
-    .eq('id', professional.id);
+    .eq('id', professional.id)
+    .eq('status', professional.status)
+    .select('id');
 
   if (updateError) {
     console.error('[toggle-professional-status] update failed:', updateError);
     return json({ success: false, error: 'Internal error' }, 500);
+  }
+  if (!updated || updated.length === 0) {
+    return json({ success: false, error: 'This professional was already updated by someone else.' }, 409);
   }
 
   return json({ success: true }, 200);

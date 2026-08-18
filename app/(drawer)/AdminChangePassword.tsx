@@ -59,12 +59,12 @@ export default function AdminChangePassword() {
     }
 
     const handleSubmit = async () => {
-        if (!oldPassword || oldPassword.length !== 6) {
-            Alert.alert('Validation Error', 'Please enter your current 6-digit PIN');
+        if (!oldPassword || oldPassword.length !== 4) {
+            Alert.alert('Validation Error', 'Please enter your current 4-digit PIN');
             return;
         }
-        if (!newPassword || newPassword.length !== 6) {
-            Alert.alert('Validation Error', 'Please enter a new 6-digit PIN');
+        if (!newPassword || newPassword.length !== 4) {
+            Alert.alert('Validation Error', 'Please enter a new 4-digit PIN');
             return;
         }
         if (newPassword !== confirmNewpassword) {
@@ -136,9 +136,9 @@ export default function AdminChangePassword() {
                                 secureTextEntry={!passwordVisibleOLD}
                                 style={styles.textInput}
                                 value={oldPassword}
-                                maxLength={6}
+                                maxLength={4}
                                 onChangeText={(text) =>
-                                    setOldPassword(text.replace(/[^0-9]/g, '').slice(0, 6))
+                                    setOldPassword(text.replace(/[^0-9]/g, '').slice(0, 4))
                                 }
                             />
                             <TouchableOpacity onPress={togglePasswordVisibilityOLD}>
@@ -160,9 +160,9 @@ export default function AdminChangePassword() {
                                 secureTextEntry={!passwordVisibleNEW}
                                 style={styles.textInput}
                                 value={newPassword}
-                                maxLength={6}
+                                maxLength={4}
                                 onChangeText={(text) =>
-                                    setNewPassword(text.replace(/[^0-9]/g, '').slice(0, 6))
+                                    setNewPassword(text.replace(/[^0-9]/g, '').slice(0, 4))
                                 }
                             />
                             <TouchableOpacity onPress={togglePasswordVisibilityNEW}>
@@ -184,9 +184,9 @@ export default function AdminChangePassword() {
                                 secureTextEntry={!passwordVisibleCONFIRM}
                                 style={styles.textInput}
                                 value={confirmNewpassword}
-                                maxLength={6}
+                                maxLength={4}
                                 onChangeText={(text) =>
-                                    setConfirmNewPassword(text.replace(/[^0-9]/g, '').slice(0, 6))
+                                    setConfirmNewPassword(text.replace(/[^0-9]/g, '').slice(0, 4))
                                 }
                             />
                             <TouchableOpacity onPress={togglePasswordVisibilityCONFIRM}>

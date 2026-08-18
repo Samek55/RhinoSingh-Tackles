@@ -14,6 +14,7 @@ export default function MyLeads() {
     const isNepal = useRequireNepal();
     const [leads, setLeads] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const loadLeads = useCallback(async () => {
         const session = await getProfessionalSession();
@@ -23,6 +24,7 @@ export default function MyLeads() {
         }
 
         setLoading(true);
+        setLoadError(null);
         const { data, error } = await supabase.functions.invoke('list-leads', {
             body: { token: session.token },
         });
@@ -32,6 +34,12 @@ export default function MyLeads() {
                 router.replace('/professional/ProfessionalLogin' as any);
                 return;
             }
+            // Any other failure (network error, 500, timeout) is a real
+            // problem, not "no leads" — used to silently render the same
+            // empty state either way, with no way to tell the two apart.
+            setLoadError(data?.error || error?.message || 'Could not load leads. Please try again.');
+            setLoading(false);
+            return;
         }
         setLeads(data?.leads ?? []);
         setLoading(false);
@@ -63,6 +71,13 @@ export default function MyLeads() {
 
                 {loading ? (
                     <ActivityIndicator size="large" color="#064E3B" style={{ marginTop: hp('5%') }} />
+                ) : loadError ? (
+                    <View style={{ marginTop: hp('8%'), alignItems: 'center' }}>
+                        <Text style={styles.emptyText}>{loadError}</Text>
+                        <TouchableOpacity onPress={loadLeads} style={{ marginTop: hp('2%') }}>
+                            <Text style={{ color: '#064E3B', fontWeight: '700' }}>Retry</Text>
+                        </TouchableOpacity>
+                    </View>
                 ) : leads.length === 0 ? (
                     <Text style={styles.emptyText}>No matching leads right now. Check back soon.</Text>
                 ) : (

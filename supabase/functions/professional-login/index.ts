@@ -47,10 +47,11 @@ Deno.serve(async (req) => {
     return json(invalidCreds, 401);
   }
 
-  if (professional.status !== 'Active') {
-    return json({ success: false, error: 'This account is not active' }, 403);
-  }
-
+  // Checked before the PIN compare (unlike status below) because this one has
+  // a real functional job — stopping further guesses — not just an
+  // informational one, and it was never a meaningful enumeration leak on its
+  // own: reaching a locked account requires 5 prior wrong-PIN attempts that
+  // already got the same generic 401 as any other guess.
   if (professional.locked_until && new Date(professional.locked_until).getTime() > Date.now()) {
     return json({ success: false, error: 'Too many failed attempts. Try again later.' }, 423);
   }
@@ -68,6 +69,17 @@ Deno.serve(async (req) => {
       { ...invalidCreds, remainingAttempts: Math.max(0, MAX_ATTEMPTS - failedAttempts) },
       401
     );
+  }
+
+  // Only revealed once the caller has proven they know the real PIN — this
+  // used to fire before any PIN check at all, letting anyone determine "this
+  // phone belongs to a suspended professional" with zero guesses. Checking it
+  // here instead closes that off without costing a legitimate suspended
+  // professional (who does know their PIN) any clarity on why they're locked
+  // out — if anything this is more informative than before, since it now
+  // never gets confused with a wrong-PIN response.
+  if (professional.status !== 'Active') {
+    return json({ success: false, error: 'This account is not active' }, 403);
   }
 
   await supabaseAdmin

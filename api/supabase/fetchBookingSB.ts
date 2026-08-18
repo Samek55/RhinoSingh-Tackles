@@ -14,7 +14,8 @@ export const fetchBookingsFromSupabase = async () => {
     const { data: records, error } = await supabase
       .from("booking")
       .select("*")
-      .order("service_booking_datetime", { ascending: false }); // 1. FIX: Sort directly at the database layer
+      .order("service_booking_datetime", { ascending: false }) // 1. FIX: Sort directly at the database layer
+      .limit(200); // Defensive ceiling matching fetchPartnershipSB.ts — every history/search screen pulls the full result of this call today
 
     if (error) {
       console.log("Supabase Error fetching bookings:", error);
@@ -55,8 +56,15 @@ export const fetchBookingsFromSupabase = async () => {
       }
 
       result[i] = {
-        id: item.id || item.push_id || i.toString(),
-        bookingId: item.bookingid, 
+        // The Postgres `booking` table has neither `id` nor `push_id`
+        // (Firebase-era fields) — that fallback chain used to collapse to
+        // the array index after sorting, so every screen that navigates by
+        // `id` (BookingHistory -> BookingDetails_1/2 -> WorkCompletionOTP,
+        // each re-fetching and re-sorting independently) could point at a
+        // different booking than the one tapped if sort order shifted
+        // between fetches. `bookingid` is the real, stable primary key.
+        id: item.bookingid != null ? String(item.bookingid) : (item.id || item.push_id || i.toString()),
+        bookingId: item.bookingid,
 
         fullName: item.full_name || "",
         email: item.email || "",

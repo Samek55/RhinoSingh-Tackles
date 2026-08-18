@@ -122,25 +122,39 @@ export function useWorkforceProfile() {
             return;
         }
 
+        if (!idUin) {
+            Alert.alert("Error", "Could not identify your profile. Please reload and try again.");
+            return;
+        }
+
         setLoading(true);
 
         const cleanExpertiseArr = areaOfExpertise.split(',').map(s => s.trim()).filter(Boolean);
         const cleanWorkingAreaArr = preferredWorkingArea.split(',').map(s => s.trim()).filter(Boolean);
 
         try {
-            // First, update the status in the workforce table
-            const { error: updateError } = await supabase
+            // First, update the status in the workforce table. .select() so a
+            // 0-row match (stale/wrong idUin) is detectable — Supabase returns
+            // no error for an update that matched nothing, so without this a
+            // failed update looked identical to a successful one and the
+            // request below still got inserted with a dangling id_uin no
+            // admin query could ever find.
+            const { data: updatedRows, error: updateError } = await supabase
                 .from('workforce')
                 .update({
                     status: 'Pending-Update'
                 })
-                .eq('uin', idUin); // Assuming 'uin' is the primary key in workforce table
+                .eq('uin', idUin) // Assuming 'uin' is the primary key in workforce table
+                .select('uin');
 
             if (updateError) throw updateError;
+            if (!updatedRows || updatedRows.length === 0) {
+                throw new Error('Could not find your workforce profile to update.');
+            }
 
             // Then, insert the profile update data into workforce_update_profile
             const finalPayload = {
-                id_uin: idUin || null,
+                id_uin: idUin,
                 full_name: fullName.trim(),
                 phone: phone.trim(),
                 email: email.trim(),

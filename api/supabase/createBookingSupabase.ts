@@ -12,14 +12,12 @@ export const createBookingSupabase = async (payload: any) => {
 
   // Best-effort — keeps the customers table (used by admin/UserManagement's
   // Customers tab) in sync without blocking the booking itself if it fails.
+  // Goes through a narrow RPC (not a direct table upsert) since customers has
+  // no anon insert/update policy anymore — see migration 20260818000000.
   if (payload?.phone) {
     supabase
-      .from("customers")
-      .upsert(
-        { phone: payload.phone, full_name: payload.full_name, last_booking_at: new Date().toISOString() },
-        { onConflict: "phone" }
-      )
-      .then(({ error: upsertError }) => {
+      .rpc("upsert_customer", { p_phone: payload.phone, p_full_name: payload.full_name })
+      .then(({ error: upsertError }: { error: any }) => {
         if (upsertError) console.log("customers upsert error:", upsertError.message);
       });
   }

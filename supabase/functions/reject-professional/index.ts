@@ -40,14 +40,19 @@ Deno.serve(async (req) => {
     return json({ success: false, error: `Already ${professional.status}` }, 409);
   }
 
-  const { error: updateError } = await supabaseAdmin
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from('professional')
     .update({ status: 'Rejected' })
-    .eq('id', professional.id);
+    .eq('id', professional.id)
+    .eq('status', 'Pending')
+    .select('id');
 
   if (updateError) {
     console.error('[reject-professional] update failed:', updateError);
     return json({ success: false, error: 'Internal error' }, 500);
+  }
+  if (!updated || updated.length === 0) {
+    return json({ success: false, error: 'This professional was already updated by someone else.' }, 409);
   }
 
   if (professional.workforce_uin) {

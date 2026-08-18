@@ -10,7 +10,7 @@ import { verifyServerOtp } from '../_shared/otp.ts';
 import { buildSms } from '../_shared/sparrow.ts';
 
 function isValidPin(pin: unknown): pin is string {
-  return typeof pin === 'string' && /^\d{6}$/.test(pin);
+  return typeof pin === 'string' && /^\d{4}$/.test(pin);
 }
 
 Deno.serve(async (req) => {
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
   const { mode, newPin } = payload;
   if (!isValidPin(newPin)) {
-    return json({ success: false, message: 'newPin must be 6 digits' }, 400);
+    return json({ success: false, message: 'newPin must be 4 digits' }, 400);
   }
   if (!payload.phone) {
     return json({ success: false, message: 'phone is required' }, 400);

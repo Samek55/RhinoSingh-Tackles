@@ -9,6 +9,7 @@ import {
     Platform,
     StyleSheet,
     Modal,
+    Alert,
 } from 'react-native';
 
 import leftArrowIcon from '../../../assets/icons/admin/leftarrow.png';
@@ -21,6 +22,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import Header5 from '@/components/Header5Admin';
 import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
+import { updateBookingStatusSB } from '@/api/supabase/updateBookingStatusSB';
 import { useRequireRole } from '@/hooks/useRequireRole';
 
 export default function BookingDetails() {
@@ -31,6 +33,7 @@ export default function BookingDetails() {
     const [loading, setLoading] = useState(true);
     const [visible, setVisible] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [cancelling, setCancelling] = useState(false);
 
     // Single unified fetch logic entirely mapped to Supabase with structural defenses
     useEffect(() => {
@@ -53,13 +56,12 @@ export default function BookingDetails() {
         load();
     }, [id]);
 
-    const photos = [
-        require('../../../assets/services/HomeRepairANDMaintenance/carpentry.jpg'),
-        require('../../../assets/services/HomeRepairANDMaintenance/handyman.jpg'),
-        require('../../../assets/services/HomeRepairANDMaintenance/electrical.jpg'),
-        require('../../../assets/services/HomeRepairANDMaintenance/washing-machine-repair.jpg'),
-        require('../../../assets/services/HomeRepairANDMaintenance/flooring.jpg'),
-    ];
+    // booking.addPhotosPicture is the customer's actual uploaded photos
+    // (booking.add_photos_picture, a text[] of URLs) — this used to be 5
+    // hardcoded local stock images shown identically for every booking.
+    const photos: { uri: string }[] = Array.isArray(booking?.addPhotosPicture)
+        ? booking.addPhotosPicture.filter(Boolean).map((url: string) => ({ uri: url }))
+        : [];
 
     const openImage = (index: number) => {
         setSelectedIndex(index);
@@ -81,6 +83,37 @@ export default function BookingDetails() {
             pathname: '/admin/BookingDetails_2',
             params: { id: routeId },
         });
+    };
+
+    // Previously this "Cancel" button just navigated back to BookingHistory
+    // with no database write at all — staff believed they'd declined the
+    // booking, but its status stayed "New / Open" forever with no actual way
+    // to reject a brand-new booking from this screen.
+    const handleCancelBooking = () => {
+        if (!booking?.bookingId || cancelling) return;
+
+        Alert.alert(
+            'Cancel Booking',
+            'Are you sure you want to cancel this booking?',
+            [
+                { text: 'No', style: 'cancel' },
+                {
+                    text: 'Yes, Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setCancelling(true);
+                        try {
+                            await updateBookingStatusSB(booking.bookingId, 'Cancelled');
+                            router.replace('/admin/BookingHistory');
+                        } catch (error: any) {
+                            Alert.alert('Error', error?.message || 'Failed to cancel booking.');
+                        } finally {
+                            setCancelling(false);
+                        }
+                    },
+                },
+            ]
+        );
     };
 
     if (!authorized) {
@@ -168,16 +201,20 @@ export default function BookingDetails() {
 
                             <View style={styles.row}>
                                 <Text style={styles.label}>Photos</Text>
-                                <View style={styles.photos}>
-                                    {photos.map((image, index) => (
-                                        <TouchableOpacity
-                                            key={index}
-                                            onPress={() => openImage(index)}
-                                        >
-                                            <Image source={image} style={styles.photoItem} />
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
+                                {photos.length === 0 ? (
+                                    <Text style={[styles.value, { paddingTop: hp('1%') }]}>No photos submitted</Text>
+                                ) : (
+                                    <View style={styles.photos}>
+                                        {photos.map((image, index) => (
+                                            <TouchableOpacity
+                                                key={index}
+                                                onPress={() => openImage(index)}
+                                            >
+                                                <Image source={image} style={styles.photoItem} />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
 
                                 {/* Fullscreen Carousel Modal Popup */}
                                 <Modal
@@ -222,10 +259,11 @@ export default function BookingDetails() {
                                     <Text style={styles.AcceptText}>Accept This Offer</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={styles.RejectButton}
-                                    onPress={() => router.push('/admin/BookingHistory')}
+                                    style={[styles.RejectButton, cancelling && { opacity: 0.6 }]}
+                                    onPress={handleCancelBooking}
+                                    disabled={cancelling}
                                 >
-                                    <Text style={styles.AcceptText}>Cancel</Text>
+                                    <Text style={styles.AcceptText}>{cancelling ? 'Cancelling...' : 'Cancel'}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

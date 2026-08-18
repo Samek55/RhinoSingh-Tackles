@@ -29,11 +29,18 @@ Deno.serve(async (req) => {
     return json({ success: false, error: 'id and a valid role are required' }, 400);
   }
 
-  const { error } = await supabaseAdmin.from('admin').update({ role: payload.role }).eq('id', payload.id);
+  const { data: updated, error } = await supabaseAdmin
+    .from('admin')
+    .update({ role: payload.role })
+    .eq('id', payload.id)
+    .select('id');
 
   if (error) {
     console.error('[update-staff-role] update failed:', error);
     return json({ success: false, error: 'Internal error' }, 500);
+  }
+  if (!updated || updated.length === 0) {
+    return json({ success: false, error: 'Account not found' }, 404);
   }
 
   return json({ success: true }, 200);

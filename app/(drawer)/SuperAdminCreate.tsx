@@ -45,8 +45,8 @@ export default function CreateSuperAdmin() {
             return;
         }
 
-        if (cleanPin.length !== 6) {
-            Alert.alert("Error", "PIN must be exactly 6 digits");
+        if (cleanPin.length !== 4) {
+            Alert.alert("Error", "PIN must be exactly 4 digits");
             return;
         }
 
@@ -149,17 +149,17 @@ export default function CreateSuperAdmin() {
                         <View style={styles.inputContainer}>
                             <Text style={styles.label}>Security PIN</Text>
                             <TextInput
-                                placeholder="Enter 6-digit PIN"
+                                placeholder="Enter 4-digit PIN"
                                 placeholderTextColor="#94a3b8"
                                 value={pin}
                                 secureTextEntry
                                 keyboardType="number-pad"
                                 onChangeText={(v) => {
                                     const cleaned = v.replace(/[^0-9]/g, "");
-                                    setPin(cleaned.slice(0, 6));
+                                    setPin(cleaned.slice(0, 4));
                                 }}
                                 style={styles.input}
-                                maxLength={6}
+                                maxLength={4}
                             />
                         </View>
 

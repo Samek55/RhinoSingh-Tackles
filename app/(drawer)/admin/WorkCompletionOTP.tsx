@@ -16,6 +16,7 @@ import Header5 from '@/components/Header5Admin';
 import FileUploadBox from '@/components/bookings/FileUploadBox';
 import { fetchBookingsFromSupabase } from '@/api/supabase/fetchBookingSB';
 import { uploadMultipleImagesForBooking } from '@/src/utils/fileUploadBooking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/src/lib/supabase';
 import { deliverSms } from '@/src/services/sparrowDelivery';
 import { notifyJobCompleted } from '@/api/notifications';
@@ -29,7 +30,7 @@ type FileItem = { uri: string; fileName?: string; sizeMB?: number; mimeType?: st
 
 export default function WorkCompletionOTP() {
     const { authorized } = useRequireRole(['career', 'admin', 'superadmin']);
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, dealAmount: dealAmountParam, dealNote: dealNoteParam } = useLocalSearchParams<{ id: string; dealAmount?: string; dealNote?: string }>();
 
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -103,17 +104,35 @@ export default function WorkCompletionOTP() {
             }
 
             const bookingPk = booking?.bookingId ?? booking?.bookingid;
+            const sessionToken = await AsyncStorage.getItem('adminSessionToken');
             const { data: claimed, error: claimError } = await supabase.rpc('claim_booking_status', {
                 p_booking_id: bookingPk,
                 p_from_status: booking.status,
                 p_to_status: 'Completed',
                 p_extra: { completion_photos: JSON.stringify(photoUrls) },
+                p_session_token: sessionToken,
             });
 
             if (claimError || !claimed) {
                 Alert.alert('Error', 'This booking was already updated by someone else.');
                 router.replace('/admin/BookingHistory');
                 return;
+            }
+
+            // claim_booking_status only ever writes completion_photos from p_extra —
+            // deal_amount/deal_note (entered on BookingDetails_2.tsx) have to be
+            // persisted separately here, since that's the only screen that collects
+            // them and this is the only path that actually completes the booking.
+            // This write is what makes the deal_amount null→value transition happen,
+            // which is what triggers the Zoho invoice sync webhook.
+            if (dealAmountParam) {
+                const { error: dealError } = await supabase
+                    .from('booking')
+                    .update({ deal_amount: Number(dealAmountParam), deal_note: dealNoteParam || undefined })
+                    .eq('bookingid', bookingPk);
+                if (dealError) {
+                    console.warn('Failed to record deal amount/note:', dealError.message);
+                }
             }
 
             notifyJobCompleted(booking.phone, String(bookingPk)).catch(() => {});

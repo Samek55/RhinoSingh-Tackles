@@ -42,8 +42,8 @@ export default function AdminLogin() {
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [phoneNumber, setphoneNumber] = useState<string>('');
 
-    // Using the 6-box input to construct our 6-digit PIN password
-    const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    // Using the 4-box input to construct our 4-digit PIN password
+    const [otp, setOtp] = useState(["", "", "", ""]);
     const inputs = useRef<Array<TextInput | null>>([]);
 
     const handleChange = (text: string, index: number) => {
@@ -54,7 +54,7 @@ export default function AdminLogin() {
         setOtp(newOtp);
 
         // Moving FORWARD safely
-        if (cleanedText && index < 5) {
+        if (cleanedText && index < 3) {
             const nextInput = inputs.current[index + 1];
             if (nextInput && typeof nextInput.focus === 'function') {
                 nextInput.focus();
@@ -84,10 +84,10 @@ export default function AdminLogin() {
     };
 
     const handleSubmit = async () => {
-        const pinPassword = otp.join(""); // Gather the 6-digit PIN here
+        const pinPassword = otp.join(""); // Gather the 4-digit PIN here
 
-        if (!phoneNumber || pinPassword.length < 6) {
-            Alert.alert("Error", "Please enter phone and a valid 6-digit PIN");
+        if (!phoneNumber || pinPassword.length < 4) {
+            Alert.alert("Error", "Please enter phone and a valid 4-digit PIN");
             return;
         }
 

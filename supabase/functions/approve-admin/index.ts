@@ -50,14 +50,22 @@ Deno.serve(async (req) => {
   const pin = generatePin();
   const pinHash = bcrypt.hashSync(pin, 10);
 
-  const { error: updateError } = await supabaseAdmin
+  // .eq('status', 'Pending') makes the write itself the guard, not just the
+  // read above — two concurrent approvals for the same account can no longer
+  // both pass the check-then-act race and both generate/SMS a different PIN.
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from('admin')
     .update({ pin_hash: pinHash, status: 'Active', failed_attempts: 0, locked_until: null })
-    .eq('id', account.id);
+    .eq('id', account.id)
+    .eq('status', 'Pending')
+    .select('id');
 
   if (updateError) {
     console.error('[approve-admin] update failed:', updateError);
     return json({ success: false, message: 'Internal error' }, 500);
+  }
+  if (!updated || updated.length === 0) {
+    return json({ success: false, message: 'This account was already updated by someone else.' }, 409);
   }
 
   const firstName = (account.full_name || 'Staff').split(' ')[0];

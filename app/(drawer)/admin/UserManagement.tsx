@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     View,
     Text,
@@ -26,6 +26,27 @@ export default function UserManagement() {
     const [professionals, setProfessionals] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
     const [staff, setStaff] = useState<any[]>([]);
+    // Keys in flight for the irreversible actions below (approve/reject/block/
+    // role-change) — these fired directly from onPress with no guard at all,
+    // so a double-tap could send two concurrent requests against the same
+    // stale read (e.g. two role-cycle calls back to back). A ref guards the
+    // actual dispatch synchronously (state updates are async/batched and
+    // can't be read-before-write within one call); the state Set is only
+    // there to re-render buttons as disabled.
+    const pendingKeysRef = useRef<Set<string>>(new Set());
+    const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
+
+    const runGuarded = useCallback(async (key: string, action: () => Promise<void>) => {
+        if (pendingKeysRef.current.has(key)) return;
+        pendingKeysRef.current.add(key);
+        setPendingKeys(new Set(pendingKeysRef.current));
+        try {
+            await action();
+        } finally {
+            pendingKeysRef.current.delete(key);
+            setPendingKeys(new Set(pendingKeysRef.current));
+        }
+    }, []);
 
     const loadTab = useCallback(async (activeTab: Tab) => {
         setLoading(true);
@@ -51,7 +72,7 @@ export default function UserManagement() {
         if (authorized) loadTab(tab);
     }, [authorized, tab, loadTab]);
 
-    const handleApprove = async (professionalId: number) => {
+    const handleApprove = (professionalId: number) => runGuarded(`approve-${professionalId}`, async () => {
         const data = await invokeEdgeFunction<any>('approve-professional', { professionalId }, 'Could not approve professional', { requireSession: true });
         if (!data?.success) {
             Alert.alert('Error', data?.error || 'Could not approve professional');
@@ -59,18 +80,18 @@ export default function UserManagement() {
         }
         if (data?.to && data?.text) deliverSms(data.to, data.text).catch(() => {});
         loadTab('Professionals');
-    };
+    });
 
-    const handleReject = async (professionalId: number) => {
+    const handleReject = (professionalId: number) => runGuarded(`reject-${professionalId}`, async () => {
         const data = await invokeEdgeFunction<any>('reject-professional', { professionalId }, 'Could not reject professional', { requireSession: true });
         if (!data?.success) {
             Alert.alert('Error', data?.error || 'Could not reject professional');
             return;
         }
         loadTab('Professionals');
-    };
+    });
 
-    const handleToggleProfessionalStatus = async (professionalId: number, currentStatus: string) => {
+    const handleToggleProfessionalStatus = (professionalId: number, currentStatus: string) => runGuarded(`toggle-pro-${professionalId}`, async () => {
         const nextStatus = currentStatus === 'Active' ? 'Suspended' : 'Active';
         const data = await invokeEdgeFunction<any>('toggle-professional-status', { professionalId, status: nextStatus }, 'Could not update status', { requireSession: true });
         if (!data?.success) {
@@ -78,18 +99,18 @@ export default function UserManagement() {
             return;
         }
         loadTab('Professionals');
-    };
+    });
 
-    const handleToggleCustomerBlock = async (phone: string, blocked: boolean) => {
+    const handleToggleCustomerBlock = (phone: string, blocked: boolean) => runGuarded(`toggle-block-${phone}`, async () => {
         const data = await invokeEdgeFunction<any>('toggle-customer-block', { phone, blocked: !blocked }, 'Could not update block status', { requireSession: true });
         if (!data?.success) {
             Alert.alert('Error', data?.error || 'Could not update block status');
             return;
         }
         loadTab('Customers');
-    };
+    });
 
-    const handleChangeStaffRole = async (id: number, role: string) => {
+    const handleChangeStaffRole = (id: number, role: string) => runGuarded(`change-role-${id}`, async () => {
         const roles = ['career', 'admin', 'superadmin'];
         const nextRole = roles[(roles.indexOf(role) + 1) % roles.length];
         const data = await invokeEdgeFunction<any>('update-staff-role', { id, role: nextRole }, 'Could not update role', { requireSession: true });
@@ -98,9 +119,9 @@ export default function UserManagement() {
             return;
         }
         loadTab('Admins');
-    };
+    });
 
-    const handleApproveAdmin = async (adminId: number) => {
+    const handleApproveAdmin = (adminId: number) => runGuarded(`approve-admin-${adminId}`, async () => {
         const data = await invokeEdgeFunction<any>('approve-admin', { adminId }, 'Could not approve account', { requireSession: true });
         if (!data?.success) {
             Alert.alert('Error', data?.message || 'Could not approve account');
@@ -108,18 +129,18 @@ export default function UserManagement() {
         }
         if (data?.to && data?.text) deliverSms(data.to, data.text).catch(() => {});
         loadTab('Admins');
-    };
+    });
 
-    const handleRejectAdmin = async (adminId: number) => {
+    const handleRejectAdmin = (adminId: number) => runGuarded(`reject-admin-${adminId}`, async () => {
         const data = await invokeEdgeFunction<any>('reject-admin', { adminId }, 'Could not reject account', { requireSession: true });
         if (!data?.success) {
             Alert.alert('Error', data?.message || 'Could not reject account');
             return;
         }
         loadTab('Admins');
-    };
+    });
 
-    const handleToggleAdminStatus = async (id: number, currentStatus: string) => {
+    const handleToggleAdminStatus = (id: number, currentStatus: string) => runGuarded(`toggle-admin-${id}`, async () => {
         const nextStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
         const data = await invokeEdgeFunction<any>('toggle-admin-status', { id, status: nextStatus }, 'Could not update status', { requireSession: true });
         if (!data?.success) {
@@ -127,7 +148,7 @@ export default function UserManagement() {
             return;
         }
         loadTab('Admins');
-    };
+    });
 
     if (!authorized) {
         return null;
@@ -169,11 +190,19 @@ export default function UserManagement() {
                                 <View style={styles.cardActions}>
                                     {item.status === 'Pending' && (
                                         <>
-                                            <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
-                                                <Text style={styles.actionText}>Approve</Text>
+                                            <TouchableOpacity
+                                                style={styles.approveBtn}
+                                                onPress={() => handleApprove(item.id)}
+                                                disabled={pendingKeys.has(`approve-${item.id}`) || pendingKeys.has(`reject-${item.id}`)}
+                                            >
+                                                <Text style={styles.actionText}>{pendingKeys.has(`approve-${item.id}`) ? '...' : 'Approve'}</Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
-                                                <Text style={styles.actionText}>Reject</Text>
+                                            <TouchableOpacity
+                                                style={styles.rejectBtn}
+                                                onPress={() => handleReject(item.id)}
+                                                disabled={pendingKeys.has(`approve-${item.id}`) || pendingKeys.has(`reject-${item.id}`)}
+                                            >
+                                                <Text style={styles.actionText}>{pendingKeys.has(`reject-${item.id}`) ? '...' : 'Reject'}</Text>
                                             </TouchableOpacity>
                                         </>
                                     )}
@@ -181,8 +210,11 @@ export default function UserManagement() {
                                         <TouchableOpacity
                                             style={item.status === 'Active' ? styles.rejectBtn : styles.approveBtn}
                                             onPress={() => handleToggleProfessionalStatus(item.id, item.status)}
+                                            disabled={pendingKeys.has(`toggle-pro-${item.id}`)}
                                         >
-                                            <Text style={styles.actionText}>{item.status === 'Active' ? 'Suspend' : 'Reactivate'}</Text>
+                                            <Text style={styles.actionText}>
+                                                {pendingKeys.has(`toggle-pro-${item.id}`) ? '...' : item.status === 'Active' ? 'Suspend' : 'Reactivate'}
+                                            </Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -203,8 +235,11 @@ export default function UserManagement() {
                                     <TouchableOpacity
                                         style={item.blocked ? styles.approveBtn : styles.rejectBtn}
                                         onPress={() => handleToggleCustomerBlock(item.phone, item.blocked)}
+                                        disabled={pendingKeys.has(`toggle-block-${item.phone}`)}
                                     >
-                                        <Text style={styles.actionText}>{item.blocked ? 'Unblock' : 'Block'}</Text>
+                                        <Text style={styles.actionText}>
+                                            {pendingKeys.has(`toggle-block-${item.phone}`) ? '...' : item.blocked ? 'Unblock' : 'Block'}
+                                        </Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -224,24 +259,39 @@ export default function UserManagement() {
                                     <View style={styles.cardActions}>
                                         {item.status === 'Pending' && (
                                             <>
-                                                <TouchableOpacity style={styles.approveBtn} onPress={() => handleApproveAdmin(item.id)}>
-                                                    <Text style={styles.actionText}>Approve</Text>
+                                                <TouchableOpacity
+                                                    style={styles.approveBtn}
+                                                    onPress={() => handleApproveAdmin(item.id)}
+                                                    disabled={pendingKeys.has(`approve-admin-${item.id}`) || pendingKeys.has(`reject-admin-${item.id}`)}
+                                                >
+                                                    <Text style={styles.actionText}>{pendingKeys.has(`approve-admin-${item.id}`) ? '...' : 'Approve'}</Text>
                                                 </TouchableOpacity>
-                                                <TouchableOpacity style={styles.rejectBtn} onPress={() => handleRejectAdmin(item.id)}>
-                                                    <Text style={styles.actionText}>Reject</Text>
+                                                <TouchableOpacity
+                                                    style={styles.rejectBtn}
+                                                    onPress={() => handleRejectAdmin(item.id)}
+                                                    disabled={pendingKeys.has(`approve-admin-${item.id}`) || pendingKeys.has(`reject-admin-${item.id}`)}
+                                                >
+                                                    <Text style={styles.actionText}>{pendingKeys.has(`reject-admin-${item.id}`) ? '...' : 'Reject'}</Text>
                                                 </TouchableOpacity>
                                             </>
                                         )}
                                         {(item.status === 'Active' || item.status === 'Inactive') && (
                                             <>
-                                                <TouchableOpacity style={styles.approveBtn} onPress={() => handleChangeStaffRole(item.id, item.role)}>
-                                                    <Text style={styles.actionText}>Change Role</Text>
+                                                <TouchableOpacity
+                                                    style={styles.approveBtn}
+                                                    onPress={() => handleChangeStaffRole(item.id, item.role)}
+                                                    disabled={pendingKeys.has(`change-role-${item.id}`)}
+                                                >
+                                                    <Text style={styles.actionText}>{pendingKeys.has(`change-role-${item.id}`) ? '...' : 'Change Role'}</Text>
                                                 </TouchableOpacity>
                                                 <TouchableOpacity
                                                     style={item.status === 'Active' ? styles.rejectBtn : styles.approveBtn}
                                                     onPress={() => handleToggleAdminStatus(item.id, item.status)}
+                                                    disabled={pendingKeys.has(`toggle-admin-${item.id}`)}
                                                 >
-                                                    <Text style={styles.actionText}>{item.status === 'Active' ? 'Deactivate' : 'Reactivate'}</Text>
+                                                    <Text style={styles.actionText}>
+                                                        {pendingKeys.has(`toggle-admin-${item.id}`) ? '...' : item.status === 'Active' ? 'Deactivate' : 'Reactivate'}
+                                                    </Text>
                                                 </TouchableOpacity>
                                             </>
                                         )}

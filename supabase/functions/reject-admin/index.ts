@@ -39,11 +39,19 @@ Deno.serve(async (req) => {
     return json({ success: false, message: `Already ${account.status}` }, 409);
   }
 
-  const { error: updateError } = await supabaseAdmin.from('admin').update({ status: 'Rejected' }).eq('id', account.id);
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('admin')
+    .update({ status: 'Rejected' })
+    .eq('id', account.id)
+    .eq('status', 'Pending')
+    .select('id');
 
   if (updateError) {
     console.error('[reject-admin] update failed:', updateError);
     return json({ success: false, message: 'Internal error' }, 500);
+  }
+  if (!updated || updated.length === 0) {
+    return json({ success: false, message: 'This account was already updated by someone else.' }, 409);
   }
 
   return json({ success: true }, 200);

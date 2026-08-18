@@ -22,7 +22,8 @@ export const fetchWorkforceFromSupabase = async () => {
         created_at, 
         status
       `)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(200); // Defensive ceiling matching fetchPartnershipSB.ts
 
     if (error) {
       console.log("Supabase Error fetching workforce:", error);

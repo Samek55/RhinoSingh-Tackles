@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
   if (payload.blocked) {
     const { error } = await supabaseAdmin
       .from('blocked_customers')
-      .upsert({ phone: cleaned, blocked_by: session.uid }, { onConflict: 'phone' });
+      .upsert({ phone: cleaned, blocked_by: session.phone }, { onConflict: 'phone' });
     if (error) {
       console.error('[toggle-customer-block] block failed:', error);
       return json({ success: false, error: 'Internal error' }, 500);

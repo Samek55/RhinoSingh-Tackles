@@ -94,11 +94,16 @@ Deno.serve(async (req) => {
     otp = generateOtp();
   }
 
+  // Keyed on the same last-10-digits normalization cleanPhone() uses
+  // everywhere else in this codebase — keying on the raw, un-normalized `to`
+  // let the same real number get a fresh 5/hour budget just by padding it
+  // with an extra leading digit (the /^\d{10,15}$/ check above allows that).
+  const rateLimitKey = cleanPhone(to);
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count, error: countError } = await supabaseAdmin
     .from('otp_send_log')
     .select('id', { count: 'exact', head: true })
-    .eq('phone', to)
+    .eq('phone', rateLimitKey)
     .gte('sent_at', oneHourAgo);
 
   if (countError) {
@@ -129,7 +134,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { error: insertError } = await supabaseAdmin.from('otp_send_log').insert({ phone: to });
+  const { error: insertError } = await supabaseAdmin.from('otp_send_log').insert({ phone: rateLimitKey });
   if (insertError) {
     console.error('[send-otp] failed to record send log:', insertError);
   }

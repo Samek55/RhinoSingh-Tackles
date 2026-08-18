@@ -38,8 +38,8 @@ Deno.serve(async (req) => {
       return json({ success: false, message: 'Superadmin session required' }, 401);
     }
 
-    if (!payload.pin || !/^\d{6}$/.test(payload.pin) || !payload.role) {
-      return json({ success: false, message: 'pin (6 digits) and role are required' }, 400);
+    if (!payload.pin || !/^\d{4}$/.test(payload.pin) || !payload.role) {
+      return json({ success: false, message: 'pin (4 digits) and role are required' }, 400);
     }
 
     const bcrypt = (await import('npm:bcryptjs@2')).default;
