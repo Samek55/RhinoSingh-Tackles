@@ -49,9 +49,11 @@ const NumberBar = ({ onFocus = () => { } }) => {
       const formattedPhone = countryInfo.dialCode + structuralClean;
 
       if (country === 'nepal') {
-        const sparrowPhone = countryInfo.dialCode.replace('+', '') + structuralClean;
+        // Sparrow's own API docs show every example as a bare 10-digit local
+        // number, never a 977 country-code prefix — matches every other
+        // Sparrow send in this codebase.
         const otp = sparrowOtpService.generateOtp();
-        const sent = await sparrowOtpService.sendOtp(sparrowPhone, otp, 'helpbox');
+        const sent = await sparrowOtpService.sendOtp(structuralClean, otp, 'helpbox');
 
         setOverlayVisible(false);
 
@@ -60,7 +62,7 @@ const NumberBar = ({ onFocus = () => { } }) => {
           return;
         }
 
-        sparrowOtpService.setPendingOtp('helpbox', { otp, phone: sparrowPhone });
+        sparrowOtpService.setPendingOtp('helpbox', { otp, phone: structuralClean });
 
         router.push({
           pathname: '/helpbox/helpboxOTP',

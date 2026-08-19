@@ -56,11 +56,25 @@ Deno.serve(async (req) => {
   // presence can't break a legitimate no-session caller. Same for a
   // `not_exists` filter (every install with no role tag at all), used only by
   // notifyPublic, which also already sets requireSession.
+  //
+  // A `filters` array that reduces to exactly one bare tag-equality condition
+  // (no AND/OR, nothing else) reaches every device carrying that one tag —
+  // e.g. every customer (notifyCustomers) or every admin (notifyAdminsBroadcast),
+  // both of which already require a session at their real call sites. This
+  // exact shape is never produced by any no-session caller: the ones that
+  // also filter on a bare role either OR in a second role (notifyAdminHelpbox:
+  // admin OR superadmin) or AND in a phone/service/area condition
+  // (notifyUsers/notifyJobCompleted: role AND phone; notifyProfessionals'
+  // only real call site always supplies both service and area) — so this
+  // can't misfire against a legitimate no-session send.
   const payload = (body.payload ?? {}) as Record<string, unknown>;
   const filters = Array.isArray(payload.filters) ? payload.filters : [];
+  const isBareSingleCondition =
+    filters.length === 1 && (filters[0] as any)?.field === 'tag' && (filters[0] as any)?.relation === '=';
   const hasUnboundedReach =
     'included_segments' in payload ||
-    filters.some((f: any) => f?.relation === 'not_exists');
+    filters.some((f: any) => f?.relation === 'not_exists') ||
+    isBareSingleCondition;
 
   if (body.requireSession || hasUnboundedReach) {
     const session = await verifyAdminSession(req);

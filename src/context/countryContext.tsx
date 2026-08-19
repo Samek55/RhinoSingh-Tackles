@@ -9,6 +9,11 @@ interface CountryContextType {
   countryInfo: CountryInfo;
   setCountry: (country: CountryCode) => void;
   toggleCountry: () => void;
+  // False until AsyncStorage/IP/timezone detection has actually run once —
+  // `country` defaults to 'india' synchronously before that, so a consumer
+  // gating on "is this Nepal" must wait for `resolved` rather than react to
+  // the placeholder default. See useRequireNepal.ts.
+  resolved: boolean;
 }
 
 const CountryContext = createContext<CountryContextType | undefined>(undefined);
@@ -55,6 +60,7 @@ async function detectCountry(): Promise<CountryCode> {
 
 export const CountryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [country, setCountryState] = useState<CountryCode>('india');
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then(async (saved) => {
@@ -63,11 +69,13 @@ export const CountryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } else {
         setCountryState(await detectCountry());
       }
+      setResolved(true);
     });
   }, []);
 
   const setCountry = (next: CountryCode) => {
     setCountryState(next);
+    setResolved(true);
     AsyncStorage.setItem(STORAGE_KEY, next);
   };
 
@@ -77,7 +85,7 @@ export const CountryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   return (
     <CountryContext.Provider
-      value={{ country, countryInfo: COUNTRIES[country], setCountry, toggleCountry }}
+      value={{ country, countryInfo: COUNTRIES[country], setCountry, toggleCountry, resolved }}
     >
       {children}
     </CountryContext.Provider>

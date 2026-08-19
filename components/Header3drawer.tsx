@@ -1,11 +1,23 @@
-import { TouchableOpacity, StyleSheet, View, Image, Text, StatusBar } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Image, Text, StatusBar, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerActions } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useCountry } from '@/src/context/countryContext';
 
 export default function Header3() {
   const navigation = useNavigation<any>();
+  const { countryInfo } = useCountry();
+
+  // Matches Header2.tsx's identical right-side icon — this one had no
+  // onPress at all, so the icon looked tappable (activeOpacity feedback) but
+  // silently did nothing on every screen that uses this header (Career,
+  // FAQs, Glossary, Partnership, both Helpbox OTP screens).
+  const openWhatsApp = () => {
+    if (!countryInfo.contactPhone) return;
+    const digits = (countryInfo.dialCode + countryInfo.contactPhone).replace(/\D/g, '');
+    Linking.openURL(`https://wa.me/${digits}`);
+  };
 
   return (
     <>
@@ -34,6 +46,7 @@ export default function Header3() {
             <TouchableOpacity
               style={styles.iconButton}
               activeOpacity={0.7}
+              onPress={openWhatsApp}
             >
               <Image
                 source={require('../assets/header/right.png')}

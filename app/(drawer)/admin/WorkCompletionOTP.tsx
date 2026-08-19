@@ -113,7 +113,22 @@ export default function WorkCompletionOTP() {
                 p_session_token: sessionToken,
             });
 
-            if (claimError || !claimed) {
+            if (claimError) {
+                // claim_booking_status's only raise-exception path is the session
+                // check — a thrown error here (distinct from `claimed === false`
+                // below, a clean compare-and-swap miss) means the session token
+                // was missing/expired, not that someone else updated this
+                // booking. The OTP is already consumed and photos already
+                // uploaded to storage, so send the professional to log back in
+                // rather than falsely implying the job is already done.
+                Alert.alert(
+                    'Session Expired',
+                    'Could not confirm completion — please log in again. The completion code you entered has already been used, so you\'ll need to request a new one after logging back in.'
+                );
+                router.replace('/admin/AdminLogin');
+                return;
+            }
+            if (!claimed) {
                 Alert.alert('Error', 'This booking was already updated by someone else.');
                 router.replace('/admin/BookingHistory');
                 return;

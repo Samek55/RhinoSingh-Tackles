@@ -97,8 +97,12 @@ export default function BookingDetails() {
         setOverlayVisible(true);
 
         const otp = sparrowOtpService.generateOtp();
-        const fullPhone = countryInfo.dialCode.replace('+', '') + cleanNumber;
-        const sent = await sparrowOtpService.sendOtp(fullPhone, otp, 'booking', name ? String(name) : undefined);
+        // Sparrow's own API docs (docs.sparrowsms.com/sms/examples_outgoing)
+        // show every example as a bare 10-digit local number, never a 977
+        // country-code prefix — every other Sparrow send in this codebase
+        // (PIN delivery, PIN reset) already uses the bare form; this one
+        // didn't match.
+        const sent = await sparrowOtpService.sendOtp(cleanNumber, otp, 'booking', name ? String(name) : undefined);
 
         setOverlayVisible(false);
 
@@ -107,7 +111,7 @@ export default function BookingDetails() {
           return;
         }
 
-        sparrowOtpService.setPendingOtp('booking', { otp, phone: fullPhone });
+        sparrowOtpService.setPendingOtp('booking', { otp, phone: cleanNumber });
 
         router.push({
           pathname: '/booking/BookingOtp',

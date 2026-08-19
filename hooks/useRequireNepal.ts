@@ -9,13 +9,19 @@ import { useCountry } from '@/src/context/countryContext';
 // src/context/countryContext.tsx — country lives only in client AsyncStorage).
 // Call this at the top of any screen under app/(drawer)/professional/.
 export function useRequireNepal() {
-  const { country } = useCountry();
+  const { country, resolved } = useCountry();
 
+  // `country` defaults to 'india' synchronously and only reflects the real
+  // detected value once `resolved` is true (AsyncStorage/IP/timezone lookup
+  // takes at least one tick, up to ~3s on a fresh install). Redirecting on
+  // the placeholder default bounced every Nepal professional who deep-linked
+  // straight into a gated screen (e.g. from a "new lead" push notification)
+  // to /Home before their real country was ever known.
   useEffect(() => {
-    if (country !== 'nepal') {
+    if (resolved && country !== 'nepal') {
       router.replace('/Home');
     }
-  }, [country]);
+  }, [resolved, country]);
 
-  return country === 'nepal';
+  return resolved && country === 'nepal';
 }
