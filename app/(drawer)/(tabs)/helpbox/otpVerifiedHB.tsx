@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import Header2 from '@/components/Header3drawer';
+import Header2 from '@/components/Header2';
 
 const VerifiedScreen = () => {
   return (

@@ -21,7 +21,6 @@ import SubmitOverlay from "@/components/bookings/SubmitOverlay";
 
 // 🎛️ API & Supabase Integration Methods
 import { notifyProfessionals } from '../../../../api/notifications';
-import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 import { useCountry } from '@/src/context/countryContext';
 import { sparrowOtpService } from '@/src/services/sparrowOtpService';
@@ -147,6 +146,7 @@ export default function BookingDetails() {
       // 1. OneSignal User Identifier Syncing
       if (cleanNumber) {
         try {
+          const { OneSignal } = require('react-native-onesignal');
           OneSignal.login(cleanNumber);
           setTimeout(() => {
             const assignedRole = role ? String(role) : 'user';

@@ -16,7 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { heightPercentageToDP as hp } from 'react-native-responsive-screen';
 const { width, height } = Dimensions.get('window');
 import { router, useLocalSearchParams } from 'expo-router';
-import Header2 from '@/components/Header3drawer';
+import Header2 from '@/components/Header2';
 import { createHelpboxSB } from '@/api/supabase/createHelpboxSB';
 import { notifyAdminHelpbox } from '@/api/notifications';
 import { sparrowOtpService } from '@/src/services/sparrowOtpService';

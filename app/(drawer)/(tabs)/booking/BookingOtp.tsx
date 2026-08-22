@@ -19,7 +19,6 @@ import Header2 from '@/components/Header2';
 
 // API & CONFIG IMPORTS
 import { notifyProfessionals } from '../../../../api/notifications';
-import { OneSignal } from 'react-native-onesignal';
 import { createBookingSupabase } from '@/api/supabase/createBookingSupabase';
 import { sparrowOtpService } from '@/src/services/sparrowOtpService';
 import { toLocalDateString } from '@/src/utils/dateFormat';
@@ -166,6 +165,7 @@ export default function BookingOtp() {
       // Complete your OneSignal push registration safely below...
       if (number) {
         try {
+          const { OneSignal } = require('react-native-onesignal');
           const cleanNumber = String(number).replace(/[^\d]/g, '');
           OneSignal.login(cleanNumber);
 
